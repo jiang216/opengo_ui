@@ -3297,3 +3297,52 @@ PAM 像素分析——字号行 6 簇 pitch=174 与布局参数精确吻合、�
 
 - [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：公共类页原以说明式呈现字号/加粗（本条目为其能力补全后升级）。
 - [UI-055](CHANGELOG.md#ui-055-文字像素对齐drawtextdrawicon-字形对齐像素网格2026-08-17)：2x 过采样图集与像素对齐（本次缩放渲染的基础）。
+
+## UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）
+
+严重度：中（ui 库能力缺口：Table 无行层级能力，树形表格页只能用全角空格 +
+├─/│/└─ 符号静态模拟官方示例，无任何交互）。
+
+根因归属：**ui 库**（Table 缺 layui treeTable 的层级展示与展开/折叠能力）。
+测试程序侧同步升级为真实交互演示，不再承载符号模拟的伪层级。
+
+修复：
+- ui/table.h/.cpp：
+  - `add_tree_row(int depth, const std::vector<std::string>& cells)`：按先序追加
+    带层级行（depth 0=根，>0 为上一 depth-1 行的子级）；`row_depth_` /
+    `row_expanded_` / `tree_visible_` 与 rows_ 平行维护，add_row 恒 depth 0。
+  - rebuild_rows 先序遍历计算树形可见性（祖先任一折叠则整棵子树隐藏），
+    分页在 tree_visible_ 上切片；page_count 按树形过滤后行数计（折叠子树不计页）。
+  - TableRow 首列渲染层级缩进（每级 20px）+ 展开三角（▼ 展开 / ▶ 折叠，
+    #c2c2c2 灰、hover 行加深），叶子行留 16px 占位使文字与父级对齐；
+    三角用 draw_polygon 与表头排序箭头同源。
+  - on_mouse_down 命中首列展开图标矩形（pad_x + depth·20 起 16px 宽 × 行高）
+    → `toggle_row(visible)` 切换并重建；`set_on_expand(cb)` 回调（数据行下标, 展开态）；
+    `set_row_expanded(data_row, on)` 程序化设置。
+  - `data_row_of(visible)` 改为 public（可视行→数据行稳定标识，跨分页/树形过滤）。
+  - 树形模式禁用 sort_rows/set_init_sort（扁平重排会破坏层级先序）。
+- layui_test/app.cpp：新增 `--click x,y` 合成点击注入（可重复；首次布局后注入、
+  再布局一次保证首帧正确）——脚本化交互验证基础设施，供所有交互控件复用。
+- layui_test/treetable_page.cpp：数据接口/组织架构两表改用 add_tree_row 真实层级；
+  组织架构表挂 set_on_expand 状态标签实时显示展开/折叠动作与 data_row。
+
+回归清单（必须保证）：
+- 非 tree 表格（仅 add_row）行为零变化：depth 恒 0、is_tree() 为 false，
+  排序/分页/行编辑/复选单选路径不受影响。
+- 分页表格在树形过滤结果上切片；折叠子树不计入总页数。
+- 缩进精确每级 +20px；三角仅在 row_has_children 的行渲染；叶子占位对齐父级文字。
+- 点击三角以外区域不触发折叠（仍走行点击/复选/按钮列等原命中逻辑）。
+- toggle/set_row_expanded 后重建走 UI-040 的 clear_children 递归释放路径，无泄漏。
+- `--smoke` 全轮换 exit 0。
+
+验证：x64 Release 编译链接通过；`--smoke 20` exit 0（67 页全轮换）；树形表格页
+首帧 PAM 像素分析——初始态缩进阶梯 295/315/335 与每级 +20px 精确吻合，父行三角
+#c2c2c2(灰度 194) 各 20px、叶子行图标位无墨迹；注入 `--click 308,390 --click
+308,710` 后「数据筛选」「前端组」「后端组」整子树消失、下方行按 38px 行高上移、
+折叠行三角簇 (300-307)→(302-305) 变窄即 ▼→▶ 翻转、状态标签文本变为
+「已折叠：研发部…[data_row=1]」证明 on_expand 回调触发。
+
+### 相关历史条目
+
+- [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：树形表格页原为符号静态模拟（本条目为其能力补全后升级）。
+- [UI-040](CHANGELOG.md#ui-040-table-行重建泄漏修复--widgetdestroy-单控件销毁-api2026-08-11)：rebuild_rows 递归释放旧行控件（本次折叠重建路径复用该机制）。

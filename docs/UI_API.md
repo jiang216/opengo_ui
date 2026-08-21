@@ -2326,6 +2326,9 @@ tb->set_theme(&theme);
 tb->add_column("ID");
 tb->add_column("姓名");
 tb->add_row({"1", "张三"});                  // 行 = 与列等长的字符串列表
+tb->add_tree_row(0, {"总公司", "", ""});      // 树形层级：depth 0=根（UI-109）
+tb->add_tree_row(1, {"研发部", "贤心", ""});  // 子级：首列自动缩进 + 展开三角，点击折叠子树
+tb->set_on_expand([](int data_row, bool expanded) { /* ... */ });
 tb->add_class("layui-table");                // layui 外观类
 parent->add_child(tb);
 ```
@@ -2360,6 +2363,7 @@ parent->add_child(tb);
 | `int page_count() const` |  |
 | `int page_size() const` |  |
 | `int visible_row_count() const` | 当前页可见数据行数（未分页 = 全量行数） |
+| `int data_row_of(int visible) const` | 可视行号 → 数据行下标（rows_ 下标；跨分页/树形过滤的稳定行标识） |
 | `void add_checkbox_column()` | —— 复选列 / 单选列（layui type:'checkbox' / type:'radio'）—— 表头全选 + 各行复选位 |
 | `void add_radio_column()` | 表头占位 + 各行单选位 |
 | `void add_numbers_column()` | 序号列（从 1 起，跨页连续） |
@@ -2394,6 +2398,15 @@ parent->add_child(tb);
 | `const std::string& button_label(int i) const` |  |
 | `const std::string& button_event(int i) const` |  |
 | `void set_on_action(std::function<void(int visible_row, const std::string& event)> cb)` | 行内工具按钮点击回调（参数：可视行号, 事件名） |
+| `void add_tree_row(int depth, const std::vector<std::string>& cells)` | —— 树形层级（layui treeTable，UI-109）—— 按先序追加带层级行：depth 0=根，>0 为上一 depth-1 行的子级；有子级的行首列渲染展开三角 |
+| `bool is_tree() const` | 存在 depth>0 的行 |
+| `int row_depth(int data_row) const` | 层级深度（add_row 的行恒为 0） |
+| `bool row_has_children(int data_row) const` | 下一行深度更深即有子级 |
+| `bool row_expanded(int data_row) const` | 展开态（默认 true） |
+| `void set_row_expanded(int data_row, bool on)` | 程序化设置展开态并重建 |
+| `void toggle_row(int visible_row)` | 点击展开图标切换并重建 |
+| `float tree_indent() const` | 每级缩进像素（20） |
+| `void set_on_expand(std::function<void(int data_row, bool expanded)> cb)` | 展开/折叠回调（数据行下标, 展开态） |
 | `int col_count() const` | 供内部行控件查询列/数据（TableRow） |
 | `float col_width(int c) const` |  |
 | `const std::vector<std::string>& row(int r) const` |  |

@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 116（BUG 108 / DOC 6 / META 2）
-- 边: 292
+- 节点: 117（BUG 109 / DOC 6 / META 2）
+- 边: 294
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -807,6 +807,12 @@
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Font 缩放与仿粗体：`Font::draw_text(..., scale=1.f, bold=false)` 全度量乘 scale（≤2x 清晰，图集 2x 过采样）+ 仿粗体 x 错位叠加；`Label::set_text_scale/set_bold` 行高/换行/测量全链路联动；默认参数下既有调用零影响——禁止在测试程序内自建多份 Font 实例或手动错位双绘实现加粗
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui 文字工具色查询：`ui::layui::font_color("layui-font-*")` 返回 .layui-font-{red orange green cyan blue purple black gray} 文字色（克隆 layui.css 2.13.x：green=#16baaa/blue=#01aaed/black=#000/gray=#c2c2c2 与 bg-\* 不同源），未知类回退黑；bg_color/bg_fill 行为不变——字色行禁用 bg_color()（其 text 字段是底色上的白前景，白底面板上不可见）
 
+### BUG:UI-109 · UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）
+
+- 路径: `docs/CHANGELOG.md#ui-109-table-树形层级-addtreerow--展开折叠交互树形表格页升级真实交互2026-08-21`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 树形层级（treeTable）：`add_tree_row(depth, cells)` 先序追加层级行，首列每级缩进 20px + 展开三角（▼/▶，仅 row_has_children 行渲染），点击切换整棵子树显隐；分页在树形过滤结果上切片、折叠子树不计页；`set_on_expand` 回调、`data_row_of` public——非 tree 表格行为零变化；树形模式禁排序（扁平重排破坏先序）；layui_test `--click x,y` 合成点击注入供脚本化交互验证
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -867,7 +873,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(14):
+- 反链(15):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -877,6 +883,7 @@
   - `META:CHANGELOG` (mention) — UI-106: 侧栏缺失镜像站 14 个页面——基础组整组缺 + 颜色/图标/输入框/选择框/单选框/树形表格/公共类/固定条（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）
+  - `META:CHANGELOG` (mention) — UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -995,6 +1002,7 @@
 | `BUG:UI-106` | BUG | UI-106: 侧栏缺失镜像站 14 个页面——基础组整组缺 + 颜色/图标/输入框/选择框/单选框/树形表格/公共类/固定条（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-107` | BUG | UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-108` | BUG | UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21） | `docs/CHANGELOG.md` |
+| `BUG:UI-109` | BUG | UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1189,6 +1197,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-107` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-108` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-108` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-109` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1291,6 +1300,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

@@ -72,6 +72,8 @@ public:
     int page_size() const { return page_size_; }
     // 当前页可见数据行数（未分页 = 全量行数）
     int visible_row_count() const;
+    // 可视行号 → 数据行下标（rows_ 下标；跨分页/树形过滤的稳定行标识）
+    int data_row_of(int visible) const;
 
     // —— 复选列 / 单选列（layui type:'checkbox' / type:'radio'）——
     void add_checkbox_column();  // 表头全选 + 各行复选位
@@ -128,6 +130,19 @@ public:
     // 行内工具按钮点击回调（参数：可视行号, 事件名）
     void set_on_action(std::function<void(int visible_row, const std::string& event)> cb) { on_action_ = std::move(cb); }
 
+    // —— 树形层级（layui treeTable）——
+    // 追加带层级的行：depth 0=根，>0 为上一 depth-1 行的子级（须按先序次序追加）。
+    // 有子级的行首列渲染展开三角（▼ 展开 / ▶ 折叠），点击切换；折叠时整棵子树隐藏。
+    void add_tree_row(int depth, const std::vector<std::string>& cells);
+    bool is_tree() const;                       // 存在 depth>0 的行
+    int row_depth(int data_row) const;          // 层级深度（add_row 的行恒为 0）
+    bool row_has_children(int data_row) const;  // 下一行深度更深即有子级
+    bool row_expanded(int data_row) const;      // 默认展开
+    void set_row_expanded(int data_row, bool on);
+    void toggle_row(int visible_row);           // 点击展开图标切换并重建
+    float tree_indent() const { return 20.f; }  // 每级缩进像素
+    void set_on_expand(std::function<void(int data_row, bool expanded)> cb) { on_expand_ = std::move(cb); }
+
     // 供内部行控件查询列/数据（TableRow）
     int col_count() const;
     float col_width(int c) const;
@@ -165,14 +180,15 @@ private:
     void commit_edit();
     bool in_header(float x, float y) const;
     int header_col_at(float x) const;
-    // 可见行→数据行映射（分页切片）；未分页时索引即数据行号
-    int data_row_of(int visible) const;
     int col_hit(float x) const;
     // 第 c 列起始 x（布局后有效）
     float col_x(int c) const;
 
     std::vector<Column> cols_;
     std::vector<std::vector<std::string>> rows_;
+    std::vector<int> row_depth_;     // 与 rows_ 平行；add_row 恒为 0，add_tree_row 指定
+    std::vector<bool> row_expanded_; // 与 rows_ 平行；默认 true
+    std::vector<int> tree_visible_;  // 树形过滤后的数据行（祖先全展开），分页在其上切片
     std::vector<int> visible_rows_;  // 当前页可见行在 rows_ 中的下标
     int hover_row_ = -1;
     int sort_col_ = -1;
@@ -212,6 +228,9 @@ private:
     std::vector<std::string> btn_labels_;
     std::vector<std::string> btn_events_;
     std::function<void(int, const std::string&)> on_action_;
+
+    // 树形层级（treeTable）
+    std::function<void(int, bool)> on_expand_;  // 展开/折叠回调（数据行下标, 展开态）
 
     ScrollBox* body_ = nullptr;
     Font* font_ = nullptr;

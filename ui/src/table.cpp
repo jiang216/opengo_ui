@@ -90,6 +90,31 @@ public:
             } else if (!text.empty() && font_) {
                 const char* drawText = text.c_str();
                 std::string truncated;
+                // 树形首列：层级缩进 + 展开/折叠三角（layui treeTable 风格）
+                float tx = x + owner_->cell_pad_x();
+                if (c == 0 && owner_->is_tree()) {
+                    const int data = owner_->data_row_of(index_);
+                    tx += owner_->row_depth(data) * owner_->tree_indent();
+                    if (owner_->row_has_children(data)) {
+                        const bool exp = owner_->row_expanded(data);
+                        // 三角：展开 ▼ / 折叠 ▶（#c2c2c2 灰，hover 行加深）
+                        const Vec4 tri = hovered() ? Vec4{0.2f, 0.2f, 0.2f, 1.f}
+                                                   : Vec4{0.76f, 0.76f, 0.76f, 1.f};
+                        const float cx = tx + 5.f;
+                        Vec2 pts[3];
+                        if (exp) {
+                            pts[0] = {cx - 4, cy - 2};
+                            pts[1] = {cx + 4, cy - 2};
+                            pts[2] = {cx, cy + 3};
+                        } else {
+                            pts[0] = {cx - 2, cy - 4};
+                            pts[1] = {cx - 2, cy + 4};
+                            pts[2] = {cx + 3, cy};
+                        }
+                        renderer.draw_polygon(pts, 3, tri);
+                    }
+                    tx += 16.f;  // 叶子行同样占位，文字与父级对齐
+                }
                 if (owner_->is_measure_text_col(c)) {
                     const float maxW = w - owner_->cell_pad_x() * 2.f;
                     const float fullW = font_->measure_text(text.c_str());
@@ -130,7 +155,7 @@ public:
                         }
                     }
                 }
-                font_->draw_text(renderer, drawText, x + owner_->cell_pad_x(),
+                font_->draw_text(renderer, drawText, tx,
                                  cy - font_->line_height() * 0.5f, Vec4{0.2f, 0.2f, 0.2f, 1.0f});
             }
             x += w;
@@ -250,12 +275,60 @@ void Table::add_column(const char* title, float width, bool sortable) {
 void Table::add_row(const std::vector<std::string>& cells) {
     rows_.push_back(cells);
     row_checked_.push_back(false);
+    row_depth_.push_back(0);
+    row_expanded_.push_back(true);
     rebuild_rows();
+}
+
+void Table::add_tree_row(int depth, const std::vector<std::string>& cells) {
+    rows_.push_back(cells);
+    row_checked_.push_back(false);
+    row_depth_.push_back(std::max(0, depth));
+    row_expanded_.push_back(true);
+    rebuild_rows();
+}
+
+bool Table::is_tree() const {
+    for (int d : row_depth_) if (d > 0) return true;
+    return false;
+}
+
+int Table::row_depth(int data_row) const {
+    return (data_row >= 0 && data_row < (int)row_depth_.size()) ? row_depth_[data_row] : 0;
+}
+
+bool Table::row_has_children(int data_row) const {
+    const int n = (int)rows_.size();
+    if (data_row < 0 || data_row >= n - 1) return false;
+    return row_depth(data_row + 1) > row_depth(data_row);
+}
+
+bool Table::row_expanded(int data_row) const {
+    return (data_row >= 0 && data_row < (int)row_expanded_.size()) ? row_expanded_[data_row] : true;
+}
+
+void Table::set_row_expanded(int data_row, bool on) {
+    if (data_row < 0 || data_row >= (int)row_expanded_.size()) return;
+    row_expanded_[data_row] = on;
+    rebuild_rows();
+    on_layout();
+}
+
+void Table::toggle_row(int visible_row) {
+    const int data = data_row_of(visible_row);
+    if (!row_has_children(data)) return;
+    row_expanded_[data] = !row_expanded_[data];
+    rebuild_rows();
+    on_layout();
+    if (on_expand_) on_expand_(data, row_expanded_[data]);
 }
 
 void Table::clear_rows() {
     rows_.clear();
     row_checked_.clear();
+    row_depth_.clear();
+    row_expanded_.clear();
+    tree_visible_.clear();
     radio_sel_ = -1;
     rebuild_rows();
 }
@@ -309,8 +382,11 @@ void Table::set_page(int page) {
 }
 
 int Table::page_count() const {
-    if (!paginated_ || rows_.empty()) return 1;
-    return (int)((rows_.size() + page_size_ - 1) / page_size_);
+    if (!paginated_) return 1;
+    // 树形模式按树形过滤后的行数分页（折叠子树不计入）
+    const size_t n = is_tree() ? tree_visible_.size() : rows_.size();
+    if (n == 0) return 1;
+    return (int)((n + page_size_ - 1) / page_size_);
 }
 
 int Table::visible_row_count() const { return (int)visible_rows_.size(); }
@@ -479,14 +555,36 @@ float Table::preferred_height() const {
 }
 
 void Table::rebuild_rows() {
-    // 计算当前页可见行映射
+    // 树形可见性：先序遍历，祖先任一折叠则整棵子树隐藏
+    tree_visible_.clear();
+    {
+        std::vector<int> path;  // path[d] = 当前深度 d 的祖先数据行下标
+        for (int i = 0; i < (int)rows_.size(); ++i) {
+            const int d = row_depth(i);
+            if ((int)path.size() > d) path.resize(d);
+            bool vis = true;
+            for (int anc : path) {
+                if (!row_expanded_[anc]) { vis = false; break; }
+            }
+            if (vis) tree_visible_.push_back(i);
+            path.push_back(i);
+        }
+    }
+    // 计算当前页可见行映射（分页在树形过滤结果上切片）
     visible_rows_.clear();
+    std::vector<int> base;
+    if (is_tree()) {
+        base = tree_visible_;
+    } else {
+        base.resize(rows_.size());
+        for (int i = 0; i < (int)rows_.size(); ++i) base[i] = i;
+    }
     if (paginated_) {
         const int start = page_ * page_size_;
-        for (int i = start; i < (int)rows_.size() && i < start + page_size_; ++i)
-            visible_rows_.push_back(i);
+        for (int i = start; i < (int)base.size() && i < start + page_size_; ++i)
+            visible_rows_.push_back(base[i]);
     } else {
-        for (int i = 0; i < (int)rows_.size(); ++i) visible_rows_.push_back(i);
+        visible_rows_ = base;
     }
     // 清掉旧行控件（UI-040：递归释放整批旧行，此前仅移除不 delete 造成排序/编辑后 TableRow 泄漏）
     body_->clear_children();
@@ -526,6 +624,7 @@ void Table::truncate_rows() {
 }
 
 void Table::sort_rows(int col) {
+    if (is_tree()) return;  // 树形模式禁排序：扁平重排会破坏层级先序
     if (col < 0 || col >= (int)cols_.size()) return;
     Column& c = cols_[col];
     c.ascending = !c.ascending;
@@ -542,6 +641,7 @@ void Table::sort_rows(int col) {
 }
 
 void Table::set_init_sort(int col, bool asc) {
+    if (is_tree()) return;  // 树形模式禁排序
     if (col < 0 || col >= (int)cols_.size()) return;
     cols_[col].ascending = asc;
     std::stable_sort(rows_.begin(), rows_.end(), [col, asc](const std::vector<std::string>& a,
@@ -558,6 +658,8 @@ void Table::set_init_sort(int col, bool asc) {
 void Table::reload(const std::vector<std::vector<std::string>>& new_rows) {
     rows_ = new_rows;
     row_checked_.resize(rows_.size(), false);
+    row_depth_.assign(rows_.size(), 0);
+    row_expanded_.assign(rows_.size(), true);
     radio_sel_ = -1;
     page_ = 0;
     rebuild_rows();
@@ -683,6 +785,15 @@ bool Table::on_mouse_down(float x, float y, int button) {
     if (row >= 0 && row < (int)visible_rows_.size()) {
         const int data = data_row_of(row);
         const int col = col_hit(x);
+        // 树形展开图标命中（首列缩进三角区域）→ 切换展开/折叠
+        if (col == 0 && is_tree() && row_has_children(data)) {
+            const float ry = bounds_.y + header_h() + (float)row * row_h() - body_->scroll_offset();
+            const float ix = col_x(0) + cell_pad_x() + (float)row_depth(data) * tree_indent();
+            if (x >= ix && x < ix + 16.f && y >= ry && y < ry + row_h()) {
+                toggle_row(row);
+                return true;
+            }
+        }
         const bool in_sel_col = (selection_col_ >= 0 && col == selection_col_);
         if (in_sel_col) {
             if (radio_mode_) {

@@ -158,6 +158,7 @@ int main(int argc, char** argv) {
     const char* shot_path = nullptr;
     int shot_page = -1;
     float shot_scroll = 0.f;
+    std::vector<std::pair<float, float>> click_points;  // --click x,y（可重复）
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--smoke") == 0 && i + 1 < argc)
             smoke_seconds = std::atof(argv[++i]);
@@ -167,6 +168,11 @@ int main(int argc, char** argv) {
             shot_page = std::atoi(argv[++i]);
         else if (std::strcmp(argv[i], "--shot-scroll") == 0 && i + 1 < argc)
             shot_scroll = (float)std::atof(argv[++i]);
+        else if (std::strcmp(argv[i], "--click") == 0 && i + 1 < argc) {
+            float cx = 0.f, cy = 0.f;
+            if (std::sscanf(argv[++i], "%f,%f", &cx, &cy) == 2)
+                click_points.push_back({cx, cy});
+        }
     }
     const auto smoke_start = std::chrono::steady_clock::now();
     bool shot_done_ = false;
@@ -479,6 +485,7 @@ int main(int argc, char** argv) {
     int smoke_page = 0;
     auto last_switch = last;
     bool smoke_switched_any = false;
+    bool clicks_injected = false;
     while (!window.should_close()) {
         window.poll_events();
         const float dt = std::chrono::duration<float>(std::chrono::steady_clock::now() - prev).count();
@@ -510,6 +517,17 @@ int main(int argc, char** argv) {
         }
 
         root.layout();
+        // --click x,y：首次布局后注入合成点击（脚本化交互验证，如树形表格展开/折叠），
+        // 点击可能重建行控件，注入后再布局一次保证首帧截图正确
+        if (!click_points.empty() && !clicks_injected) {
+            clicks_injected = true;
+            for (const auto& c : click_points) {
+                root.dispatch_mouse_move(c.first, c.second);
+                root.dispatch_mouse_down(c.first, c.second, 0);
+                root.dispatch_mouse_up(c.first, c.second, 0);
+            }
+            root.layout();
+        }
         root.dispatch_mouse_move(window.mouse_x(), window.mouse_y());
         if (window.mouse_pressed(0)) root.dispatch_mouse_down(window.mouse_x(), window.mouse_y(), 0);
         if (window.mouse_released(0)) root.dispatch_mouse_up(window.mouse_x(), window.mouse_y(), 0);

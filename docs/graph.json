@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-21T22:25:22+08:00",
+  "generatedAt": "2026-08-21T23:05:33+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -762,6 +762,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-108-fontlabel-字号缩放与仿粗体--layui-文字工具色-fontcolor公共类页升级真实演示2026-08-21"
     },
+    "BUG:UI-109": {
+      "id": "BUG:UI-109",
+      "type": "BUG",
+      "label": "UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-109-table-树形层级-addtreerow--展开折叠交互树形表格页升级真实交互2026-08-21"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -1321,6 +1328,12 @@
       "to": "META:CHANGELOG",
       "kind": "mention",
       "context": "UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）"
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）"
     },
     {
       "from": "DOC:PLAN",
@@ -2179,6 +2192,12 @@
       "to": "BUG:UI-108",
       "kind": "checklist",
       "context": "回归清单#layui 文字工具色查询：`ui::layui::font_color(\"layui-font-*\")` 返回 .layui-font-{red orange green cyan blue purple black gray} 文字色（克隆 layui.css 2.13.x：green=#16baaa/blue=#01aaed/black=#000/gray=#c2c2c2 与 bg-\\* 不同源），未知类回退黑；bg_color/bg_fill 行为不变——字色行禁用 bg_color()（其 text 字段是底色上的白前景，白底面板上不可见）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-109",
+      "kind": "checklist",
+      "context": "回归清单#Table 树形层级（treeTable）：`add_tree_row(depth, cells)` 先序追加层级行，首列每级缩进 20px + 展开三角（▼/▶，仅 row_has_children 行渲染），点击切换整棵子树显隐；分页在树形过滤结果上切片、折叠子树不计页；`set_on_expand` 回调、`data_row_of` public——非 tree 表格行为零变化；树形模式禁排序（扁平重排破坏先序）；layui_test `--click x,y` 合成点击注入供脚本化交互验证"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -4062,6 +4081,13 @@
         "context": "回归清单#layui 文字工具色查询：`ui::layui::font_color(\"layui-font-*\")` 返回 .layui-font-{red orange green cyan blue purple black gray} 文字色（克隆 layui.css 2.13.x：green=#16baaa/blue=#01aaed/black=#000/gray=#c2c2c2 与 bg-\\* 不同源），未知类回退黑；bg_color/bg_fill 行为不变——字色行禁用 bg_color()（其 text 字段是底色上的白前景，白底面板上不可见）"
       }
     ],
+    "BUG:UI-109": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table 树形层级（treeTable）：`add_tree_row(depth, cells)` 先序追加层级行，首列每级缩进 20px + 展开三角（▼/▶，仅 row_has_children 行渲染），点击切换整棵子树显隐；分页在树形过滤结果上切片、折叠子树不计页；`set_on_expand` 回调、`data_row_of` public——非 tree 表格行为零变化；树形模式禁排序（扁平重排破坏先序）；layui_test `--click x,y` 合成点击注入供脚本化交互验证"
+      }
+    ],
     "META:CHANGELOG": [
       {
         "from": "META:CHANGELOG",
@@ -4107,6 +4133,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）"
       },
       {
         "from": "DOC:PLAN",
