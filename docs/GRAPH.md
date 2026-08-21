@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 126（BUG 118 / DOC 6 / META 2）
-- 边: 313
+- 节点: 127（BUG 119 / DOC 6 / META 2）
+- 边: 317
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -860,7 +860,8 @@
 ### BUG:UI-117 · UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）
 
 - 路径: `docs/CHANGELOG.md#ui-117-图标页克隆镜像列表-195-项--hbox-自适应高度与图标字体扩段2026-08-22`
-- 反链(1):
+- 反链(2):
+  - `META:CHANGELOG` (ref) — 相关历史条目
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名，均水平居中，后两行 0.78 缩放小字；数据源 icon_catalog.h），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9
 
 ### BUG:UI-118 · UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）
@@ -868,6 +869,13 @@
 - 路径: `docs/CHANGELOG.md#ui-118-图标卡片文本居中--数据表抽离重构2026-08-22`
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名，均水平居中，后两行 0.78 缩放小字；数据源 icon_catalog.h），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9
+
+### BUG:UI-119 · UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-119-表单选择框分页页崩溃排查陈旧增量构建产物-odr-混合布局--崩溃诊断钩子2026-08-22`
+- 反链(2):
+  - `DOC:BUILD` (checklist) — 回归清单#布局相关 constexpr 公开头（如 gl/font.h 字形数组尺寸）变更后，凡经历过编译失败/中断的构建树必须全量重建再验证；增量混合产物会触发 ODR 违例型堆崩溃（症状：仅个别页 0xC0000374/0xC0000005 且崩溃码漂移）
+  - `DOC:BUILD` (checklist) — 回归清单#layui_test 崩溃时自动打印符号化调用栈（SetUnhandledExceptionFilter + dbghelp）；定位崩溃帧需 Release+/Z7 生成 PDB
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -929,7 +937,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(23):
+- 反链(24):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -948,6 +956,7 @@
   - `META:CHANGELOG` (mention) — UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）
+  - `META:CHANGELOG` (mention) — UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -1076,6 +1085,7 @@
 | `BUG:UI-116` | BUG | UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-117` | BUG | UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-118` | BUG | UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-119` | BUG | UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1290,6 +1300,8 @@
 | `DOC:BUILD` | `BUG:UI-003` | checklist |
 | `DOC:BUILD` | `BUG:UI-010` | checklist |
 | `DOC:BUILD` | `BUG:UI-010` | checklist |
+| `DOC:BUILD` | `BUG:UI-119` | checklist |
+| `DOC:BUILD` | `BUG:UI-119` | checklist |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
@@ -1370,6 +1382,7 @@
 | `META:CHANGELOG` | `BUG:UI-077` | ref |
 | `META:CHANGELOG` | `BUG:UI-097` | ref |
 | `META:CHANGELOG` | `BUG:UI-098` | ref |
+| `META:CHANGELOG` | `BUG:UI-117` | ref |
 | `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |
 | `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |
 | `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |
@@ -1384,6 +1397,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

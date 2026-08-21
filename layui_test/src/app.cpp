@@ -28,6 +28,12 @@
 
 #include <glad/gl.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <dbghelp.h>
+#pragma comment(lib, "dbghelp")
+#endif
+
 namespace {
 
 constexpr float kHeaderH = 60.f;
@@ -153,7 +159,57 @@ private:
 
 }  // namespace
 
+#ifdef _WIN32
+// 崩溃诊断：未处理异常时打印异常码/地址 + 符号化调用栈（配合 RelWithDebInfo 的 PDB）
+namespace {
+void print_crash_stack(const CONTEXT* ctx) {
+    SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES);
+    if (!SymInitialize(GetCurrentProcess(), nullptr, TRUE)) return;
+    STACKFRAME64 frame{};
+    frame.AddrPC.Offset = ctx->Rip;
+    frame.AddrPC.Mode = AddrModeFlat;
+    frame.AddrFrame.Offset = ctx->Rbp;
+    frame.AddrFrame.Mode = AddrModeFlat;
+    frame.AddrStack.Offset = ctx->Rsp;
+    frame.AddrStack.Mode = AddrModeFlat;
+    for (int i = 0; i < 48; ++i) {
+        if (!StackWalk64(IMAGE_FILE_MACHINE_AMD64, GetCurrentProcess(), GetCurrentThread(),
+                         &frame, const_cast<CONTEXT*>(ctx), nullptr, SymFunctionTableAccess64,
+                         SymGetModuleBase64, nullptr))
+            break;
+        const DWORD64 pc = frame.AddrPC.Offset;
+        if (!pc) break;
+        char buf[sizeof(SYMBOL_INFO) + 256] = {};
+        auto* sym = reinterpret_cast<SYMBOL_INFO*>(buf);
+        sym->SizeOfStruct = sizeof(SYMBOL_INFO);
+        sym->MaxNameLen = 255;
+        DWORD64 disp = 0;
+        if (SymFromAddr(GetCurrentProcess(), pc, &disp, sym))
+            ui::log_error("  #%d %s+0x%llx (%s)", i, sym->Name,
+                          static_cast<unsigned long long>(disp), sym->Name);
+        else
+            ui::log_error("  #%d pc=0x%llx", i, static_cast<unsigned long long>(pc));
+    }
+}
+LONG WINAPI on_unhandled_crash(EXCEPTION_POINTERS* ep) {
+    ui::log_error("CRASH code=0x%08lx addr=%p", ep->ExceptionRecord->ExceptionCode,
+                  ep->ExceptionRecord->ExceptionAddress);
+    if (ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && ep->ExceptionRecord->NumberParameters >= 2)
+        ui::log_error("AV %s address 0x%p",
+                      ep->ExceptionRecord->ExceptionInformation[0] ? "WRITE" : "READ",
+                      reinterpret_cast<void*>(ep->ExceptionRecord->ExceptionInformation[1]));
+    print_crash_stack(ep->ContextRecord);
+    fflush(stdout);
+    fflush(stderr);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+}  // namespace
+#endif
+
 int main(int argc, char** argv) {
+#ifdef _WIN32
+    SetUnhandledExceptionFilter(on_unhandled_crash);
+#endif
     double smoke_seconds = 0.0;
     const char* shot_path = nullptr;
     int shot_page = -1;
