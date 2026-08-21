@@ -2200,6 +2200,9 @@ sb->set_padding(12.f);
 sb->set_spacing(8.f);
 sb->add_child(child_widget);                 // 内容超高自动滚动 + scissor 裁剪
 sb->set_on_scroll_to_bottom([] { ui::log_info("滚到底"); });  // 传 nullptr 清除
+auto* bar = new ui::VBox(0, 0, 52.f, 52.f);  // 视口锚定工具组（UI-110）
+bar->add_child(top_btn);
+sb->add_pinned(bar, ui::PinCorner::BottomRight, 20.f, 20.f);  // 钉右下角，不随滚动
 parent->add_child(sb);
 ```
 
@@ -2222,6 +2225,8 @@ parent->add_child(sb);
 | `void set_on_scroll_to_bottom(std::function<void()> cb)` | 滚到内容底部时回调一次（再次离开底部再滚回底部会重新触发）。 传入 nullptr 清除回调（切页清理用，防悬空引用）。 |
 | `void set_on_scroll(std::function<void()> cb)` | 通用滚动回调：每次 scroll_offset 变化时触发（用于关闭下拉面板等场景）。 |
 | `void set_bottom_margin(float mb)` | 距底部触发距离 margin（镜像 layui flow mb，默认 50）：当 scroll_offset 距内容底部 不足 mb 像素时即触发触底回调，而不必严格滚到底（UI-094）。仅影响 check_bottom， 触发/重新武装语义（bottom_fired_）与 set_on_scroll_to_bottom 一致。 |
+| `void add_pinned(Widget* w, PinCorner corner = PinCorner::BottomRight, float margin_x = 16.f, float margin_y = 16.f)` | —— 视口级锚定子控件（layui fixbar，UI-110）—— 控件照常 add_child（生命周期/命中/绘制顺序不变），但不参与纵向流式排布、不计入内容高度；每次布局钉在可视区 corner 内缩 (margin_x, margin_y) 处，不随 scroll_offset 移动；后加的锚定控件绘制在流式内容之上 |
+| `int pinned_count() const` | 当前锚定子控件数 |
 | `void on_layout() override` |  |
 | `void on_draw(Renderer& renderer) override` |  |
 | `void draw(Renderer& renderer) override` | 覆写 draw：背景 -> scissor(内容) -> 滚动条 |

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-21T23:05:33+08:00",
+  "generatedAt": "2026-08-21T23:51:11+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -769,6 +769,20 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-109-table-树形层级-addtreerow--展开折叠交互树形表格页升级真实交互2026-08-21"
     },
+    "BUG:UI-111": {
+      "id": "BUG:UI-111",
+      "type": "BUG",
+      "label": "UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-111-scrollbox-视口锚定-addpinnedlayui-fixbar-pagehost-栈局部悬空修复固定条页升级真实常驻工具组2026-08-21"
+    },
+    "BUG:UI-110": {
+      "id": "BUG:UI-110",
+      "type": "BUG",
+      "label": "UI-110: ComboBox 无 ScrollBox 祖先时弹出面板不翻转，贴近窗口底部的下拉尾部选项被窗口底边裁掉（2026-08-21）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-110-combobox-无-scrollbox-祖先时弹出面板不翻转贴近窗口底部的下拉尾部选项被窗口底边裁掉2026-08-21"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -1336,6 +1350,12 @@
       "context": "UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）"
     },
     {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）"
+    },
+    {
       "from": "DOC:PLAN",
       "to": "META:CHANGELOG",
       "kind": "mention",
@@ -1709,6 +1729,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-111",
+      "kind": "checklist",
+      "context": "回归清单#ScrollBox 视口锚定：`add_pinned(w, corner, mx, my)` 控件照常入子树但不参与流式排布/不计内容高度，每次布局钉在可视区角落不随滚动移动；pinned_ 悬空条目 on_layout 自动剔除（clear_children 切页安全）；后加先绘先命中（layui fixbar）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-093",
       "kind": "checklist",
       "context": "回归清单#图片懒加载（lay-src）：`Image::set_lay_src()` on_draw 用 `Renderer::current_scissor()`（当前可视屏）判进入可视区才解码，只加载一次；显式尺寸时加载前也预留高度（列表布局不塌陷）"
@@ -1717,7 +1743,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-095",
       "kind": "checklist",
-      "context": "回归清单#页面回调生命周期：build 期回调（scroll/click/destroy）只捕获 app 长期对象（font/theme/preview 等 new 控件），**严禁捕获 build 期栈局部 PageHost**（返回即失效，运行期解引用悬空崩溃）"
+      "context": "回归清单#页面回调生命周期：PageHost 为 **main 作用域长命对象**（UI-110 结构性修复），页面 build 里 `[&host]` 捕获合法；历史上 host 曾是 render_page lambda 栈局部变量、回调触发即悬空（UI-095 首次暴露，当时以\"回调只捕获长期对象\"规避）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-111",
+      "kind": "checklist",
+      "context": "回归清单#页面回调生命周期：PageHost 为 **main 作用域长命对象**（UI-110 结构性修复），页面 build 里 `[&host]` 捕获合法；历史上 host 曾是 render_page lambda 栈局部变量、回调触发即悬空（UI-095 首次暴露，当时以\"回调只捕获长期对象\"规避）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -1921,7 +1953,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-023",
       "kind": "checklist",
-      "context": "回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字"
+      "context": "回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字；有 ScrollBox 祖先时随滚动实时翻转/钉顶，无则按窗口可视区定位（底部下拉不被窗口底边裁切）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-110",
+      "kind": "checklist",
+      "context": "回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字；有 ScrollBox 祖先时随滚动实时翻转/钉顶，无则按窗口可视区定位（底部下拉不被窗口底边裁切）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3088,7 +3126,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字"
+        "context": "回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字；有 ScrollBox 祖先时随滚动实时翻转/钉顶，无则按窗口可视区定位（底部下拉不被窗口底边裁切）"
       },
       {
         "from": "DOC:ARCHITECTURE",
@@ -3967,7 +4005,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#页面回调生命周期：build 期回调（scroll/click/destroy）只捕获 app 长期对象（font/theme/preview 等 new 控件），**严禁捕获 build 期栈局部 PageHost**（返回即失效，运行期解引用悬空崩溃）"
+        "context": "回归清单#页面回调生命周期：PageHost 为 **main 作用域长命对象**（UI-110 结构性修复），页面 build 里 `[&host]` 捕获合法；历史上 host 曾是 render_page lambda 栈局部变量、回调触发即悬空（UI-095 首次暴露，当时以\"回调只捕获长期对象\"规避）"
       }
     ],
     "BUG:UI-096": [
@@ -4088,6 +4126,25 @@
         "context": "回归清单#Table 树形层级（treeTable）：`add_tree_row(depth, cells)` 先序追加层级行，首列每级缩进 20px + 展开三角（▼/▶，仅 row_has_children 行渲染），点击切换整棵子树显隐；分页在树形过滤结果上切片、折叠子树不计页；`set_on_expand` 回调、`data_row_of` public——非 tree 表格行为零变化；树形模式禁排序（扁平重排破坏先序）；layui_test `--click x,y` 合成点击注入供脚本化交互验证"
       }
     ],
+    "BUG:UI-111": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#ScrollBox 视口锚定：`add_pinned(w, corner, mx, my)` 控件照常入子树但不参与流式排布/不计内容高度，每次布局钉在可视区角落不随滚动移动；pinned_ 悬空条目 on_layout 自动剔除（clear_children 切页安全）；后加先绘先命中（layui fixbar）"
+      },
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#页面回调生命周期：PageHost 为 **main 作用域长命对象**（UI-110 结构性修复），页面 build 里 `[&host]` 捕获合法；历史上 host 曾是 render_page lambda 栈局部变量、回调触发即悬空（UI-095 首次暴露，当时以\"回调只捕获长期对象\"规避）"
+      }
+    ],
+    "BUG:UI-110": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字；有 ScrollBox 祖先时随滚动实时翻转/钉顶，无则按窗口可视区定位（底部下拉不被窗口底边裁切）"
+      }
+    ],
     "META:CHANGELOG": [
       {
         "from": "META:CHANGELOG",
@@ -4138,6 +4195,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）"
       },
       {
         "from": "DOC:PLAN",

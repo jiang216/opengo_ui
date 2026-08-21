@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 117（BUG 109 / DOC 6 / META 2）
-- 边: 294
+- 节点: 119（BUG 111 / DOC 6 / META 2）
+- 边: 298
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -216,7 +216,7 @@
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Renderer `draw_rect_outline`：矩形描边原语（4 条薄 quad，无圆角）
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Button layui 变体：layui-btn 默认/normal/warm/danger/primary + disabled（禁点击键盘）+ radius + lg/sm/xs（preferred_height）；hover opacity .8 / active 恢复；`set_badge`/`set_dot_badge` 内嵌徽章/圆点（文本右缘，叠加 layui-bg-* 换底）
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Switch（layui-form-switch）：开绿底白滑块 / 关白底灰滑块，点击/Enter/Space 切换 + on_change(bool)
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字；有 ScrollBox 祖先时随滚动实时翻转/钉顶，无则按窗口可视区定位（底部下拉不被窗口底边裁切）
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Slider `layui-slider`：h4 #eee 轨道 + accent 填充 + 12px 白圆钮（hover 放大 1.2）+ 聚焦描边
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Tabs（layui-tab）：标题条 + 内容区，card（#fafafa 标题条 / 激活白底）/ brief（激活绿字 + 2px 绿下划线）变体，点击切换 + on_change(int)；`add_tab(title, content)` 每页可带内容区文本（切换联动）、`set_content/set_allow_close ×` 删除、`remove_tab/count` 动态操作（lay-id 语义）、标题超宽右缘展开三角弹出下拉面板；`title_width()` 把徽章/圆点计入标题宽，`set_badge/set_dot_badge` 标题右缘内嵌红徽章
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Collapse（layui-collapse）：1px #eee 外框 + #fafafa 标题条 + `set_accordion(true)` 手风琴单开 / `(false)` 非手风琴多开（open_ 集合）+ 内容区白字；`is_open/open_count/active` 查询；可作另一 Collapse 子控件无限嵌套
@@ -723,7 +723,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-095-流加载页回调捕获栈局部-pagehost-悬空崩溃2026-08-18`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#页面回调生命周期：build 期回调（scroll/click/destroy）只捕获 app 长期对象（font/theme/preview 等 new 控件），**严禁捕获 build 期栈局部 PageHost**（返回即失效，运行期解引用悬空崩溃）
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#页面回调生命周期：PageHost 为 **main 作用域长命对象**（UI-110 结构性修复），页面 build 里 `[&host]` 捕获合法；历史上 host 曾是 render_page lambda 栈局部变量、回调触发即悬空（UI-095 首次暴露，当时以"回调只捕获长期对象"规避）
 
 ### BUG:UI-096 · UI-096: 文本行修饰页改克隆 layui-code 代码块组件 demo（2026-08-18）
 
@@ -813,6 +813,19 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 树形层级（treeTable）：`add_tree_row(depth, cells)` 先序追加层级行，首列每级缩进 20px + 展开三角（▼/▶，仅 row_has_children 行渲染），点击切换整棵子树显隐；分页在树形过滤结果上切片、折叠子树不计页；`set_on_expand` 回调、`data_row_of` public——非 tree 表格行为零变化；树形模式禁排序（扁平重排破坏先序）；layui_test `--click x,y` 合成点击注入供脚本化交互验证
 
+### BUG:UI-110 · UI-110: ComboBox 无 ScrollBox 祖先时弹出面板不翻转，贴近窗口底部的下拉尾部选项被窗口底边裁掉（2026-08-21）
+
+- 路径: `docs/CHANGELOG.md#ui-110-combobox-无-scrollbox-祖先时弹出面板不翻转贴近窗口底部的下拉尾部选项被窗口底边裁掉2026-08-21`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字；有 ScrollBox 祖先时随滚动实时翻转/钉顶，无则按窗口可视区定位（底部下拉不被窗口底边裁切）
+
+### BUG:UI-111 · UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）
+
+- 路径: `docs/CHANGELOG.md#ui-111-scrollbox-视口锚定-addpinnedlayui-fixbar-pagehost-栈局部悬空修复固定条页升级真实常驻工具组2026-08-21`
+- 反链(2):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBox 视口锚定：`add_pinned(w, corner, mx, my)` 控件照常入子树但不参与流式排布/不计内容高度，每次布局钉在可视区角落不随滚动移动；pinned_ 悬空条目 on_layout 自动剔除（clear_children 切页安全）；后加先绘先命中（layui fixbar）
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#页面回调生命周期：PageHost 为 **main 作用域长命对象**（UI-110 结构性修复），页面 build 里 `[&host]` 捕获合法；历史上 host 曾是 render_page lambda 栈局部变量、回调触发即悬空（UI-095 首次暴露，当时以"回调只捕获长期对象"规避）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -873,7 +886,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(15):
+- 反链(16):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -884,6 +897,7 @@
   - `META:CHANGELOG` (mention) — UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）
+  - `META:CHANGELOG` (mention) — UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -1003,6 +1017,8 @@
 | `BUG:UI-107` | BUG | UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-108` | BUG | UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-109` | BUG | UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21） | `docs/CHANGELOG.md` |
+| `BUG:UI-110` | BUG | UI-110: ComboBox 无 ScrollBox 祖先时弹出面板不翻转，贴近窗口底部的下拉尾部选项被窗口底边裁掉（2026-08-21） | `docs/CHANGELOG.md` |
+| `BUG:UI-111` | BUG | UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1198,6 +1214,9 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-108` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-108` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-109` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-110` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-111` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-111` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1300,6 +1319,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

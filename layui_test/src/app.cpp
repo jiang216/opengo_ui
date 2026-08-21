@@ -365,9 +365,12 @@ int main(int argc, char** argv) {
         }
         child_nav.end_group();  // add_group/end_group 配对闭合，保持层级卫生
     };
+    // 页面宿主对象：生命周期必须覆盖全部页面控件回调——页面 build 里以 [&host]
+    // 捕获的回调（按钮点击/滚动回调等）在 render_page 返回后仍会触发，
+    // 此前 host 为 lambda 栈局部变量，回调触发时读到悬空引用（垃圾值）。
+    PageHost host;
     render_page = [&](int idx) {
         if (idx < 0 || idx >= (int)pages.size()) return;
-        PageHost host;
         host.content = &preview;
         host.code = &code;
         host.help = &help;

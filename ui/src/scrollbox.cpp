@@ -18,10 +18,23 @@ float ScrollBox::content_height() const {
     float h = 2.f * padding_;
     for (const Widget* child : children_) {
         if (!child->visible) continue;
+        if (is_pinned(child)) continue;  // 锚定控件不占内容流高度
         h += child->preferred_height() + spacing_;
     }
     if (!children_.empty()) h -= spacing_;  // 去掉末尾多算的间距
     return h;
+}
+
+bool ScrollBox::is_pinned(const Widget* w) const {
+    for (const Pinned& p : pinned_)
+        if (p.w == w) return true;
+    return false;
+}
+
+void ScrollBox::add_pinned(Widget* w, PinCorner corner, float margin_x, float margin_y) {
+    if (!w) return;
+    add_child(w);
+    pinned_.push_back({w, corner, margin_x, margin_y});
 }
 
 float ScrollBox::scroll_max() const {
@@ -67,9 +80,33 @@ void ScrollBox::on_layout() {
     float cursor_y = bounds_.y + padding_ - scroll_offset_;
     for (Widget* child : children_) {
         if (!child->visible) continue;
+        if (is_pinned(child)) continue;  // 锚定控件不走流式排布
         const float h = child->preferred_height();
         child->set_bounds(bounds_.x + padding_, cursor_y, content_w, h);
         cursor_y += h + spacing_;
+    }
+    // 锚定子控件：剔除已被 clear_children 释放的悬空条目，再钉到可视区角落
+    pinned_.erase(std::remove_if(pinned_.begin(), pinned_.end(),
+                                 [this](const Pinned& p) {
+                                     return std::find(children_.begin(), children_.end(), p.w) ==
+                                            children_.end();
+                                 }),
+                  pinned_.end());
+    for (const Pinned& p : pinned_) {
+        Widget* w = p.w;
+        if (!w->visible) continue;
+        const float pw = w->bounds().w;
+        const float ph = w->bounds().h > 0.f ? w->bounds().h : w->preferred_height();
+        float px, py;
+        if (p.corner == PinCorner::TopRight || p.corner == PinCorner::BottomRight)
+            px = bounds_.x + bounds_.w - p.mx - pw;
+        else
+            px = bounds_.x + p.mx;
+        if (p.corner == PinCorner::BottomLeft || p.corner == PinCorner::BottomRight)
+            py = bounds_.y + bounds_.h - p.my - ph;
+        else
+            py = bounds_.y + p.my;
+        w->set_bounds(px, py, pw, ph);
     }
 }
 

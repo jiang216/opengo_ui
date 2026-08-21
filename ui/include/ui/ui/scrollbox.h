@@ -8,6 +8,9 @@ namespace ui {
 class Renderer;
 struct Theme;
 
+// 视口锚定角（layui fixbar：钉在滚动容器可视区的哪个角）
+enum class PinCorner { TopLeft, TopRight, BottomLeft, BottomRight };
+
 // 纵向滚动容器（M8）：子控件按顺序纵向排列，超出可视区用 scissor 裁剪，
 // 滚轮 / 拖动右侧滚动条滚动。内容自适应宽度，高度由外部指定。
 class ScrollBox : public Widget {
@@ -41,6 +44,14 @@ public:
     // 触发/重新武装语义（bottom_fired_）与 set_on_scroll_to_bottom 一致。
     void set_bottom_margin(float mb) { bottom_margin_ = mb; }
 
+    // —— 视口级锚定子控件（layui fixbar，UI-110）——
+    // 控件照常 add_child（生命周期/命中/绘制顺序不变），但不参与纵向流式排布、
+    // 不计入 content_height；每次布局钉在可视区 corner 内缩 (margin_x, margin_y) 处，
+    // 不随 scroll_offset 移动。后加的锚定控件绘制在流式内容之上。
+    void add_pinned(Widget* w, PinCorner corner = PinCorner::BottomRight,
+                    float margin_x = 16.f, float margin_y = 16.f);
+    int pinned_count() const { return (int)pinned_.size(); }
+
     void on_layout() override;
     void on_draw(Renderer& renderer) override;
     // 覆写 draw：背景 -> scissor(内容) -> 滚动条
@@ -69,6 +80,8 @@ private:
     bool in_scrollbar(float x, float y) const;
     // 滚动触底时触发一次 on_bottom_（离开底部后重新武装）
     void check_bottom();
+    // 是否为锚定子控件（不参与流式排布/内容高度）
+    bool is_pinned(const Widget* w) const;
 
     float spacing_ = 4.f;
     float padding_ = 8.f;
@@ -81,6 +94,14 @@ private:
     bool bottom_fired_ = false;
     float bottom_margin_ = 0.f;  // 距底部触发距离（镜像 layui flow mb；0=严格滚到底）
     std::function<void()> on_scroll_;
+
+    // 锚定子控件（w 悬空——被 clear_children 释放——的条目在 on_layout 自动剔除）
+    struct Pinned {
+        Widget* w;
+        PinCorner corner;
+        float mx, my;
+    };
+    std::vector<Pinned> pinned_;
 };
 
 }  // namespace ui

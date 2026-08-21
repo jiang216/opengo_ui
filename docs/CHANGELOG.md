@@ -1,4 +1,4 @@
-﻿# CHANGELOG
+# CHANGELOG
 
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
@@ -3347,7 +3347,7 @@ PAM 像素分析——字号行 6 簇 pitch=174 与布局参数精确吻合、�
 - [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：树形表格页原为符号静态模拟（本条目为其能力补全后升级）。
 - [UI-040](CHANGELOG.md#ui-040-table-行重建泄漏修复--widgetdestroy-单控件销毁-api2026-08-11)：rebuild_rows 递归释放旧行控件（本次折叠重建路径复用该机制）。
 
-## UI-110: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）
+## UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）
 
 严重度：高（含测试程序潜在 UB：PageHost 为 render_page lambda 栈局部变量，
 页面回调 `[&host]` 捕获全部悬空，回调触发时读到垃圾值——本次 on_scroll 回调
@@ -3388,7 +3388,7 @@ on_scroll 回调正确隐藏）。
 ### 相关历史条目
 
 - [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：固定条页原以页内静态呈现替代视口锚定（本条目为其能力补全后升级）。
-- [UI-109](CHANGELOG.md#ui-109-table-树形层级-add_tree-row--展开折叠交互树形表格页升级真实交互2026-08-21)：同批引入的 --click 合成点击注入（本次交互验证复用）。
+- [UI-109](CHANGELOG.md#ui-109-table-树形层级-addtreerow--展开折叠交互树形表格页升级真实交互2026-08-21)：同批引入的 --click 合成点击注入（本次交互验证复用）。
 
 ## UI-110: ComboBox 无 ScrollBox 祖先时弹出面板不翻转，贴近窗口底部的下拉尾部选项被窗口底边裁掉（2026-08-21）
 

@@ -4,8 +4,6 @@
 #include "ui/ui/button.h"
 #include "ui/ui/code.h"
 #include "ui/ui/fieldset.h"
-#include "ui/ui/hbox.h"
-#include "ui/ui/icon.h"
 #include "ui/ui/label.h"
 #include "ui/ui/scrollbox.h"
 #include "ui/ui/theme.h"
@@ -22,21 +20,12 @@ void field_title(PageHost& host, const char* text) {
     host.content->add_child(t);
 }
 
-// 说明行（次级文字色，自动换行）
-void para_line(PageHost& host, const char* text) {
-    auto* l = new ui::Label(0, 0, kCW, 0, text);
-    l->set_font(host.font);
-    l->set_theme(host.theme);
-    l->set_color(host.theme->text_secondary);
-    l->set_wrap(true);
-    host.content->add_child(l);
-}
-
 void build_fixbar(PageHost& host) {
     // ---- 顶部引用块 ----
     auto* bq1 = new ui::BlockQuote(kCW, 0,
         "固定条 fixbar：固定在页面右下角的快捷工具组（返回顶部、客服、二维码等）。"
-        "本页演示其构成与交互——点击「返回顶部」按钮会真实滚动内容区到顶部。");
+        "本页已把工具组锚定到预览区右下角（ScrollBox::add_pinned，不随内容滚动），"
+        "内容下滚超过一屏后出现，点击「返回顶部」真实复位滚动。");
     bq1->set_font(host.font);
     bq1->set_theme(host.theme);
     host.content->add_child(bq1);
@@ -67,27 +56,29 @@ void build_fixbar(PageHost& host) {
         host.content->add_child(bar);
     }
 
-    // ---- Fieldset 2: 交互演示 ----
-    field_title(host, "返回顶部交互");
-    para_line(host,
-        "下方按钮模拟右下角「返回顶部」：点击后将内容区滚动位置复位到顶部。"
-        "真实场景中该按钮在内容下滚一屏后出现。");
+    // ---- 视口级锚定：预览区右下角常驻工具组（UI-110 add_pinned）----
     {
-        auto* r = new ui::HBox(0, 0, kCW, 46.f);
-        r->set_padding(0.f);
-        r->set_spacing(12.f);
-        r->set_theme(host.theme);
-        auto* btn = new ui::Button(0, 0, 130.f, 38.f, "返回顶部");
-        btn->set_font(host.font);
-        btn->set_theme(host.theme);
-        btn->add_class("layui-btn");
-        btn->set_on_click([&host]() { host.content->set_scroll_offset(0.f); });
-        r->add_child(btn);
-        host.content->add_child(r);
+        auto* bar = new ui::VBox(0, 0, 52.f, 0);
+        bar->set_padding(4.f);
+        bar->set_spacing(6.f);
+        bar->set_theme(host.theme);
+        auto* top = new ui::Button(0, 0, 44.f, 44.f, "");
+        top->set_font(host.font);
+        top->set_theme(host.theme);
+        top->add_class("layui-btn layui-btn-primary");
+        top->set_icon("top");
+        top->set_on_click([&host]() { host.content->set_scroll_offset(0.f); });
+        bar->add_child(top);
+        // layui 行为：下滚一屏后出现；滚回顶部隐藏（用既有 set_on_scroll 编排）
+        bar->visible = false;
+        host.content->add_pinned(bar, ui::PinCorner::BottomRight, 20.f, 20.f);
+        host.content->set_on_scroll([&host, bar]() {
+            bar->visible = host.content->scroll_offset() > host.content->bounds().h;
+        });
     }
 
-    // ---- 撑高内容，便于验证滚动复位 ----
-    for (int i = 0; i < 12; ++i) {
+    // ---- 撑高内容（>2 屏），保证「下滚一屏出现」阈值可达 ----
+    for (int i = 0; i < 40; ++i) {
         char buf[64];
         std::snprintf(buf, sizeof(buf), "占位段落 %02d —— 内容区滚动演示用文本行。", i + 1);
         auto* l = new ui::Label(0, 0, kCW, 0, buf);
@@ -99,8 +90,9 @@ void build_fixbar(PageHost& host) {
 
     // ---- 底部引用块 ----
     auto* bq2 = new ui::BlockQuote(kCW, 0,
-        "视口级固定定位（不随内容滚动）依赖外壳层布局钩子，当前以页内呈现替代；"
-        "接入后本页将挂载到预览区右下角常驻。");
+        "视口级锚定能力（ui 库 ScrollBox::add_pinned）：控件照常加入子树（生命周期/"
+        "命中不变），但不参与流式排布与内容高度，每次布局钉在可视区角落、不随滚动移动；"
+        "出现阈值用既有 set_on_scroll 编排（下滚一屏渐显）。");
     bq2->set_font(host.font);
     bq2->set_theme(host.theme);
     host.content->add_child(bq2);
@@ -109,15 +101,19 @@ void build_fixbar(PageHost& host) {
     if (host.code) {
         host.code->set_lang("C++");
         host.code->set_code(
-            "// pages/fixbar_page.cpp：克隆 layui fixbar\n"
+            "// pages/fixbar_page.cpp：克隆 layui fixbar（UI-110 视口锚定）\n"
             "\n"
-            "// 工具组：VBox{ Button(layui-btn-primary) * N }，\n"
-            "// 按钮内嵌 Icon（top/service/qr）。\n"
+            "auto* bar = new ui::VBox(0, 0, 52.f, 0);\n"
+            "bar->add_child(top_btn);          // 返回顶部：复位 content 滚动\n"
             "\n"
-            "// 返回顶部：直接复位内容区滚动\n"
-            "btn->set_on_click([&host] { host.content->set_scroll_offset(0.f); });\n"
+            "// 锚定到预览区右下角，不随内容滚动：\n"
+            "host.content->add_pinned(bar, ui::PinCorner::BottomRight, 20.f, 20.f);\n"
             "\n"
-            "// 规划：外壳层提供 viewport 级锚点（右下角常驻）+ 出现阈值");
+            "// 出现阈值：下滚一屏后出现（既有 set_on_scroll 编排）\n"
+            "host.content->set_on_scroll([&] {\n"
+            "    bar->visible = host.content->scroll_offset()\n"
+            "                   > host.content->bounds().h;\n"
+            "});");
     }
     if (host.help) {
         const char* lines[] = {
@@ -125,12 +121,12 @@ void build_fixbar(PageHost& host) {
             "",
             "构成：竖排 VBox 工具组，44px 方块按钮 + 私用区图标。",
             "",
-            "已支持：",
+            "已支持（UI-110 ScrollBox::add_pinned）：",
+            "  视口级锚定 —— 控件钉在可视区右下角，不随内容滚动、不计入内容高度；",
+            "  出现阈值 —— 下滚一屏后出现，滚回顶部隐藏（set_on_scroll 编排）；",
             "  返回顶部 —— 点击复位 content ScrollBox 滚动位置。",
             "",
-            "规划（ui 库迭代项）：",
-            "  视口级固定锚点（不随滚动）；出现阈值（下滚一屏渐显）；",
-            "  自定义项（客服/二维码弹层）。",
+            "规划能力：自定义项弹层（客服/二维码）。",
         };
         for (const char* line : lines) {
             ui::Label* label = new ui::Label(0, 0, 800, 0, line);

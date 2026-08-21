@@ -1,4 +1,4 @@
-﻿# 分层架构
+# 分层架构
 
 四层单向依赖，禁止反向包含。media 模块默认不编译（`OPENGUI_MEDIA_FFMPEG`/`OPENGUI_MEDIA_OPENCV`，默认 OFF）。
 
@@ -61,8 +61,9 @@ core   ui_core 静态库（纯 C++：math/log/version，禁止 include GL/媒体
 | ScrollBox 滚动容器：内容超高可滚，scissor 裁剪可视区；滚轮滚动无溢出不消费；右缘轨道+滑块指示，拖动改值；布局让出滚动条列；子节点变化（add/remove/clear）标记重布局，抑制切页后滚动条闪现 | UI-013 / [UI-079](CHANGELOG.md#ui-079-scrollbox-切页滚动条闪烁修复2026-08-18) |
 | ScrollBox 滚动到底回调：`set_on_scroll_to_bottom(cb)` 滚到底触发一次（离开底部再滚回重新武装）；传 nullptr 清除（切页清理防悬空引用） | UI-035 |
 | ScrollBox 触底临界距离：`set_bottom_margin(mb)` 距底部不足 mb 即触发触底回调（镜像 layui flow.mb 语义）；mb 默认 0 = 严格滚到底，不破坏 UI-035 | [UI-094](CHANGELOG.md#ui-094-流加载滚动加载修复scrollbox-触底回调加-mb-临界距离2026-08-18) |
+| ScrollBox 视口锚定：`add_pinned(w, corner, mx, my)` 控件照常入子树但不参与流式排布/不计内容高度，每次布局钉在可视区角落不随滚动移动；pinned_ 悬空条目 on_layout 自动剔除（clear_children 切页安全）；后加先绘先命中（layui fixbar） | [UI-111](CHANGELOG.md#ui-111-scrollbox-视口锚定-add-pinnedlayui-fixbar--pagehost-栈局部悬空修复固定条页升级真实常驻工具组2026-08-21) |
 | 图片懒加载（lay-src）：`Image::set_lay_src()` on_draw 用 `Renderer::current_scissor()`（当前可视屏）判进入可视区才解码，只加载一次；显式尺寸时加载前也预留高度（列表布局不塌陷） | [UI-093](CHANGELOG.md#ui-093-流加载页-11-克隆镜像-3-演示--ui-库图片懒加载2026-08-18) |
-| 页面回调生命周期：build 期回调（scroll/click/destroy）只捕获 app 长期对象（font/theme/preview 等 new 控件），**严禁捕获 build 期栈局部 PageHost**（返回即失效，运行期解引用悬空崩溃） | [UI-095](CHANGELOG.md#ui-095-流加载页回调捕获栈局部-pagehost-悬空崩溃2026-08-18) |
+| 页面回调生命周期：PageHost 为 **main 作用域长命对象**（UI-110 结构性修复），页面 build 里 `[&host]` 捕获合法；历史上 host 曾是 render_page lambda 栈局部变量、回调触发即悬空（UI-095 首次暴露，当时以"回调只捕获长期对象"规避） | [UI-095](CHANGELOG.md#ui-095-流加载页回调捕获栈局部-pagehost-悬空崩溃2026-08-18) / [UI-111](CHANGELOG.md#ui-111-scrollbox-视口锚定-add-pinnedlayui-fixbar--pagehost-栈局部悬空修复固定条页升级真实常驻工具组2026-08-21) |
 | Slider 程序同步：set_value_silent() 改值不触发 on_change（避免回调循环）；dragging() 供外部跳过同步 | UI-011 |
 | x64/x86 双架构 + media ON/OFF 编译回归 | UI-003 |
 | CheckBox / RadioGroup / ComboBox 复合控件：Tab 聚焦 + 键盘选择 + 点击/回调；ComboBox 下拉复用 ScrollBox，点击外部关闭 | UI-014 |
@@ -88,7 +89,7 @@ core   ui_core 静态库（纯 C++：math/log/version，禁止 include GL/媒体
 | Renderer `draw_rect_outline`：矩形描边原语（4 条薄 quad，无圆角） | UI-023 |
 | Button layui 变体：layui-btn 默认/normal/warm/danger/primary + disabled（禁点击键盘）+ radius + lg/sm/xs（preferred_height）；hover opacity .8 / active 恢复；`set_badge`/`set_dot_badge` 内嵌徽章/圆点（文本右缘，叠加 layui-bg-* 换底） | UI-023 / UI-066 |
 | Switch（layui-form-switch）：开绿底白滑块 / 关白底灰滑块，点击/Enter/Space 切换 + on_change(bool) | UI-023 |
-| ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字 | UI-023 |
+| ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字；有 ScrollBox 祖先时随滚动实时翻转/钉顶，无则按窗口可视区定位（底部下拉不被窗口底边裁切） | UI-023 / [UI-110](CHANGELOG.md#ui-110-combobox-在-scrollbox-滚动时下拉面板不跟随滚动按窗口在底部翻转钉顶选项被裁在底边不得见2026-08-21) |
 | Slider `layui-slider`：h4 #eee 轨道 + accent 填充 + 12px 白圆钮（hover 放大 1.2）+ 聚焦描边 | UI-023 |
 | Tabs（layui-tab）：标题条 + 内容区，card（#fafafa 标题条 / 激活白底）/ brief（激活绿字 + 2px 绿下划线）变体，点击切换 + on_change(int)；`add_tab(title, content)` 每页可带内容区文本（切换联动）、`set_content/set_allow_close ×` 删除、`remove_tab/count` 动态操作（lay-id 语义）、标题超宽右缘展开三角弹出下拉面板；`title_width()` 把徽章/圆点计入标题宽，`set_badge/set_dot_badge` 标题右缘内嵌红徽章 | UI-023 / [UI-062](CHANGELOG.md#ui-062-tabs-组件增强内容区动态操作删除超宽响应式--选项卡页一比一复刻-demotabhtml2026-08-17) / [UI-066](CHANGELOG.md#ui-066-徽章页一比一克隆-demobadgehtml-两组-demo--button-内嵌徽章tabs-标题徽章--badge-圆点与-navbar-徽章修正2026-08-17) |
 | Collapse（layui-collapse）：1px #eee 外框 + #fafafa 标题条 + `set_accordion(true)` 手风琴单开 / `(false)` 非手风琴多开（open_ 集合）+ 内容区白字；`is_open/open_count/active` 查询；可作另一 Collapse 子控件无限嵌套 | UI-023 / [UI-065](CHANGELOG.md#ui-065-面板页一比一克隆-demo/panelhtml-全部-5-组-demo--collapse-手风琴非手风琴双模式2026-08-17) |
@@ -116,7 +117,7 @@ core   ui_core 静态库（纯 C++：math/log/version，禁止 include GL/媒体
 | layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色色卡（Swatch 自绘 + layui::bg_color/bg_fill/hex）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页 | [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21) |
 | Font 缩放与仿粗体：`Font::draw_text(..., scale=1.f, bold=false)` 全度量乘 scale（≤2x 清晰，图集 2x 过采样）+ 仿粗体 x 错位叠加；`Label::set_text_scale/set_bold` 行高/换行/测量全链路联动；默认参数下既有调用零影响——禁止在测试程序内自建多份 Font 实例或手动错位双绘实现加粗 | [UI-108](CHANGELOG.md#ui-108-fontlabel-字号缩放与仿粗体--layui-文字工具色-font-color公共类页升级真实演示2026-08-21) |
 | layui 文字工具色查询：`ui::layui::font_color("layui-font-*")` 返回 .layui-font-{red orange green cyan blue purple black gray} 文字色（克隆 layui.css 2.13.x：green=#16baaa/blue=#01aaed/black=#000/gray=#c2c2c2 与 bg-\* 不同源），未知类回退黑；bg_color/bg_fill 行为不变——字色行禁用 bg_color()（其 text 字段是底色上的白前景，白底面板上不可见） | [UI-108](CHANGELOG.md#ui-108-fontlabel-字号缩放与仿粗体--layui-文字工具色-font-color公共类页升级真实演示2026-08-21) |
-| Table 树形层级（treeTable）：`add_tree_row(depth, cells)` 先序追加层级行，首列每级缩进 20px + 展开三角（▼/▶，仅 row_has_children 行渲染），点击切换整棵子树显隐；分页在树形过滤结果上切片、折叠子树不计页；`set_on_expand` 回调、`data_row_of` public——非 tree 表格行为零变化；树形模式禁排序（扁平重排破坏先序）；layui_test `--click x,y` 合成点击注入供脚本化交互验证 | [UI-109](CHANGELOG.md#ui-109-table-树形层级-add_tree-row--展开折叠交互树形表格页升级真实交互2026-08-21) |
+| Table 树形层级（treeTable）：`add_tree_row(depth, cells)` 先序追加层级行，首列每级缩进 20px + 展开三角（▼/▶，仅 row_has_children 行渲染），点击切换整棵子树显隐；分页在树形过滤结果上切片、折叠子树不计页；`set_on_expand` 回调、`data_row_of` public——非 tree 表格行为零变化；树形模式禁排序（扁平重排破坏先序）；layui_test `--click x,y` 合成点击注入供脚本化交互验证 | [UI-109](CHANGELOG.md#ui-109-table-树形层级-addtreerow--展开折叠交互树形表格页升级真实交互2026-08-21) |
 | layui_test 页面管线：`page_registry` 注册表带 order 排序（std::map）；`show_page` 切页 `clear_children()` 释放旧页重建 + `preview/help.reset_scroll()` 滚动复位（UI-039 起由 ui 库 `Widget::clear_children` 统一递归释放，替代原应用侧 release_tree）；`--smoke <秒>` 逐页切换验证切页无崩溃、`--shot-page <n>` 首帧截图指定页；全 30 页可切换 | UI-028 / UI-029 / UI-039 / [UI-047](CHANGELOG.md#ui-047-布局外壳-navmenu-折叠不回收空间--切页滚动残留--图片加载能力缺失2026-08-16) |
 | Icon 字体回退：`Font::load_icon_font()` 优先 exe 目录 iconfont.ttf，缺失回退 3rdparty（layui_test 仅需 glfw3.dll + iconfont.ttf + logo.png 独立运行；POST_BUILD 拷贝三件套） | UI-029 / [UI-047](CHANGELOG.md#ui-047-布局外壳-navmenu-折叠不回收空间--切页滚动残留--图片加载能力缺失2026-08-16) |
 | 徽章页克隆 layui badge.html：区块1「小徽章、大家族」灰底三行——小圆点 layui-badge-dot 正圆 / 常规弧形 layui-badge / 描边 layui-badge-rim；区块2「与其它元素的搭配」——按钮内嵌徽章（`Button::set_badge/set_dot_badge` 叠加 layui-bg-*）、导航徽章（`NavBar::set_badge/set_dot_badge`）、选项卡标题徽章（`Tabs::set_badge/set_dot_badge`）；Badge 宽用 preferred_width() 自适应，HBox 横排 | UI-029 / [UI-066](CHANGELOG.md#ui-066-徽章页一比一克隆-demobadgehtml-两组-demo--button-内嵌徽章tabs-标题徽章--badge-圆点与-navbar-徽章修正2026-08-17) |
