@@ -15,6 +15,9 @@ namespace {
 
 constexpr float kPad = 8.f;
 constexpr float kSelAlpha = 0.30f;  // 选区高亮透明度
+// 垂直滚动条（对齐 ScrollBox：宽 6、右距 4，仅内容溢出时绘制）
+constexpr float kScrollbarW = 6.f;
+constexpr float kScrollbarMargin = 4.f;
 
 // ---- 默认剪贴板（UI-103）：未注入 on_copy_/on_paste_ 回调时的内置实现 ----
 
@@ -162,13 +165,55 @@ void TextArea::replace_selection(const std::string& repl) {
 void TextArea::clamp_scroll(float line_h) {
     float content_h = 0.f;
     {
-        const float avail = std::max(1.f, bounds_.w - 2.f * kPad);
+        const float avail = avail_width();
         auto lines = wrap_lines(text_, font_, avail, nullptr);
         content_h = (float)lines.size() * line_h + 2.f * kPad;
     }
     const float vis = bounds_.h;
     const float max_scroll = std::max(0.f, content_h - vis);
     scroll_ = std::max(0.f, std::min(scroll_, max_scroll));
+}
+
+// ---- 垂直滚动条（对齐 ScrollBox 风格与交互）----
+
+float TextArea::avail_width() const {
+    return std::max(1.f, bounds_.w - 2.f * kPad - kScrollbarW - kScrollbarMargin);
+}
+
+float TextArea::content_height(float line_h) const {
+    const auto lines = wrap_lines(text_, font_, avail_width(), nullptr);
+    return (float)lines.size() * line_h + 2.f * kPad;
+}
+
+Rect TextArea::scrollbar_track_rect() const {
+    const float x = bounds_.x + bounds_.w - kScrollbarMargin - kScrollbarW;
+    return {x, bounds_.y + 4.f, kScrollbarW, std::max(1.f, bounds_.h - 8.f)};
+}
+
+Rect TextArea::scrollbar_thumb_rect(float content_h) const {
+    const Rect track = scrollbar_track_rect();
+    if (content_h <= 0.f) return {track.x, track.y, track.w, track.h};
+    const float frac = bounds_.h / content_h;
+    const float thumb_h = std::max(20.f, track.h * frac);
+    const float max_off = std::max(0.f, content_h - bounds_.h);
+    const float t = max_off > 0.f ? scroll_ / max_off : 0.f;
+    const float thumb_y = track.y + (track.h - thumb_h) * t;
+    return {track.x, thumb_y, track.w, thumb_h};
+}
+
+bool TextArea::in_scrollbar(float x, float y, float content_h) const {
+    if (content_h <= bounds_.h) return false;  // 未溢出无滚动条
+    const Rect track = scrollbar_track_rect();
+    return x >= track.x - 2.f && x <= track.x + track.w + 2.f && y >= track.y &&
+           y <= track.y + track.h;
+}
+
+float TextArea::scroll_from_y(float y, float content_h) const {
+    const Rect track = scrollbar_track_rect();
+    if (track.h <= 0.f) return 0.f;
+    const float max_off = std::max(0.f, content_h - bounds_.h);
+    const float t = std::min(std::max((y - track.y) / track.h, 0.f), 1.f);
+    return t * max_off;
 }
 
 // ---- Text API ----
@@ -213,7 +258,7 @@ void TextArea::ensure_caret_visible(float line_h, size_t row) {
 size_t TextArea::caret_from_point(float local_y, float local_x) const {
     if (!font_) return text_.size();
     float line_h = 0.f;
-    const auto lines = wrap_lines(text_, font_, std::max(1.f, bounds_.w - 2.f * kPad), &line_h);
+    const auto lines = wrap_lines(text_, font_, avail_width(), &line_h);
     int row = (int)((local_y - kPad + scroll_) / line_h);
     if (row < 0) row = 0;
     if (row >= (int)lines.size()) row = (int)lines.size() - 1;
@@ -244,6 +289,18 @@ float TextArea::offset_to_y(size_t offset, float line_h,
 
 bool TextArea::on_mouse_down(float x, float y, int button) {
     if (button != 0) return false;
+    // 滚动条命中优先（不抢焦点、不移动光标）
+    {
+        float line_h = font_ ? font_->line_height() + 2.f : 16.f;
+        const float ch = content_height(line_h);
+        if (in_scrollbar(x, y, ch)) {
+            dragging_scrollbar_ = true;
+            capture_mouse();
+            scroll_ = scroll_from_y(y, ch);
+            clamp_scroll(line_h);
+            return true;
+        }
+    }
     focus();
     float local_x = x - bounds_.x;
     float local_y = y - bounds_.y;
@@ -255,7 +312,7 @@ bool TextArea::on_mouse_down(float x, float y, int button) {
     capture_mouse();
 
     float line_h = 0.f;
-    const auto lines = wrap_lines(text_, font_, std::max(1.f, bounds_.w - 2.f * kPad), &line_h);
+    const auto lines = wrap_lines(text_, font_, avail_width(), &line_h);
     for (size_t r = 0; r < lines.size(); ++r) {
         if (caret_ >= lines[r].start && caret_ <= lines[r].end) {
             ensure_caret_visible(line_h, r);
@@ -266,6 +323,12 @@ bool TextArea::on_mouse_down(float x, float y, int button) {
 }
 
 bool TextArea::on_mouse_move(float x, float y) {
+    if (dragging_scrollbar_) {
+        float line_h = font_ ? font_->line_height() + 2.f : 16.f;
+        scroll_ = scroll_from_y(y, content_height(line_h));
+        clamp_scroll(line_h);
+        return true;
+    }
     if (!selecting_) return false;
     float local_x = x - bounds_.x;
     float local_y = y - bounds_.y;
@@ -276,7 +339,7 @@ bool TextArea::on_mouse_move(float x, float y) {
         scroll_ -= 3.f;
         if (scroll_ < 0.f) scroll_ = 0.f;
     } else if (local_y > bounds_.h - scroll_margin_) {
-        const float avail = std::max(1.f, bounds_.w - 2.f * kPad);
+        const float avail = avail_width();
         auto lines = wrap_lines(text_, font_, avail, nullptr);
         float content_h = (float)lines.size() * line_h + 2.f * kPad;
         float max_scroll = std::max(0.f, content_h - bounds_.h);
@@ -296,7 +359,13 @@ bool TextArea::on_mouse_move(float x, float y) {
 
 bool TextArea::on_mouse_up(float x, float y, int button) {
     (void)x; (void)y;
-    if (button != 0 || !selecting_) return false;
+    if (button != 0) return false;
+    if (dragging_scrollbar_) {
+        dragging_scrollbar_ = false;
+        release_mouse_capture();
+        return true;
+    }
+    if (!selecting_) return false;
     selecting_ = false;
     release_mouse_capture();
     has_selection_ = (sel_start_ != sel_end_);
@@ -307,7 +376,7 @@ bool TextArea::on_mouse_scroll(float x, float y, float dx, float dy) {
     (void)x; (void)y; (void)dx;
     if (dy == 0.f) return false;
     float line_h = 0.f;
-    const auto lines = wrap_lines(text_, font_, std::max(1.f, bounds_.w - 2.f * kPad), &line_h);
+    const auto lines = wrap_lines(text_, font_, avail_width(), &line_h);
     const float content_h = (float)lines.size() * line_h + 2.f * kPad;
     const float max_scroll = std::max(0.f, content_h - bounds_.h);
     if (max_scroll <= 0.f) return false;
@@ -322,7 +391,7 @@ bool TextArea::on_key_down(int key, int mods) {
     if (!font_) return false;
     bool ctrl = (mods & ModControl) != 0;
     bool shift = (mods & ModShift) != 0;
-    const float avail = std::max(1.f, bounds_.w - 2.f * kPad);
+    const float avail = avail_width();
     const float line_h = font_->line_height() + 2.f;
     const auto lines = wrap_lines(text_, font_, avail, nullptr);
     size_t row = 0;
@@ -457,7 +526,7 @@ bool TextArea::on_char(unsigned int codepoint) {
     const std::string s = encode_cp(codepoint);
     replace_selection(s);
     float line_h = font_ ? font_->line_height() + 2.f : 16.f;
-    const auto lines = wrap_lines(text_, font_, std::max(1.f, bounds_.w - 2.f * kPad), nullptr);
+    const auto lines = wrap_lines(text_, font_, avail_width(), nullptr);
     size_t row = 0;
     for (size_t r = 0; r < lines.size(); ++r) {
         if (caret_ >= lines[r].start && caret_ <= lines[r].end) {
@@ -485,7 +554,7 @@ void TextArea::on_draw(Renderer& renderer) {
 
     if (!font_) return;
 
-    const float avail = std::max(1.f, bounds_.w - 2.f * kPad);
+    const float avail = avail_width();
     float line_h = 0.f;
     const auto lines = wrap_lines(text_, font_, avail, &line_h);
 
@@ -575,6 +644,16 @@ void TextArea::on_draw(Renderer& renderer) {
     }
 
     renderer.pop_scissor();
+
+    // ---- 垂直滚动条（仅内容溢出时；对齐 ScrollBox：track=button_pressed / thumb=text_dim）----
+    {
+        const float ch = content_height(line_h);
+        if (ch > bounds_.h) {
+            renderer.draw_rounded_rect(scrollbar_track_rect(), kScrollbarW * 0.5f,
+                                       t->button_pressed);
+            renderer.draw_rounded_rect(scrollbar_thumb_rect(ch), kScrollbarW * 0.5f, t->text_dim);
+        }
+    }
 }
 
 }  // namespace ui

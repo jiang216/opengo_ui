@@ -5,9 +5,10 @@
 
 ## 统计
 
-- 节点: 121（BUG 113 / DOC 6 / META 2）
-- 边: 302
-- lint: 0 错误 / 0 警告
+- 节点: 122（BUG 114 / DOC 6 / META 2）
+- 边: 303
+- lint: 0 错误 / 1 警告
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-115
 
 ## 反链索引
 
@@ -838,6 +839,11 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页按钮图标段：克隆镜像 h2#icon 三组——默认文字+图标（set_text+set_icon）+ 纯图标 / 小号 primary 五图标 / 小号 disabled+normal+warm+danger 混合；Button::set_icon + add_class 能力复用，190 全量网格不受影响
 
+### BUG:UI-115 · UI-115: TextArea 垂直滚动条（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-115-textarea-垂直滚动条2026-08-22`
+- 反链: 无
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -898,7 +904,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(18):
+- 反链(19):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -912,6 +918,7 @@
   - `META:CHANGELOG` (mention) — UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22）
+  - `META:CHANGELOG` (mention) — UI-115: TextArea 垂直滚动条（2026-08-22）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -1035,6 +1042,7 @@
 | `BUG:UI-111` | BUG | UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-112` | BUG | UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-113` | BUG | UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-115` | BUG | UI-115: TextArea 垂直滚动条（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1337,6 +1345,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

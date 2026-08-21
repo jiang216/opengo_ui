@@ -71,6 +71,15 @@ private:
     void replace_selection(const std::string& repl);
     // 将 scroll_ clamp 到有效范围
     void clamp_scroll(float line_h);
+    // 文本可用宽度（恒定让出右侧滚动条列，避免滚动条出现/消失时换行跳动）
+    float avail_width() const;
+    // 内容总高度（换行后行数 * 行高 + 上下 padding）
+    float content_height(float line_h) const;
+    // 垂直滚动条（对齐 ScrollBox 风格：仅内容溢出时绘制，可点击/拖拽）
+    Rect scrollbar_track_rect() const;
+    Rect scrollbar_thumb_rect(float content_h) const;
+    bool in_scrollbar(float x, float y, float content_h) const;
+    float scroll_from_y(float y, float content_h) const;
 
     std::string text_;
     std::string placeholder_;
@@ -84,6 +93,9 @@ private:
     size_t sel_start_ = 0, sel_end_ = 0, sel_anchor_ = 0;
     bool selecting_ = false;      // 鼠标拖拽中
     bool has_selection_ = false;
+
+    // ---- 滚动条拖拽 ----
+    bool dragging_scrollbar_ = false;
 
     // ---- 只读 ----
     bool readonly_ = false;

@@ -3486,3 +3486,36 @@ Button::set_icon / add_class 已具备全部能力，图标页仅需新增 demo 
 ### 相关历史条目
 
 - [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：图标页初版（190 全量网格 + 彩色图标），本条目补充按钮图标段。
+
+## UI-115: TextArea 垂直滚动条（2026-08-22）
+
+严重度：低（能力补全，无缺陷回归）。
+
+背景：TextArea 已有内部纵向滚动（scroll_ + 滚轮 + 拖选边缘自动滚屏），但无
+滚动条 UI——内容溢出时用户看不到滚动位置，也无法拖拽快速定位（语音助手日志框
+等 readonly 长文本场景明显）。
+
+实现（ui/src/textarea.cpp + ui/include/ui/ui/textarea.h）：
+- 滚动条绘制：内容溢出时在控件右缘画 track（button_pressed）+ thumb
+  （text_dim），圆角半宽，风格与 ScrollBox 一致；未溢出不画。
+- 滚动条交互：on_mouse_down 命中滚动条列（±2px 容差）→ 进入拖拽
+  （capture_mouse，不抢焦点、不移动光标）；on_mouse_move 按比例映射 scroll_；
+  on_mouse_up 结束。点击轨道即跳转（scroll_from_y）。
+- 文本可用宽度 avail_width() 恒定让出滚动条列（6+4px），避免滚动条出现/消失
+  时换行重排跳动。
+- 影响范围：所有 TextArea 使用方（含语音助手日志框、规则页命令编辑框），
+  纯增量能力，既有 API 不变。
+
+回归清单（必须保证）：
+- 既有滚轮滚动 / 拖选边缘自动滚屏 / ensure_caret_visible 行为不变。
+- readonly 模式滚轮可用、输入仍被吞掉。
+- 未溢出时无滚动条、不响应滚动条点击；溢出时 thumb 位置随 scroll_ 线性映射。
+- 滚动条拖拽期间文本选区/光标不受干扰；松开后 selecting_ 流程正常。
+- 换行宽度恒定（让出滚动条列），内容增减导致滚动条出现/消失时已换行位置不变。
+
+验证：x64 Release ui_ui 编译通过并 install；下游 voice_assistant_cpp 全量
+Release 构建通过 + regression.ps1 全 PASS。
+
+### 相关历史条目
+
+- [UI-103](CHANGELOG.md#ui-103-textarea-剪贴板默认实现回调未注入时-ctrlcxv-静默失效2026-08-21)：TextArea readonly/剪贴板前置能力（日志框场景依赖）。

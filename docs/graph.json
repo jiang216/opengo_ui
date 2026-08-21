@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T00:53:13+08:00",
+  "generatedAt": "2026-08-22T01:06:22+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -797,6 +797,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-113-图标页新增按钮图标段克隆镜像-h2icon2026-08-22"
     },
+    "BUG:UI-115": {
+      "id": "BUG:UI-115",
+      "type": "BUG",
+      "label": "UI-115: TextArea 垂直滚动条（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-115-textarea-垂直滚动条2026-08-22"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -1380,6 +1387,12 @@
       "to": "META:CHANGELOG",
       "kind": "mention",
       "context": "UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22）"
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-115: TextArea 垂直滚动条（2026-08-22）"
     },
     {
       "from": "DOC:PLAN",
@@ -4197,6 +4210,7 @@
         "context": "回归清单#图标页按钮图标段：克隆镜像 h2#icon 三组——默认文字+图标（set_text+set_icon）+ 纯图标 / 小号 primary 五图标 / 小号 disabled+normal+warm+danger 混合；Button::set_icon + add_class 能力复用，190 全量网格不受影响"
       }
     ],
+    "BUG:UI-115": [],
     "META:CHANGELOG": [
       {
         "from": "META:CHANGELOG",
@@ -4262,6 +4276,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-115: TextArea 垂直滚动条（2026-08-22）"
       },
       {
         "from": "DOC:PLAN",
@@ -4413,6 +4432,8 @@
   },
   "lint": {
     "errors": [],
-    "warnings": []
+    "warnings": [
+      "孤儿条目（无任何文档引用）: BUG:UI-115"
+    ]
   }
 }
