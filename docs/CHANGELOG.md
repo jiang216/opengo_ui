@@ -3414,3 +3414,44 @@ script/mouse/json/combo 尾部选项；所有无 ScrollBox 祖先、位于页面
 验证：x64 Release 重编 ui_ui 并安装（install/lib 时间戳更新）；layui_test 链接新库
 `--smoke 20` 全 67 页轮换 exit 0（page switches ok）；应用侧（voice_assistant 规则页
 类型下拉展开完整显示 10 项）由应用仓库构建回归 + 人工冒烟确认。
+
+## UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22）
+
+严重度：低（页面保真度升级，无缺陷回归）。
+
+根因归属：**测试程序**。原颜色页为自创内容（主色/工具色/文字与背景色混排），
+未对照镜像站 docs/2/color/index.html；属测试程序演示页与镜像不一致，非 ui 库缺陷。
+所需绘制能力（自绘矩形 + 居中文本 + HBox 布局 + Label 缩放加粗）ui 库均已具备，
+无需改动 ui 库。
+
+修复/实现：
+- layui_test/pages/color_page.cpp 重写，逐节克隆镜像：
+  - 顶部引用块（镜像原文）；
+  - 基色调：3 等分白字双行卡（#16baaa 蓝绿色 / #16b777 清新绿 / #1e9fff 经典蓝）；
+  - 辅色调：4 等分（#ff5722 Danger / #ffb800 Warning / #16b777 Success / #31bdec Info）；
+  - 中色调：radius 0 黑字灰阶（md6 #fafafa/#f6f6f6 + md2×6 #eeeeee~#c2c2c2 +
+    md6 #2f363c/#23292e 三行铺满无列间距；#2f363c 黑字、#23292e 白字——镜像
+    ws-docs-necolor 规则的原样保留，含其内联白字特例）；
+  - 七色调：整宽横条左对齐依次堆叠（红橙绿蓝紫深浅，浅条深字）；
+  - 标语 h2 + 引用块「不热衷于视觉设计的开发者不是一个好作家。 —— 贤心」；
+  - code tab / help 面板同步更新为新结构。
+- ColorBlock 自绘控件：纯色圆角矩形 + 多行文本（居中/左对齐），高度 = 行数×22.4
+  （line-height 1.6×14px）+ 上下 20px 内边距，同镜像 CSS。
+- layui_test/app.cpp 新增 `--list-pages`：打印「索引\\t组\\t标题」后退出，
+  供像素验证脚本定位页索引（此前 --shot-page 索引只能靠猜，本次颜色页实为 8 非 9）。
+
+回归清单（必须保证）：
+- 页面注册参数不变（order=9 / 组=通用 / 标题=颜色），侧栏插位不受影响。
+- --shot-page 索引语义不变（pages 按 order 稳定排序后的下标）。
+- 既有命令行参数（--smoke/--shot/--shot-page/--shot-scroll/--click）行为不变。
+- HBox 显式高度行的子件布局不受本页特例影响。
+
+验证：x64 Release 编译链接通过；`--smoke 15` exit 0（67 页轮换）；PAM 像素精确
+采样——基色调 3 卡、辅色调 4 卡、七色调 7 条色值与镜像逐一相等
+（#16baaa/#16b777/#1e9fff/#ff5722/#ffb800/#31bdec/#a233c6/#2f363c/#fafafa）；
+中色调三行结构与滚动后下半页（七色调+标语）ASCII 色图核对一致。
+
+### 相关历史条目
+
+- [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：颜色页初版真实化（本条目按镜像站一比一重写升级）。
+- [UI-108](CHANGELOG.md#ui-108-fontlabel-字号缩放与仿粗体--layui-文字工具色-fontcolor公共类页升级真实演示2026-08-21)：Label set_text_scale/set_bold（本页 h2 小节标题使用）。

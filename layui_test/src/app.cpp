@@ -159,9 +159,12 @@ int main(int argc, char** argv) {
     int shot_page = -1;
     float shot_scroll = 0.f;
     std::vector<std::pair<float, float>> click_points;  // --click x,y（可重复）
+    bool list_pages = false;
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--smoke") == 0 && i + 1 < argc)
             smoke_seconds = std::atof(argv[++i]);
+        else if (std::strcmp(argv[i], "--list-pages") == 0)
+            list_pages = true;
         else if (std::strcmp(argv[i], "--shot") == 0 && i + 1 < argc)
             shot_path = argv[++i];
         else if (std::strcmp(argv[i], "--shot-page") == 0 && i + 1 < argc)
@@ -335,6 +338,12 @@ int main(int argc, char** argv) {
     std::vector<PageDef> pages = page::all_pages();
     std::stable_sort(pages.begin(), pages.end(),
                      [](const PageDef& a, const PageDef& b) { return a.order < b.order; });
+    if (list_pages) {
+        for (int i = 0; i < (int)pages.size(); ++i)
+            std::printf("%d\t%s\t%s\n", i, pages[i].group, pages[i].title);
+        std::fflush(stdout);
+        return 0;
+    }
 
     int current_page = -1;
     // 每个页面在侧栏中的 (组, 子项) 坐标，切页时同步 NavMenu 选中态（UI-050）

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-21T23:51:11+08:00",
+  "generatedAt": "2026-08-22T00:30:47+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -783,6 +783,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-110-combobox-无-scrollbox-祖先时弹出面板不翻转贴近窗口底部的下拉尾部选项被窗口底边裁掉2026-08-21"
     },
+    "BUG:UI-112": {
+      "id": "BUG:UI-112",
+      "type": "BUG",
+      "label": "UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-112-颜色页一比一克隆镜像-docs2color基色调辅色调中色调七色调标语---list-pages-调试设施2026-08-22"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -1354,6 +1361,12 @@
       "to": "META:CHANGELOG",
       "kind": "mention",
       "context": "UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）"
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22）"
     },
     {
       "from": "DOC:PLAN",
@@ -2217,7 +2230,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-107",
       "kind": "checklist",
-      "context": "回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色色卡（Swatch 自绘 + layui::bg_color/bg_fill/hex）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页"
+      "context": "回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色页（UI-112 起一比一克隆镜像色彩页）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-112",
+      "kind": "checklist",
+      "context": "回归清单#颜色页一比一克隆镜像 docs/2/color：基色调 3 卡 / 辅色调 4 卡（白字双行 hex+名，radius 3）/ 中色调灰阶梯 radius 0 黑字（md6+md2×6+md6 三行无间距，#2f363c 黑字/#23292e 白字同镜像怪癖）/ 七色调整宽横条左对齐堆叠 / 标语引用块；色值全部精确采样验证；ColorBlock 自绘（HBox 行须传显式高度——Stretch 模式子高=行高-2×padding，行高 0 则子件不可见）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -4104,7 +4123,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色色卡（Swatch 自绘 + layui::bg_color/bg_fill/hex）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页"
+        "context": "回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色页（UI-112 起一比一克隆镜像色彩页）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页"
       }
     ],
     "BUG:UI-108": [
@@ -4143,6 +4162,13 @@
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
         "context": "回归清单#ComboBox `layui-form-select`：白底 #eee 边框圆角2 + 右三角 + 聚焦绿框淡环；面板白底描边、dd 项 hover #f8f8f8、选中 layui-this 绿字；有 ScrollBox 祖先时随滚动实时翻转/钉顶，无则按窗口可视区定位（底部下拉不被窗口底边裁切）"
+      }
+    ],
+    "BUG:UI-112": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#颜色页一比一克隆镜像 docs/2/color：基色调 3 卡 / 辅色调 4 卡（白字双行 hex+名，radius 3）/ 中色调灰阶梯 radius 0 黑字（md6+md2×6+md6 三行无间距，#2f363c 黑字/#23292e 白字同镜像怪癖）/ 七色调整宽横条左对齐堆叠 / 标语引用块；色值全部精确采样验证；ColorBlock 自绘（HBox 行须传显式高度——Stretch 模式子高=行高-2×padding，行高 0 则子件不可见）"
       }
     ],
     "META:CHANGELOG": [
@@ -4200,6 +4226,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22）"
       },
       {
         "from": "DOC:PLAN",

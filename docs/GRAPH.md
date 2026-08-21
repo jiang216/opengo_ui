@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 119（BUG 111 / DOC 6 / META 2）
-- 边: 298
+- 节点: 120（BUG 112 / DOC 6 / META 2）
+- 边: 300
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -798,7 +798,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色色卡（Swatch 自绘 + layui::bg_color/bg_fill/hex）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色页（UI-112 起一比一克隆镜像色彩页）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页
 
 ### BUG:UI-108 · UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）
 
@@ -825,6 +825,12 @@
 - 反链(2):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBox 视口锚定：`add_pinned(w, corner, mx, my)` 控件照常入子树但不参与流式排布/不计内容高度，每次布局钉在可视区角落不随滚动移动；pinned_ 悬空条目 on_layout 自动剔除（clear_children 切页安全）；后加先绘先命中（layui fixbar）
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#页面回调生命周期：PageHost 为 **main 作用域长命对象**（UI-110 结构性修复），页面 build 里 `[&host]` 捕获合法；历史上 host 曾是 render_page lambda 栈局部变量、回调触发即悬空（UI-095 首次暴露，当时以"回调只捕获长期对象"规避）
+
+### BUG:UI-112 · UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-112-颜色页一比一克隆镜像-docs2color基色调辅色调中色调七色调标语---list-pages-调试设施2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#颜色页一比一克隆镜像 docs/2/color：基色调 3 卡 / 辅色调 4 卡（白字双行 hex+名，radius 3）/ 中色调灰阶梯 radius 0 黑字（md6+md2×6+md6 三行无间距，#2f363c 黑字/#23292e 白字同镜像怪癖）/ 七色调整宽横条左对齐堆叠 / 标语引用块；色值全部精确采样验证；ColorBlock 自绘（HBox 行须传显式高度——Stretch 模式子高=行高-2×padding，行高 0 则子件不可见）
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -886,7 +892,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(16):
+- 反链(17):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -898,6 +904,7 @@
   - `META:CHANGELOG` (mention) — UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）
+  - `META:CHANGELOG` (mention) — UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -1019,6 +1026,7 @@
 | `BUG:UI-109` | BUG | UI-109: Table 树形层级 add_tree_row + 展开/折叠交互——树形表格页升级真实交互（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-110` | BUG | UI-110: ComboBox 无 ScrollBox 祖先时弹出面板不翻转，贴近窗口底部的下拉尾部选项被窗口底边裁掉（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-111` | BUG | UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21） | `docs/CHANGELOG.md` |
+| `BUG:UI-112` | BUG | UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1217,6 +1225,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-110` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-111` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-111` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-112` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1319,6 +1328,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
