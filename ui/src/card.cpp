@@ -52,6 +52,10 @@ void Card::on_draw(Renderer& renderer) {
     // 卡片白底
     renderer.draw_rounded_rect(bounds_, t->radius, t->panel);
 
+    // 可选描边（set_outline；a<=0 关闭）
+    if (outline_.a > 0.f)
+        renderer.draw_rounded_rect_outline(bounds_, t->radius, outline_thickness_, outline_);
+
     // header
     if (!header_.empty()) {
         const Rect hrect = {bounds_.x, bounds_.y, bounds_.w, 42.f};

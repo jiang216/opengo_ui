@@ -9,7 +9,7 @@ namespace ui {
 class Renderer;
 class Texture;
 
-// 位图字体：stb_truetype 静态烘培 ASCII 32..126 + 可选私用区图标（U+E600..E7FF）
+// 位图字体：stb_truetype 静态烘培 ASCII 32..126 + 可选图标区（U+E600..ECFF、U+1000..100F）
 // 到基础图集；非 ASCII/图标码点（CJK 等）经 load_cjk_font 载入的中文字体按需懒烘培
 // 到同一图集的剩余区（glTexSubImage2D 局部上传），支持自定义字体路径/环境变量。
 class Font {
@@ -31,7 +31,8 @@ public:
     // msyh.ttc / msyh.ttf / simhei.ttf / simsun.ttc / Deng.ttf；命中打日志。
     bool load_cjk_font_auto();
 
-    // 加载图标字体（M17d）：烘培 U+E600..E7FF 私用区到第二图集（layui iconfont.ttf）
+    // 加载图标字体（M17d）：烘培 U+E600..E7FF 私用区 + U+1000..100F（layui 2.13.x
+    // close/ok-circle 等非私用区码点）到第二图集（layui iconfont.ttf）
     bool load_icon_font(const char* path, float pixel_height);
 
     // (x, y) 为文本左上角（像素坐标，y 向下）；UTF-8 输入，私用区码点走图标图集。
@@ -60,7 +61,9 @@ private:
     static constexpr int kFirstChar = 32;
     static constexpr int kNumChars = 95;  // 32..126
     static constexpr unsigned kIconFirst = 0xE600;
-    static constexpr int kIconNum = 0x200;  // E600..E7FF
+    static constexpr int kIconNum = 0x700;  // E600..ECFF（2.13.x 新增字形散布至 EB2E）
+    static constexpr unsigned kIcon2First = 0x1000;
+    static constexpr int kIcon2Num = 0x10;  // 1000..100F（2.13.x 新增图标段）
 
     struct Glyph {
         float x0 = 0, y0 = 0, x1 = 0, y1 = 0;  // 相对基线（像素，y 向下）
@@ -75,10 +78,14 @@ private:
     const Glyph* ensure_dynamic(unsigned int cp) const;
     void bake_cjk(unsigned int cp) const;
 
+    // 图标字形查询：按码点落在 E600..E7FF / 1000..100F 哪一段返回对应字形，段外返回 nullptr
+    const Glyph* icon_glyph(unsigned int cp) const;
+
     Texture* atlas_ = nullptr;
     Texture* icon_atlas_ = nullptr;
     Glyph glyphs_[kNumChars] = {};
     Glyph icon_glyphs_[kIconNum] = {};
+    Glyph icon2_glyphs_[kIcon2Num] = {};
     float ascent_ = 0;
     float descent_ = 0;
     float pixel_height_ = 32.f;

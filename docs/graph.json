@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T01:21:54+08:00",
+  "generatedAt": "2026-08-22T03:14:27+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -818,6 +818,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-116-垂直滚动条-overlay-风格化自动隐藏--悬停加宽--三态色2026-08-22"
     },
+    "BUG:UI-117": {
+      "id": "BUG:UI-117",
+      "type": "BUG",
+      "label": "UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-117-图标页克隆镜像列表-195-项--hbox-自适应高度与图标字体扩段2026-08-22"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -1421,6 +1428,12 @@
       "context": "UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）"
     },
     {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）"
+    },
+    {
       "from": "DOC:PLAN",
       "to": "META:CHANGELOG",
       "kind": "mention",
@@ -1568,7 +1581,7 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-046",
       "kind": "checklist",
-      "context": "回归清单#Font ASCII/图标全量烘培：`stbtt_BakeFontBitmap` 返回值为图集打包底边 y（bottom_y），非烘培字数；`glyphs_`/`icon_glyphs_` 必须按 `kNumChars`/`kIconNum` 全量拷贝字形度量，任意 ASCII（32..126）与图标（U+E600..E7FF）字形在 `draw_text`/`measure_text` 中不得缺失、advance 不得为 0（曾致 \"6/12\" 只渲染 \"/1\"）"
+      "context": "回归清单#Font ASCII/图标全量烘培：`stbtt_BakeFontBitmap` 返回值为图集打包底边 y（bottom_y），非烘培字数；`glyphs_`/`icon_glyphs_` 必须按 `kNumChars`/`kIconNum` 全量拷贝字形度量，任意 ASCII（32..126）与图标（U+E600..ECFF 主段、U+1000..100F 辅段）字形在 `draw_text`/`measure_text` 中不得缺失、advance 不得为 0（曾致 \"6/12\" 只渲染 \"/1\"）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -1862,13 +1875,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-017",
       "kind": "checklist",
-      "context": "回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）"
+      "context": "回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）；HBox h≤0 时 `preferred_height()`=可见子高最大值+2×padding（h>0 显式优先），ScrollBox/VBox 流式排布不再塌陷"
     },
     {
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-052",
       "kind": "checklist",
-      "context": "回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）"
+      "context": "回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）；HBox h≤0 时 `preferred_height()`=可见子高最大值+2×padding（h>0 显式优先），ScrollBox/VBox 流式排布不再塌陷"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -2204,7 +2217,7 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-026",
       "kind": "checklist",
-      "context": "回归清单#Icon（layui-icon）：`layui_icons.h` 自动生成 190 个类名→码点常量（私用区 U+E600..E7FF，非法 C++ 标识符加 `ic_` 前缀）+ `from_class()` 查表；`Font::load_icon_font()` 烘培 + `draw_icon()` 中心绘制；`Icon` 控件按类名渲染"
+      "context": "回归清单#Icon（layui-icon）：`layui_icons.h` 自动生成 195 个类名→码点常量（主区 U+E600..ECFF + 2.13.x 非私用区 U+1005..1007，非法 C++ 标识符加 `ic_` 前缀）+ `from_class()` 查表；`Font::load_icon_font()` 双段烘培同图集 + `draw_icon()` 中心绘制；`Icon` 控件按类名渲染（无 theme/set_color 时回退白色）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -2331,6 +2344,12 @@
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#图标页按钮图标段：克隆镜像 h2#icon 两容器（UI-114 一比一修正）——容器一「按钮 ▾」(`set_icon_right` 文字左图标右) + left/right/edit/share 纯图标 / 容器二单行 9 个 sm：primary×5 + disabled + normal/warm/danger；Button::set_icon + add_class 能力复用，190 全量网格不受影响"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-117",
+      "kind": "checklist",
+      "context": "回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3090,7 +3109,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）"
+        "context": "回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）；HBox h≤0 时 `preferred_height()`=可见子高最大值+2×padding（h>0 显式优先），ScrollBox/VBox 流式排布不再塌陷"
       }
     ],
     "BUG:UI-018": [
@@ -3298,7 +3317,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#Icon（layui-icon）：`layui_icons.h` 自动生成 190 个类名→码点常量（私用区 U+E600..E7FF，非法 C++ 标识符加 `ic_` 前缀）+ `from_class()` 查表；`Font::load_icon_font()` 烘培 + `draw_icon()` 中心绘制；`Icon` 控件按类名渲染"
+        "context": "回归清单#Icon（layui-icon）：`layui_icons.h` 自动生成 195 个类名→码点常量（主区 U+E600..ECFF + 2.13.x 非私用区 U+1005..1007，非法 C++ 标识符加 `ic_` 前缀）+ `from_class()` 查表；`Font::load_icon_font()` 双段烘培同图集 + `draw_icon()` 中心绘制；`Icon` 控件按类名渲染（无 theme/set_color 时回退白色）"
       },
       {
         "from": "DOC:ARCHITECTURE",
@@ -3618,7 +3637,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#Font ASCII/图标全量烘培：`stbtt_BakeFontBitmap` 返回值为图集打包底边 y（bottom_y），非烘培字数；`glyphs_`/`icon_glyphs_` 必须按 `kNumChars`/`kIconNum` 全量拷贝字形度量，任意 ASCII（32..126）与图标（U+E600..E7FF）字形在 `draw_text`/`measure_text` 中不得缺失、advance 不得为 0（曾致 \"6/12\" 只渲染 \"/1\"）"
+        "context": "回归清单#Font ASCII/图标全量烘培：`stbtt_BakeFontBitmap` 返回值为图集打包底边 y（bottom_y），非烘培字数；`glyphs_`/`icon_glyphs_` 必须按 `kNumChars`/`kIconNum` 全量拷贝字形度量，任意 ASCII（32..126）与图标（U+E600..ECFF 主段、U+1000..100F 辅段）字形在 `draw_text`/`measure_text` 中不得缺失、advance 不得为 0（曾致 \"6/12\" 只渲染 \"/1\"）"
       }
     ],
     "BUG:UI-047": [
@@ -3705,7 +3724,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）"
+        "context": "回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）；HBox h≤0 时 `preferred_height()`=可见子高最大值+2×padding（h>0 显式优先），ScrollBox/VBox 流式排布不再塌陷"
       }
     ],
     "BUG:UI-053": [
@@ -4286,6 +4305,13 @@
         "context": "回归清单#垂直滚动条 overlay 风格化（TextArea+ScrollBox 共享 scrollbar_style.h）：自动隐藏（悬停/拖拽/2s 内滚过才显示）、悬停右缘列 6→8px 加宽、thumb 三态色（默认半透明→悬停全色→拖拽 accent）；隐藏期间滚轮照常滚动"
       }
     ],
+    "BUG:UI-117": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9"
+      }
+    ],
     "META:CHANGELOG": [
       {
         "from": "META:CHANGELOG",
@@ -4366,6 +4392,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）"
       },
       {
         "from": "DOC:PLAN",

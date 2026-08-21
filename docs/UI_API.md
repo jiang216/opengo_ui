@@ -352,7 +352,7 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, theme.success);
 | `bool load_from_file(const char* path, float pixel_height = 32.f)` | 从 .ttf 加载并烘培图集；pixel_height 为像素字号 |
 | `bool load_cjk_font(const char* path, int font_index = 0)` | 加载中文字体（懒烘培源）：保留 TTF/TTC 字节，首次遇到图集外码点按需光栅化。 .ttc 集合用 font_index 选取子字体；失败返回 false（ASCII 仍可用）。 |
 | `bool load_cjk_font_auto()` | 自动探测 CJK 字体：OPENGUI_CJK_FONT 环境变量（自定义字体）→ 系统候选 msyh.ttc / msyh.ttf / simhei.ttf / simsun.ttc / Deng.ttf；命中打日志。 |
-| `bool load_icon_font(const char* path, float pixel_height)` | 加载图标字体（M17d）：烘培 U+E600..E7FF 私用区到第二图集（layui iconfont.ttf） |
+| `bool load_icon_font(const char* path, float pixel_height)` | 加载图标字体（M17d）：烘培 U+E600..ECFF 主段 + U+1000..100F 辅段到第二图集（layui iconfont.ttf 2.13.9） |
 | `void draw_text(Renderer& renderer, const char* text, float x, float y, const Vec4& color, float scale = 1.f, bool bold = false) const` | (x, y) 为文本左上角（像素坐标，y 向下）；UTF-8 输入，私用区码点走图标图集；scale 为相对烘培像素号的缩放倍率（图集 2x 过采样，≤2x 清晰）；bold 仿粗体（字形 x 错位叠加一次，偏移 ≈ 字号/16） |
 | `float measure_text(const char* text, float scale = 1.f) const` | 宽度按 scale 同步缩放 |
 | `float char_width(unsigned int codepoint) const` | 单字符宽度：ASCII 用字形 advance；私用区图标用图标 advance；CJK 懒烘培后取真实 advance， 仍缺失时按方块字近似为字号 |
@@ -566,7 +566,7 @@ bool has = ui::layui::has_class(widget, "layui-btn");
 
 **调用示例**：
 ```cpp
-// 图标码点常量（190 项，layui-iconfont.ttf 私用区 U+E600..E7FF）
+// 图标码点常量（195 项，主区 U+E600..ECFF + close/ok-circle 等非私用区 U+1005..1007）
 font.load_icon_font("iconfont.ttf", 18.f);
 font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, ui::Vec4{1,1,1,1});
 ```

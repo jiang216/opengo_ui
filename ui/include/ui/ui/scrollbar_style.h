@@ -13,9 +13,8 @@
 #include "ui/gl/renderer.h"
 #include "ui/ui/theme.h"
 
-#include <GLFW/glfw3.h>
-
 #include <algorithm>
+#include <chrono>
 
 namespace ui {
 namespace scrollbar {
@@ -30,15 +29,23 @@ constexpr double kAutoHideDelay = 2.0;// 无活动自动隐藏延时（秒）
 // 每控件一份的交互状态
 struct State {
     bool dragging = false;       // 正在拖拽 thumb
-    double last_active = -1e30;  // 上次滚动/命中时刻（glfwGetTime 秒）
+    double last_active = -1e30;  // 上次滚动/命中时刻（steady_clock 秒）
 };
 
-inline void touch(State& s) { s.last_active = glfwGetTime(); }
+namespace detail {
+inline double now_s() {
+    return std::chrono::duration<double>(
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+}  // namespace detail
+
+inline void touch(State& s) { s.last_active = detail::now_s(); }
 
 // 是否处于活动期（绘制与命中的总开关）：悬停 / 拖拽 / 近期滚过
 inline bool active(const State& s, bool widget_hovered) {
     return widget_hovered || s.dragging ||
-           (glfwGetTime() - s.last_active) < kAutoHideDelay;
+           (detail::now_s() - s.last_active) < kAutoHideDelay;
 }
 
 // 当前条宽：拖拽或悬停 thumb 列时加宽

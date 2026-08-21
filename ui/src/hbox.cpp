@@ -3,9 +3,21 @@
 #include "ui/gl/renderer.h"
 #include "ui/ui/theme.h"
 
+#include <algorithm>
+
 namespace ui {
 
 HBox::HBox(float x, float y, float w, float h) : Widget(x, y, w, h) {}
+
+float HBox::preferred_height() const {
+    if (bounds_.h > 0.f) return bounds_.h;  // 显式高度优先
+    float max_h = 0.f;
+    for (const Widget* child : children_) {
+        if (!child->visible) continue;
+        max_h = std::max(max_h, child->preferred_height());
+    }
+    return 2.f * padding_ + max_h;
+}
 
 void HBox::on_layout() {
     const float content_h = bounds_.h - 2.f * padding_;

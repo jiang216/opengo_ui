@@ -27,6 +27,9 @@ public:
 
     void on_layout() override;
     void on_draw(Renderer& renderer) override;
+    // h<=0（自适应）：取可见子控件 preferred_height 最大值 + 2*padding；
+    // h>0 时显式高度优先（返回 bounds_.h）。使 HBox 可直接投入 ScrollBox/VBox 流式排布。
+    float preferred_height() const override;
 
 private:
     float spacing_ = 8.f;

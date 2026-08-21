@@ -100,6 +100,17 @@ bool Font::load_icon_font(const char* path, float pixel_height) {
         return false;
     }
 
+    // 第二段 U+1000..100F（layui 2.13.x close/ok-circle 等非私用区码点）：
+    // 紧接首段打包底边之下烘培进同一图集；溢出仅告警不致命（缺字形退化为空绘制）
+    stbtt_bakedchar cdata2[kIcon2Num] = {};
+    int baked2 = -1;
+    if (baked < kIconAtlasH) {
+        baked2 = stbtt_BakeFontBitmap(ttf.data(), 0, pixel_height * kAtlasScale,
+                                      bitmap.data() + (size_t)baked * kIconAtlasW, kIconAtlasW,
+                                      kIconAtlasH - baked, kIcon2First, kIcon2Num, cdata2);
+        if (baked2 < 0) log_error("icon font: range2 atlas overflow (U+1000..100F skipped)");
+    }
+
     std::vector<unsigned char> rgba((size_t)kIconAtlasW * kIconAtlasH * 4);
     for (size_t i = 0; i < bitmap.size(); ++i) {
         rgba[i * 4 + 0] = 255;
@@ -128,6 +139,22 @@ bool Font::load_icon_font(const char* path, float pixel_height) {
         g.u1 = b.x1 * ipw;
         g.v1 = b.y1 * iph;
         g.xadvance = b.xadvance * kAtlasInvScale;
+    }
+    if (baked2 >= 0) {
+        // 第二段 UV 需加上首段占用的 y 偏移（烘培坐标系原点在其传入缓冲顶部）
+        for (int i = 0; i < kIcon2Num; ++i) {
+            Glyph& g = icon2_glyphs_[i];
+            const stbtt_bakedchar& b = cdata2[i];
+            g.x0 = b.xoff * kAtlasInvScale;
+            g.y0 = b.yoff * kAtlasInvScale;
+            g.x1 = (b.xoff + (b.x1 - b.x0)) * kAtlasInvScale;
+            g.y1 = (b.yoff + (b.y1 - b.y0)) * kAtlasInvScale;
+            g.u0 = b.x0 * ipw;
+            g.v0 = (b.y0 + (float)baked) * iph;
+            g.u1 = b.x1 * ipw;
+            g.v1 = (b.y1 + (float)baked) * iph;
+            g.xadvance = b.xadvance * kAtlasInvScale;
+        }
     }
     return true;
 }
@@ -371,17 +398,16 @@ void Font::draw_text(Renderer& renderer, const char* text, float x, float y,
                 renderer.draw_textured_quad({rect.x + bold_off, rect.y, rect.w, rect.h},
                                             atlas_->id(), uv, color);
             cursor += g.xadvance * scale;
-        } else if (cp >= kIconFirst && cp < kIconFirst + kIconNum && icon_atlas_) {
-            const Glyph& g = icon_glyphs_[cp - kIconFirst];
-            if (g.x1 <= g.x0 || g.y1 <= g.y0) { cursor += g.xadvance * scale; continue; }
-            const Rect rect{align(cursor + g.x0 * scale), align(baseline + g.y0 * scale),
-                            (g.x1 - g.x0) * scale, (g.y1 - g.y0) * scale};
-            const Rect uv{g.u0, g.v0, g.u1, g.v1};
+        } else if (const Glyph* ig = icon_atlas_ ? icon_glyph(cp) : nullptr) {
+            if (ig->x1 <= ig->x0 || ig->y1 <= ig->y0) { cursor += ig->xadvance * scale; continue; }
+            const Rect rect{align(cursor + ig->x0 * scale), align(baseline + ig->y0 * scale),
+                            (ig->x1 - ig->x0) * scale, (ig->y1 - ig->y0) * scale};
+            const Rect uv{ig->u0, ig->v0, ig->u1, ig->v1};
             renderer.draw_textured_quad(rect, icon_atlas_->id(), uv, color);
             if (bold)
                 renderer.draw_textured_quad({rect.x + bold_off, rect.y, rect.w, rect.h},
                                             icon_atlas_->id(), uv, color);
-            cursor += g.xadvance * scale;
+            cursor += ig->xadvance * scale;
         } else {
             // CJK 懒烘培：命中即按真实字形绘制，缺失退回方块字宽近似
             const Glyph* g = ensure_dynamic(cp);
@@ -412,10 +438,19 @@ float Font::measure_text(const char* text, float scale) const {
     return width;
 }
 
+const Font::Glyph* Font::icon_glyph(unsigned int cp) const {
+    if (cp >= kIconFirst && cp < kIconFirst + (unsigned)kIconNum) return &icon_glyphs_[cp - kIconFirst];
+    if (cp >= kIcon2First && cp < kIcon2First + (unsigned)kIcon2Num)
+        return &icon2_glyphs_[cp - kIcon2First];
+    return nullptr;
+}
+
 void Font::draw_icon(Renderer& renderer, unsigned codepoint, float cx, float cy, float size,
                      const Vec4& color, float rotation) const {
-    if (!icon_atlas_ || codepoint < kIconFirst || codepoint >= kIconFirst + kIconNum) return;
-    const Glyph& g = icon_glyphs_[codepoint - kIconFirst];
+    if (!icon_atlas_) return;
+    const Glyph* gp = icon_glyph(codepoint);
+    if (!gp) return;
+    const Glyph& g = *gp;
     if (g.x1 <= g.x0 || g.y1 <= g.y0) return;
     const float gw = g.x1 - g.x0, gh = g.y1 - g.y0;
     if (gw <= 0.f || gh <= 0.f) return;
@@ -432,10 +467,8 @@ void Font::draw_icon(Renderer& renderer, unsigned codepoint, float cx, float cy,
 float Font::char_width(unsigned int codepoint) const {
     if (codepoint >= kFirstChar && codepoint < kFirstChar + kNumChars)
         return glyphs_[codepoint - kFirstChar].xadvance;
-    if (codepoint >= kIconFirst && codepoint < kIconFirst + kIconNum)
-        return icon_glyphs_[codepoint - kIconFirst].xadvance > 0
-                   ? icon_glyphs_[codepoint - kIconFirst].xadvance
-                   : pixel_height_;
+    if (const Glyph* ig = icon_glyph(codepoint))
+        return ig->xadvance > 0.f ? ig->xadvance : pixel_height_;
     const Glyph* g = ensure_dynamic(codepoint);
     if (g) return g->xadvance;
     return pixel_height_;  // 非图集字符按方块字近似

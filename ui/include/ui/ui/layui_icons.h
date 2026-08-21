@@ -1,8 +1,9 @@
 #pragma once
 
-// AUTO-GENERATED from layui.css 2.9.18 (iconfont.ttf 私用区 U+E600..E7FF)。
-// layui-icon-<name> 类名 -> Unicode 码点常量表（190 项）。
-// 生成：python tools/gen_icons.py（勿手改内容格式）
+// AUTO-GENERATED from layui.css（2.9.18 基础 190 项 + 2.13.9 新增 5 项，共 195）。
+// layui-icon-<name> 类名 -> Unicode 码点常量表。
+// 码点来源：layui/v/2.13.9/css/layui.css 的 .layui-icon-<name>:before content；
+// close/close-fill/ok-circle 为 2.13.x 新增非私用区码点（U+1005..1007）。
 
 #include <cstdint>
 
@@ -24,6 +25,7 @@ constexpr uint32_t at = 0xE687;  // layui-icon-at
 constexpr uint32_t auz = 0xE672;  // layui-icon-auz
 constexpr uint32_t backspace = 0xE694;  // layui-icon-backspace
 constexpr uint32_t bluetooth = 0xE689;  // layui-icon-bluetooth
+constexpr uint32_t bot = 0xE7D6;  // layui-icon-bot（2.13.9 新增）
 constexpr uint32_t camera = 0xE660;  // layui-icon-camera
 constexpr uint32_t camera_fill = 0xE65D;  // layui-icon-camera-fill
 constexpr uint32_t carousel = 0xE634;  // layui-icon-carousel
@@ -38,6 +40,8 @@ constexpr uint32_t chrome = 0xE68A;  // layui-icon-chrome
 constexpr uint32_t circle = 0xE63F;  // layui-icon-circle
 constexpr uint32_t circle_dot = 0xE617;  // layui-icon-circle-dot
 constexpr uint32_t clear = 0xE788;  // layui-icon-clear
+constexpr uint32_t close = 0x1006;  // layui-icon-close（2.13.x 新增，非私用区）
+constexpr uint32_t close_fill = 0x1007;  // layui-icon-close-fill（2.13.x 新增，非私用区）
 constexpr uint32_t code_circle = 0xE635;  // layui-icon-code-circle
 constexpr uint32_t cols = 0xE610;  // layui-icon-cols
 constexpr uint32_t component = 0xE857;  // layui-icon-component
@@ -124,6 +128,7 @@ constexpr uint32_t next = 0xE65B;  // layui-icon-next
 constexpr uint32_t note = 0xE66E;  // layui-icon-note
 constexpr uint32_t notice = 0xE667;  // layui-icon-notice
 constexpr uint32_t ok = 0xE605;  // layui-icon-ok
+constexpr uint32_t ok_circle = 0x1005;  // layui-icon-ok-circle（2.13.x 新增，非私用区）
 constexpr uint32_t password = 0xE673;  // layui-icon-password
 constexpr uint32_t pause = 0xE651;  // layui-icon-pause
 constexpr uint32_t picture = 0xE64A;  // layui-icon-picture
@@ -161,6 +166,7 @@ constexpr uint32_t share = 0xE641;  // layui-icon-share
 constexpr uint32_t shrink_right = 0xE668;  // layui-icon-shrink-right
 constexpr uint32_t slider = 0xE714;  // layui-icon-slider
 constexpr uint32_t snowflake = 0xE6B1;  // layui-icon-snowflake
+constexpr uint32_t sound = 0xE69D;  // layui-icon-sound（2.13.9 新增）
 constexpr uint32_t speaker = 0xE645;  // layui-icon-speaker
 constexpr uint32_t spread_left = 0xE66B;  // layui-icon-spread-left
 constexpr uint32_t star = 0xE600;  // layui-icon-star

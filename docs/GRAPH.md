@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 124（BUG 116 / DOC 6 / META 2）
-- 边: 309
+- 节点: 125（BUG 117 / DOC 6 / META 2）
+- 边: 311
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -161,7 +161,7 @@
 - 路径: `docs/CHANGELOG.md#ui-017-m12-布局增强hbox--grid--嵌套滚动2026-08-09`
 - 反链(2):
   - `META:CHANGELOG` (ref) — 相关历史条目
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）；HBox h≤0 时 `preferred_height()`=可见子高最大值+2×padding（h>0 显式优先），ScrollBox/VBox 流式排布不再塌陷
 
 ### BUG:UI-018 · UI-018: M13 视频增强：倍速 / 帧步进 / 精确 seek（2026-08-09）
 
@@ -244,7 +244,7 @@
 - 路径: `docs/CHANGELOG.md#ui-026-m17d-layui-克隆图标与特殊组件2026-08-10`
 - 反链(3):
   - `META:CHANGELOG` (ref) — 相关历史条目
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Icon（layui-icon）：`layui_icons.h` 自动生成 190 个类名→码点常量（私用区 U+E600..E7FF，非法 C++ 标识符加 `ic_` 前缀）+ `from_class()` 查表；`Font::load_icon_font()` 烘培 + `draw_icon()` 中心绘制；`Icon` 控件按类名渲染
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Icon（layui-icon）：`layui_icons.h` 自动生成 195 个类名→码点常量（主区 U+E600..ECFF + 2.13.x 非私用区 U+1005..1007，非法 C++ 标识符加 `ic_` 前缀）+ `from_class()` 查表；`Font::load_icon_font()` 双段烘培同图集 + `draw_icon()` 中心绘制；`Icon` 控件按类名渲染（无 theme/set_color 时回退白色）
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#特殊组件：Carousel（轮播：箭头/指示点/页码/自动播放 advance(dt)）、ColorPicker（12x3 色相网格 + 预设 + hex 显示）、Transfer（穿梭框：列表 + 移动按钮）、Code（代码块：深灰/notepad 皮肤 + 标题条 title/lang + 行号 + 超高滚动 + 嵌套）、Upload（文件列表 + 进度条模拟）
 
 ### BUG:UI-027 · UI-027: M16 收官·示例应用（终点）（2026-08-10）
@@ -400,7 +400,7 @@
 - 路径: `docs/CHANGELOG.md#ui-046-font-烘培计数误用-stbttbakefontbitmap-返回值ascii图标大量字形缺失2026-08-16`
 - 反链(2):
   - `META:CHANGELOG` (ref) — 相关历史条目
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Font ASCII/图标全量烘培：`stbtt_BakeFontBitmap` 返回值为图集打包底边 y（bottom_y），非烘培字数；`glyphs_`/`icon_glyphs_` 必须按 `kNumChars`/`kIconNum` 全量拷贝字形度量，任意 ASCII（32..126）与图标（U+E600..E7FF）字形在 `draw_text`/`measure_text` 中不得缺失、advance 不得为 0（曾致 "6/12" 只渲染 "/1"）
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Font ASCII/图标全量烘培：`stbtt_BakeFontBitmap` 返回值为图集打包底边 y（bottom_y），非烘培字数；`glyphs_`/`icon_glyphs_` 必须按 `kNumChars`/`kIconNum` 全量拷贝字形度量，任意 ASCII（32..126）与图标（U+E600..ECFF 主段、U+1000..100F 辅段）字形在 `draw_text`/`measure_text` 中不得缺失、advance 不得为 0（曾致 "6/12" 只渲染 "/1"）
 
 ### BUG:UI-047 · UI-047: 布局外壳 NavMenu 折叠不回收空间 / 切页滚动残留 / 图片加载能力缺失（2026-08-16）
 
@@ -445,7 +445,7 @@
 - 路径: `docs/CHANGELOG.md#ui-052-按钮页三缺陷尺寸行无大小差--按钮组后续按钮缺失--按钮容器缺失2026-08-16`
 - 反链(2):
   - `META:CHANGELOG` (ref) — 相关历史条目
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#HBox 横向 / Grid 网格布局：子控件按序排布，Grid 按列数换行 + `preferred_height()` 自适应；ScrollBox 内可嵌套 VBox 等容器。HBox `Valign` 垂直对齐（默认 Stretch 填满 / Center 按 preferred_height 居中，layui 尺寸按钮行用）；FlowBox 流式换行容器（layui-btn-container 语义，spacing 10 自动换行）；HBox h≤0 时 `preferred_height()`=可见子高最大值+2×padding（h>0 显式优先），ScrollBox/VBox 流式排布不再塌陷
 
 ### BUG:UI-053 · UI-053: 按钮文本垂直偏移 ~4px + 圆角按钮描边矩形化（2026-08-16）
 
@@ -857,6 +857,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#垂直滚动条 overlay 风格化（TextArea+ScrollBox 共享 scrollbar_style.h）：自动隐藏（悬停/拖拽/2s 内滚过才显示）、悬停右缘列 6→8px 加宽、thumb 三态色（默认半透明→悬停全色→拖拽 accent）；隐藏期间滚轮照常滚动
 
+### BUG:UI-117 · UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-117-图标页克隆镜像列表-195-项--hbox-自适应高度与图标字体扩段2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -917,7 +923,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(21):
+- 反链(22):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -934,6 +940,7 @@
   - `META:CHANGELOG` (mention) — UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-115: TextArea 垂直滚动条（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）
+  - `META:CHANGELOG` (mention) — UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -1060,6 +1067,7 @@
 | `BUG:UI-114` | BUG | UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-115` | BUG | UI-115: TextArea 垂直滚动条（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-116` | BUG | UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-117` | BUG | UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1264,6 +1272,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-114` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-115` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-116` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-117` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1366,6 +1375,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

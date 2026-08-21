@@ -25,6 +25,11 @@ public:
 
     // 子控件间距（body 内）
     void set_spacing(float spacing) { spacing_ = spacing; }
+    // 可选描边（layui 图标列表等 1px 边框卡片）；a<=0 关闭
+    void set_outline(const Vec4& color, float thickness = 1.f) {
+        outline_ = color;
+        outline_thickness_ = thickness;
+    }
 
     void on_layout() override;
     float preferred_height() const override;
@@ -35,6 +40,8 @@ private:
     float spacing_ = 10.f;
     Font* font_ = nullptr;
     const Theme* theme_ = nullptr;
+    Vec4 outline_{0, 0, 0, -1.f};  // 默认无描边
+    float outline_thickness_ = 1.f;
 };
 
 }  // namespace ui

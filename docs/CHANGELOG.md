@@ -2714,7 +2714,8 @@ layui 数据表格模块 `demo/table/static.html`（转化静态表格）此前�
 严重度：功能缺失。原 template_page 只是静态新闻列表（手动拼 Label），未实现模板引擎；镜像站 laytpl.html 是「数据+模版→视图」的实时沙箱。属 ui 库能力缺陷，按工作流新建 ui::LayTpl 引擎。
 - **ui 库新增引擎**（ui/include/ui/ui/laytpl.h + ui/src/laytpl.cpp，CMakeLists 追加）：
   - LayTplValue：数据节点（对象/数组/标量），laytpl_parse_json() 从 JSON 文本解析。
-  - LayTpl tpl(str) 编译模板，ender(data) 渲染；config(open,close) 自定义分隔符（默认 {{ }}）。
+  - LayTpl tpl(str) 编译模板，
+ender(data) 渲染；config(open,close) 自定义分隔符（默认 {{ }}）。
   - 语法：{{ d.field }} 输出（不转义）、{{= d.field }} 输出（转义 html）、{{# JS 语句 }} 逻辑（if/else、layui.each 循环）、{{! 区域 !}} 过滤不解析。
   - 表达式求值支持：成员访问 .key / 数组下标 [i] / .length / 逻辑 || && / 比较 === == !== != / 算术 + - * / % / 字符串与数字字面量 / 短路真值。
 - **测试页重写**（layui_test/src/pages/template_page.cpp）：1:1 镜像 laytpl.html —— 左侧数据（JSON）文本框 + 右侧模版文本框，下方视图结果；任意编辑实时重渲染（TextArea.onChange）。默认数据/模版与官方一致（Layui常用模块 + 5 条 list）。
@@ -3595,3 +3596,70 @@ GUI 人工冒烟。
 ### 相关历史条目
 
 - [UI-115](CHANGELOG.md#ui-115-textarea-垂直滚动条2026-08-22)：TextArea 滚动条基础能力（本条目将其风格化并与 ScrollBox 统一）。
+
+## UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）
+
+严重度：高（「全部图标」网格整体不可见；ui 库两处缺陷 + 一处能力限制）。
+
+背景：用户反馈「通用>图标」页只有 layui-icon-xxx 文本、无字形且行距塌陷
+（对照镜像 docs/2/icon 图标列表）。PAM 像素采样定位三个独立根因，均归属
+ui 库，按「先归因再修复」修正 ui 库本身；测试程序只做页面编排。
+（用户手上 exe 同时呈现乱码，系多会话并行改动期间的混合产物所致，
+非独立缺陷。）
+
+根因与修复：
+1. HBox 缺 preferred_height() 重写（ui 布局缺陷）：h=0 的行投入 ScrollBox
+   流式排布时按默认 bounds_.h=0 取高 → on_layout 给子控件派发负高度
+   （0−2×padding），图标页 38 行网格整体塌陷不可见（复现：y510 以下零墨水）。
+   修复：h>0 显式高度优先返回 bounds_.h；h≤0 返回可见子控件
+   preferred_height 最大值+2×padding，与 FlowBox/Grid 自适应语义对齐。
+2. scrollbar_style.h 头文件裸包含 <GLFW/glfw3.h>（UI-116 引入的编译缺陷）：
+   GLFW 默认拉入系统 GL/gl.h，凡先包含该头再包含 glad/gl.h 的 TU 报
+   C1189 直接编译失败（layui_test app.cpp 即命中）。修复：头部移除 GLFW
+   依赖，时间源改 std::chrono::steady_clock（touch/active/自动隐藏语义不变；
+   ui 库公开头不再暴露平台 GL 头）。
+3. 图标烘培区段不足（ui_gl 能力限制）：kIconNum=0x200 仅覆盖 E600..E7FF，
+   2.13.x 新字形 folder(eabe)/folder-open(eac1)/rss(e808)/component(e857)/
+   refresh-3(e9aa)/tips-fill(eb2e) 越界被范围检查静默丢弃（旧表 tips-fill
+   实际从未渲染成功过）；close(1006)/close-fill(1007)/ok-circle(1005) 更在
+   私用区之外。修复：主段扩为 E600..ECFF（stbtt 对缺字形零占位打包，
+   不耗图集空间）；新增第二段 U+1000..100F 紧接首段打包底边 bottom_y
+   续烘进同一图集（UV 加行偏移；溢出仅告警不致命）；新增
+   Font::icon_glyph(cp) 统一段查询，draw_text/draw_icon/char_width
+   三处路径全部改走该查询，段外码点安全返回 nullptr 不越界。
+
+资产与数据同步：
+- assets/iconfont.ttf 升级为镜像 layui v2.13.9 同款（旧 2.9.18 字体缺新字形）。
+- layui_icons.h 与 layui_style.cpp kIcons 表 190→195：补 bot(E7D6)/sound(E69D)/
+  close(1006)/close-fill(1007)/ok-circle(1005)（码点取自 2.13.9 layui.css）。
+- ui::Card 新增 set_outline(color, thickness=1)：可选描边（a≤0 关闭，默认关）。
+
+测试程序编排（layui_test/src/pages/icon_page.cpp）：
+- 「全部图标」网格重写为镜像一比一：6 列描边卡片（Card+set_outline
+  #e8e8e8），每卡四行＝字形(26px)/中文名/&#x码点;/layui-icon-类名；
+  前 192 项与镜像列表同序，末尾保留 layim-download/layim-theme/
+  layim-uploadfile（镜像页已下架、码点表仍收录），共 195 项。
+- cell() 内 Icon 补 set_theme：Icon 无 theme 时回退纯白色、白卡上不可见
+  （契约：主题色图标须 set_theme 或 set_color）。
+
+回归清单（必须保证）：
+- HBox：h>0 显式高度行为不变；Valign::Center 居中不受影响；h≤0 行投入
+  ScrollBox/VBox 后子件高度≥0，行高=最大子高+2×padding。
+- Card：默认无描边；header 卡、阴影、body 排布均不变。
+- load_icon_font：双段外码点安全返回 nullptr；range2 图集溢出仅 error
+  日志、主段照常可用；bottom_y 语义沿用 UI-046。
+- Icon：无 theme 回退白色不变；set_color 覆盖优先级不变。
+- 图标字体回退链（exe 目录→CWD→../assets→assets）不变（UI-047/UI-048）。
+- 滚动条 overlay 自动隐藏/三态色/悬停加宽行为不变（UI-116，时间源替换等价）。
+
+验证：x64 全量重建通过（GLFW 头污染消除后 app.cpp 可编译）；--shot-page 10
+PAM 采样——网格首行 6 字形墨水>0（bot=132/leaf=61/folder=55/folder-open=93/
+gitee=317/github=248）、row31 close=32/ok-circle=129（第二段码点生效）、
+末行仅 3 卡（layim×3）；卡片描边线 y627/774/888 定位准确、行距 pitch≈131px；
+--smoke 6s 全 67 页切换 exit 0；颜色/按钮/树表页抽查正常。
+
+### 相关历史条目
+
+- [UI-116](CHANGELOG.md#ui-116-垂直滚动条-overlay-风格化自动隐藏--悬停加宽--三态色2026-08-22)：scrollbar_style.h 引入 GLFW 头依赖（根因 2 修复之）；时间源 glfwGetTime→steady_clock。
+- [UI-114](CHANGELOG.md#ui-114-button-图标右置-seticonright--图标页按钮图标段一比一修正2026-08-22)：图标页按钮图标段（本条目完成全量网格一比一）。
+- [UI-046](CHANGELOG.md#ui-046-font-烘培计数误用-stbttbakefontbitmap-返回值ascii图标大量字形缺失2026-08-16)：BakeFontBitmap bottom_y 语义（range2 续包依据）。
