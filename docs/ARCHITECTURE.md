@@ -45,6 +45,7 @@ core   ui_core 静态库（纯 C++：math/log/version，禁止 include GL/媒体
 | TextBox 选择/剪贴板：Shift+方向/Home/End 与鼠标拖选（accent 高亮）、Ctrl+A/C/X/V 全选/复制/剪切/粘贴（Window::primary_handle 剪贴板句柄）、Backspace/Delete/输入优先删选中 | [UI-101](CHANGELOG.md#ui-101-textbox-选择剪贴板能力拖选shift-选择ctrlacxv2026-08-21) |
 | 键盘 mods 快照：key_cb PRESS 时记录修饰键，`key_pressed_mods(key)` 供应用在边沿消费时取用（SendInput 快速序列实时查询丢 mods）；TextBox::on_char 过滤 C0/DEL 控制字符 | [UI-102](CHANGELOG.md#ui-102-键盘修饰键快照sendinput-粘贴到自绘输入框丢失-mods2026-08-21) |
 | TextArea 剪贴板兜底：未注入 on_copy_/on_paste_ 时内置 GLFW 剪贴板读写（primary_handle），已注入时优先覆盖；消除「漏注入即静默失效」 | [UI-103](CHANGELOG.md#ui-103-textarea-剪贴板默认实现回调未注入时-ctrlcxv-静默失效2026-08-21) |
+| TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb（对齐 ScrollBox 风格），点击轨道跳转 + 拖拽映射 scroll_（capture_mouse，不抢焦点不动光标）；avail_width 恒定让出滚动条列防换行跳动 | [UI-115](CHANGELOG.md#ui-115-textarea-垂直滚动条2026-08-22) |
 | IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开 | [UI-100](CHANGELOG.md#ui-100-ime-候选窗跟随输入框光标2026-08-21) |
 | Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形 | UI-008 / [UI-057](CHANGELOG.md#ui-057-嵌套-scissor-pop-不恢复上级矩形textbox-之后内容被裁剪2026-08-17) |
 | 鼠标捕获：on_mouse_down 返回 true 即捕获，move/up 越界仍路由给捕获者，up 自动释放 | UI-009 |

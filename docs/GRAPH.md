@@ -6,9 +6,8 @@
 ## 统计
 
 - 节点: 122（BUG 114 / DOC 6 / META 2）
-- 边: 303
-- lint: 0 错误 / 1 警告
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-115
+- 边: 304
+- lint: 0 错误 / 0 警告
 
 ## 反链索引
 
@@ -842,7 +841,8 @@
 ### BUG:UI-115 · UI-115: TextArea 垂直滚动条（2026-08-22）
 
 - 路径: `docs/CHANGELOG.md#ui-115-textarea-垂直滚动条2026-08-22`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb（对齐 ScrollBox 风格），点击轨道跳转 + 拖拽映射 scroll_（capture_mouse，不抢焦点不动光标）；avail_width 恒定让出滚动条列防换行跳动
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -1243,6 +1243,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-111` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-112` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-113` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-115` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

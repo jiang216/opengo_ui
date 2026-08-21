@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T01:06:22+08:00",
+  "generatedAt": "2026-08-22T01:07:30+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -1651,6 +1651,12 @@
       "to": "BUG:UI-103",
       "kind": "checklist",
       "context": "回归清单#TextArea 剪贴板兜底：未注入 on_copy_/on_paste_ 时内置 GLFW 剪贴板读写（primary_handle），已注入时优先覆盖；消除「漏注入即静默失效」"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-115",
+      "kind": "checklist",
+      "context": "回归清单#TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb（对齐 ScrollBox 风格），点击轨道跳转 + 拖拽映射 scroll_（capture_mouse，不抢焦点不动光标）；avail_width 恒定让出滚动条列防换行跳动"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -4210,7 +4216,13 @@
         "context": "回归清单#图标页按钮图标段：克隆镜像 h2#icon 三组——默认文字+图标（set_text+set_icon）+ 纯图标 / 小号 primary 五图标 / 小号 disabled+normal+warm+danger 混合；Button::set_icon + add_class 能力复用，190 全量网格不受影响"
       }
     ],
-    "BUG:UI-115": [],
+    "BUG:UI-115": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb（对齐 ScrollBox 风格），点击轨道跳转 + 拖拽映射 scroll_（capture_mouse，不抢焦点不动光标）；avail_width 恒定让出滚动条列防换行跳动"
+      }
+    ],
     "META:CHANGELOG": [
       {
         "from": "META:CHANGELOG",
@@ -4432,8 +4444,6 @@
   },
   "lint": {
     "errors": [],
-    "warnings": [
-      "孤儿条目（无任何文档引用）: BUG:UI-115"
-    ]
+    "warnings": []
   }
 }
