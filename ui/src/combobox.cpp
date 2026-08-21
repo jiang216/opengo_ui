@@ -112,6 +112,21 @@ void ComboBox::sync_panel() {
             else
                 panel_y = bounds_.y - max_h;
         }
+    } else {
+        // 无 ScrollBox 祖先（页面级布局的下拉框）：以 root 可视区（窗口）为界，
+        // 执行同样的翻转/钉顶——否则贴近窗口底部的下拉面板会被窗口底边裁掉尾部选项
+        // （UI-110）。
+        const Widget* rt = root();
+        const float vis_top = rt ? rt->bounds().y : 0.f;
+        const float vis_bot = rt ? rt->bounds().y + rt->bounds().h
+                                 : bounds_.y + bounds_.h + max_h;         // 兜底：无 root 视为无限深
+        if (bounds_.y + bounds_.h + max_h > vis_bot) {
+            // 向下放不下：翻转到 ComboBox 上方；仍超出可视区顶部则钉在可视区顶部
+            if (bounds_.y - max_h < vis_top)
+                panel_y = vis_top;
+            else
+                panel_y = bounds_.y - max_h;
+        }
     }
 
     panel_->set_bounds(panel_x, panel_y, panel_w, max_h);

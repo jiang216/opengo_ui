@@ -3346,3 +3346,71 @@ PAM 像素分析——字号行 6 簇 pitch=174 与布局参数精确吻合、�
 
 - [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：树形表格页原为符号静态模拟（本条目为其能力补全后升级）。
 - [UI-040](CHANGELOG.md#ui-040-table-行重建泄漏修复--widgetdestroy-单控件销毁-api2026-08-11)：rebuild_rows 递归释放旧行控件（本次折叠重建路径复用该机制）。
+
+## UI-110: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）
+
+严重度：高（含测试程序潜在 UB：PageHost 为 render_page lambda 栈局部变量，
+页面回调 `[&host]` 捕获全部悬空，回调触发时读到垃圾值——本次 on_scroll 回调
+实测读到 off=-2.6e38；此前未暴露仅因多数回调从未在 build 返回后被触发）。
+
+根因归属：**双根因**。
+① ui 库能力缺口：ScrollBox 无视口级锚定能力，固定条只能以页内静态呈现替代；
+② **测试程序缺陷**：app.cpp 中 `PageHost host` 声明在 render_page lambda 体内，
+函数返回即销毁，而页面 build 里以 `[&host]` 捕获的回调（按钮点击/滚动回调等）
+生命周期覆盖整个页面显示期。
+
+修复：
+- ui/scrollbox.h/.cpp：新增 `PinCorner` 枚举 + `add_pinned(w, corner, margin_x,
+  margin_y)`——控件照常 add_child（生命周期/命中测试/绘制顺序不变），但不参与
+  纵向流式排布、不计入 content_height；每次布局钉在可视区 corner 内缩 margin 处，
+  不随 scroll_offset 移动；后加的锚定控件绘制在流式内容之上。pinned_ 条目在
+  on_layout 时对 children_ 校验，被 clear_children 释放的悬空条目自动剔除（切页安全）。
+- layui_test/app.cpp：**PageHost 提升到 main 作用域**（生命周期覆盖全部页面控件
+  回调）——所有页面 `[&host]` 捕获合法化，属结构性修复而非逐点补丁。
+- layui_test/fixbar_page.cpp：右下角常驻「返回顶部」工具组（add_pinned
+  BottomRight 20,20）；出现阈值用既有 set_on_scroll 编排（下滚一屏出现、滚回顶部
+  隐藏）；点击复位 content 滚动。占位段落增至 40 行保证「一屏」阈值可达。
+
+回归清单（必须保证）：
+- 非 pinned 子控件的流式排布 / content_height / 滚动条计算零变化。
+- clear_children 后 pinned_ 悬空条目自动剔除，切页无崩溃、无泄漏。
+- 页面回调捕获 [&host] 合法（PageHost 与 main 同生命周期）——既有全部 [&host]
+  回调（按钮点击等）同步受益。
+- 锚定控件命中优先于其下内容（children_ 逆序派发 + 后加先测）。
+- `--smoke` 全轮换 exit 0。
+
+验证：x64 Release 编译链接通过；`--smoke 20` exit 0（67 页全轮换）；固定条页三态
+PAM 像素分析——初始 bar 区墨迹 0（隐藏）、`--shot-scroll 850` 后 19（出现于
+y828-880 = 视口底 900 - margin 20 - 高 52，位置精确）、注入 `--click 1234,850`
+后 bar 区归 0 且顶部文本带从 266 复位到 3075（与初始态一致，滚动真实复位 +
+on_scroll 回调正确隐藏）。
+
+### 相关历史条目
+
+- [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：固定条页原以页内静态呈现替代视口锚定（本条目为其能力补全后升级）。
+- [UI-109](CHANGELOG.md#ui-109-table-树形层级-add_tree-row--展开折叠交互树形表格页升级真实交互2026-08-21)：同批引入的 --click 合成点击注入（本次交互验证复用）。
+
+## UI-110: ComboBox 无 ScrollBox 祖先时弹出面板不翻转，贴近窗口底部的下拉尾部选项被窗口底边裁掉（2026-08-21）
+
+严重度：高（规则管理页底部「类型」下拉 10 个选项仅前 ~7 个可见，滚到底也无法看到
+script/mouse/json/combo 尾部选项；所有无 ScrollBox 祖先、位于页面底部的下拉均受影响）。
+
+根因归属：**ui 库**。`ComboBox::sync_panel()` 的翻转/钉顶逻辑整体包在 `if (scroll_anc)`
+分支内——仅当存在最近 ScrollBox 祖先时才检测可视区边界；无 ScrollBox 祖先（页面级
+绝对布局的下拉框）时恒向下弹出 `kMaxPanelH`(150px) 面板，combo 距窗口底边不足时面板
+超出窗口被裁，ScrollBox 内部可滚动但视口外内容永远不可见。
+
+修复（ui/src/combobox.cpp sync_panel 新增 else 分支）：无 ScrollBox 祖先时以 root 可视区
+（窗口矩形）为界执行同样的翻转/钉顶——向下放不下翻转到 ComboBox 上方；翻转后仍超出
+可视区顶部则钉在可视区顶部；无 root 时兜底视为无限深保持旧行为。
+
+回归清单（必须保证）：
+- 有 ScrollBox 祖先的下拉翻转/钉顶行为零变化（原分支未动）。
+- 无 ScrollBox 祖先且下方空间充足的下拉仍向下弹（默认路径不变）。
+- 无 ScrollBox 祖先且贴近窗口底部的下拉向上翻转，全部选项可见。
+- 极小窗口下翻转也不够时面板钉在窗口顶部（不越界、不为负坐标）。
+- 打开一关一 / 点击外部关闭 / 滚动关闭 / 键盘上下选择行为不变（UI-0xx 相关清单）。
+
+验证：x64 Release 重编 ui_ui 并安装（install/lib 时间戳更新）；layui_test 链接新库
+`--smoke 20` 全 67 页轮换 exit 0（page switches ok）；应用侧（voice_assistant 规则页
+类型下拉展开完整显示 10 项）由应用仓库构建回归 + 人工冒烟确认。
