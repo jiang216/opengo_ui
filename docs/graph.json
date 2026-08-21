@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T03:14:27+08:00",
+  "generatedAt": "2026-08-22T03:20:59+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -825,6 +825,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-117-图标页克隆镜像列表-195-项--hbox-自适应高度与图标字体扩段2026-08-22"
     },
+    "BUG:UI-118": {
+      "id": "BUG:UI-118",
+      "type": "BUG",
+      "label": "UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-118-图标卡片文本居中--数据表抽离重构2026-08-22"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -1432,6 +1439,12 @@
       "to": "META:CHANGELOG",
       "kind": "mention",
       "context": "UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）"
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）"
     },
     {
       "from": "DOC:PLAN",
@@ -2349,7 +2362,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-117",
       "kind": "checklist",
-      "context": "回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9"
+      "context": "回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名，均水平居中，后两行 0.78 缩放小字；数据源 icon_catalog.h），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-118",
+      "kind": "checklist",
+      "context": "回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名，均水平居中，后两行 0.78 缩放小字；数据源 icon_catalog.h），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -4309,7 +4328,14 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9"
+        "context": "回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名，均水平居中，后两行 0.78 缩放小字；数据源 icon_catalog.h），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9"
+      }
+    ],
+    "BUG:UI-118": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名，均水平居中，后两行 0.78 缩放小字；数据源 icon_catalog.h），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9"
       }
     ],
     "META:CHANGELOG": [
@@ -4397,6 +4423,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）"
       },
       {
         "from": "DOC:PLAN",

@@ -3663,3 +3663,34 @@ gitee=317/github=248）、row31 close=32/ok-circle=129（第二段码点生效�
 - [UI-116](CHANGELOG.md#ui-116-垂直滚动条-overlay-风格化自动隐藏--悬停加宽--三态色2026-08-22)：scrollbar_style.h 引入 GLFW 头依赖（根因 2 修复之）；时间源 glfwGetTime→steady_clock。
 - [UI-114](CHANGELOG.md#ui-114-button-图标右置-seticonright--图标页按钮图标段一比一修正2026-08-22)：图标页按钮图标段（本条目完成全量网格一比一）。
 - [UI-046](CHANGELOG.md#ui-046-font-烘培计数误用-stbttbakefontbitmap-返回值ascii图标大量字形缺失2026-08-16)：BakeFontBitmap bottom_y 语义（range2 续包依据）。
+
+## UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）
+
+严重度：低（视觉对齐修正 + 测试程序内部重构，无 ui 库缺陷）。
+
+根因归属：卡片内三行文本左对齐属**测试程序**编排问题——ui 库
+`Label::set_align(int)`（1=水平居中，M11 起提供）能力齐全，
+icon_page.cpp 的 cell() 未调用；无需改动 ui 库。
+
+修复与重构（layui_test/src/pages）：
+- cell() 中文名/码点/类名三行 Label 补 `set_align(1)` 水平居中
+  （Icon 本身按控件中心绘制，已居中）。
+- 码点(&#x…;)/类名(layui-icon-…) 两行 `set_text_scale(0.78)` 小字灰阶，
+  对齐镜像 docs-icon-code / docs-icon-fontclass 的次级字号层次。
+- 195 项数据表（IconItem kIcons + kIconCount）自 icon_page.cpp 抽出至
+  新头 icon_catalog.h：页面文件 429→231 行，数据与编排分离；
+  表与 ui::layui_icon 码点表的对应关系（前 192 项镜像同序 + layim×3）注释随迁。
+
+回归清单（必须保证）：
+- 图标页 195 张描边卡片渲染不变：字形/中文名/码点/类名四行结构、
+  Card::set_outline #e8e8e8 描边、6 列 HBox h=0 自适应行高（UI-117）。
+- 卡片四行内容均以卡片垂直中线为轴水平居中（偏差 ≤1px）。
+- icon_catalog.h 为图标页唯一数据源；修改码点须同步 ui::layui_icon 表。
+
+验证：x64 重建通过；--shot-page 10 PAM 采样——首行 6 卡文本墨水中心
+相对卡中心偏差 0/-0/+0/-0/+0/-1 px；六卡字形墨水不变（bot=132/leaf=61/
+folder=55/folder-open=93/gitee=317/github=248）；--smoke 4s 全页切换 exit 0。
+
+### 相关历史条目
+
+- [UI-117](CHANGELOG.md#ui-117-图标页克隆镜像列表-195-项--hbox-自适应高度与图标字体扩段2026-08-22)：网格一比一克隆与 ui 库三根因修复（本条目在其产物上做居中修正与重构）。

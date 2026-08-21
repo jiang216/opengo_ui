@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 125（BUG 117 / DOC 6 / META 2）
-- 边: 311
+- 节点: 126（BUG 118 / DOC 6 / META 2）
+- 边: 313
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -861,7 +861,13 @@
 
 - 路径: `docs/CHANGELOG.md#ui-117-图标页克隆镜像列表-195-项--hbox-自适应高度与图标字体扩段2026-08-22`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名，均水平居中，后两行 0.78 缩放小字；数据源 icon_catalog.h），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9
+
+### BUG:UI-118 · UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-118-图标卡片文本居中--数据表抽离重构2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名，均水平居中，后两行 0.78 缩放小字；数据源 icon_catalog.h），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -923,7 +929,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(22):
+- 反链(23):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -941,6 +947,7 @@
   - `META:CHANGELOG` (mention) — UI-115: TextArea 垂直滚动条（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）
+  - `META:CHANGELOG` (mention) — UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -1068,6 +1075,7 @@
 | `BUG:UI-115` | BUG | UI-115: TextArea 垂直滚动条（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-116` | BUG | UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-117` | BUG | UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-118` | BUG | UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1273,6 +1281,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-115` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-116` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-117` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-118` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1375,6 +1384,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
