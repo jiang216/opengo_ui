@@ -345,10 +345,12 @@ void Font::bake_cjk(unsigned int cp) const {
 }
 
 void Font::draw_text(Renderer& renderer, const char* text, float x, float y,
-                     const Vec4& color) const {
+                     const Vec4& color, float scale, bool bold) const {
     if ((!atlas_ && !icon_atlas_) || !text) return;
-    const float baseline = y + ascent_;
+    const float baseline = y + ascent_ * scale;
     float cursor = x;
+    // 仿粗体偏移：约字号的 1/16（18px → 1px），随 scale 同步
+    const float bold_off = std::max(1.f, std::round(pixel_height_ * scale / 16.f));
     // 字形左上角对齐像素网格（round 到整数像素）：baseline = y + ascent_ 与
     // 逐字 xadvance 累加均为小数，落在非整数像素坐标时 GL_LINEAR 双线性采样会
     // 跨纹素混叠，造成文字发虚（UI-055）。对齐后每个字形内部 1:1 映射纹素，
@@ -360,41 +362,52 @@ void Font::draw_text(Renderer& renderer, const char* text, float x, float y,
         if (cp == 0) break;
         if (cp >= kFirstChar && cp < kFirstChar + kNumChars) {
             const Glyph& g = glyphs_[cp - kFirstChar];
-            if (g.x1 <= g.x0 || g.y1 <= g.y0) { cursor += g.xadvance; continue; }
-            const Rect rect{align(cursor + g.x0), align(baseline + g.y0), g.x1 - g.x0, g.y1 - g.y0};
+            if (g.x1 <= g.x0 || g.y1 <= g.y0) { cursor += g.xadvance * scale; continue; }
+            const Rect rect{align(cursor + g.x0 * scale), align(baseline + g.y0 * scale),
+                            (g.x1 - g.x0) * scale, (g.y1 - g.y0) * scale};
             const Rect uv{g.u0, g.v0, g.u1, g.v1};
             renderer.draw_textured_quad(rect, atlas_->id(), uv, color);
-            cursor += g.xadvance;
+            if (bold)
+                renderer.draw_textured_quad({rect.x + bold_off, rect.y, rect.w, rect.h},
+                                            atlas_->id(), uv, color);
+            cursor += g.xadvance * scale;
         } else if (cp >= kIconFirst && cp < kIconFirst + kIconNum && icon_atlas_) {
             const Glyph& g = icon_glyphs_[cp - kIconFirst];
-            if (g.x1 <= g.x0 || g.y1 <= g.y0) { cursor += g.xadvance; continue; }
-            const Rect rect{align(cursor + g.x0), align(baseline + g.y0), g.x1 - g.x0, g.y1 - g.y0};
+            if (g.x1 <= g.x0 || g.y1 <= g.y0) { cursor += g.xadvance * scale; continue; }
+            const Rect rect{align(cursor + g.x0 * scale), align(baseline + g.y0 * scale),
+                            (g.x1 - g.x0) * scale, (g.y1 - g.y0) * scale};
             const Rect uv{g.u0, g.v0, g.u1, g.v1};
             renderer.draw_textured_quad(rect, icon_atlas_->id(), uv, color);
-            cursor += g.xadvance;
+            if (bold)
+                renderer.draw_textured_quad({rect.x + bold_off, rect.y, rect.w, rect.h},
+                                            icon_atlas_->id(), uv, color);
+            cursor += g.xadvance * scale;
         } else {
             // CJK 懒烘培：命中即按真实字形绘制，缺失退回方块字宽近似
             const Glyph* g = ensure_dynamic(cp);
             if (g && g->x1 > g->x0 && g->y1 > g->y0) {
-                const Rect rect{align(cursor + g->x0), align(baseline + g->y0),
-                                g->x1 - g->x0, g->y1 - g->y0};
+                const Rect rect{align(cursor + g->x0 * scale), align(baseline + g->y0 * scale),
+                                (g->x1 - g->x0) * scale, (g->y1 - g->y0) * scale};
                 const Rect uv{g->u0, g->v0, g->u1, g->v1};
                 renderer.draw_textured_quad(rect, atlas_->id(), uv, color);
-                cursor += g->xadvance;
+                if (bold)
+                    renderer.draw_textured_quad({rect.x + bold_off, rect.y, rect.w, rect.h},
+                                                atlas_->id(), uv, color);
+                cursor += g->xadvance * scale;
             } else {
-                cursor += pixel_height_;  // 非图集字符（CJK 等）按方块字近似
+                cursor += pixel_height_ * scale;  // 非图集字符（CJK 等）按方块字近似
             }
         }
     }
 }
 
-float Font::measure_text(const char* text) const {
+float Font::measure_text(const char* text, float scale) const {
     if (!text) return 0.f;
     float width = 0.f;
     for (const char* p = text; *p;) {
         const unsigned cp = decode_utf8(p);
         if (cp == 0) break;
-        width += char_width(cp);
+        width += char_width(cp) * scale;
     }
     return width;
 }

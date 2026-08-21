@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 115（BUG 107 / DOC 6 / META 2）
-- 边: 289
+- 节点: 116（BUG 108 / DOC 6 / META 2）
+- 边: 292
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -800,6 +800,13 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色色卡（Swatch 自绘 + layui::bg_color/bg_fill/hex）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页
 
+### BUG:UI-108 · UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）
+
+- 路径: `docs/CHANGELOG.md#ui-108-fontlabel-字号缩放与仿粗体--layui-文字工具色-fontcolor公共类页升级真实演示2026-08-21`
+- 反链(2):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Font 缩放与仿粗体：`Font::draw_text(..., scale=1.f, bold=false)` 全度量乘 scale（≤2x 清晰，图集 2x 过采样）+ 仿粗体 x 错位叠加；`Label::set_text_scale/set_bold` 行高/换行/测量全链路联动；默认参数下既有调用零影响——禁止在测试程序内自建多份 Font 实例或手动错位双绘实现加粗
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui 文字工具色查询：`ui::layui::font_color("layui-font-*")` 返回 .layui-font-{red orange green cyan blue purple black gray} 文字色（克隆 layui.css 2.13.x：green=#16baaa/blue=#01aaed/black=#000/gray=#c2c2c2 与 bg-\* 不同源），未知类回退黑；bg_color/bg_fill 行为不变——字色行禁用 bg_color()（其 text 字段是底色上的白前景，白底面板上不可见）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -860,7 +867,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(13):
+- 反链(14):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -869,6 +876,7 @@
   - `META:CHANGELOG` (mention) — UI-105: 帧率 HUD 与头部右侧控件重叠——HUD 右对齐压在生态/版本下拉上（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-106: 侧栏缺失镜像站 14 个页面——基础组整组缺 + 颜色/图标/输入框/选择框/单选框/树形表格/公共类/固定条（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21）
+  - `META:CHANGELOG` (mention) — UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -986,6 +994,7 @@
 | `BUG:UI-105` | BUG | UI-105: 帧率 HUD 与头部右侧控件重叠——HUD 右对齐压在生态/版本下拉上（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-106` | BUG | UI-106: 侧栏缺失镜像站 14 个页面——基础组整组缺 + 颜色/图标/输入框/选择框/单选框/树形表格/公共类/固定条（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-107` | BUG | UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21） | `docs/CHANGELOG.md` |
+| `BUG:UI-108` | BUG | UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1178,6 +1187,8 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-105` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-106` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-107` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-108` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-108` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1280,6 +1291,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

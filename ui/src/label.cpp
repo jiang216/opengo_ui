@@ -51,9 +51,9 @@ void Label::set_wrap(bool wrap) {
 
 float Label::preferred_height() const {
     if (!font_) return bounds_.h;
-    if (!wrap_) return font_->line_height();
+    if (!wrap_) return font_->line_height() * text_scale_;
     if (dirty_) const_cast<Label*>(this)->recompute_lines();  // 宽度依赖当前 bounds_.w
-    return std::max(1, (int)lines_.size()) * font_->line_height();
+    return std::max(1, (int)lines_.size()) * font_->line_height() * text_scale_;
 }
 
 void Label::recompute_lines() {
@@ -75,7 +75,7 @@ void Label::recompute_lines() {
     while (i < len) {
         unsigned int cp = 0;
         const int n = utf8_decode(text_.data() + i, cp);
-        const float cw = font_->char_width(cp);
+        const float cw = font_->char_width(cp) * text_scale_;
         if (w + cw > max_w && !line.empty()) {
             lines_.push_back(line);
             line.clear();
@@ -99,20 +99,22 @@ void Label::on_draw(Renderer& renderer) {
     const Theme* t = theme_ ? theme_ : &kDefaultTheme;
     const Vec4 color = color_set_ ? color_ : t->text;
 
-    const float line_h = font_->line_height();
+    const float line_h = font_->line_height() * text_scale_;
     const float total_h = (float)lines_.size() * line_h;
     float y = bounds_.y + (bounds_.h - total_h) * 0.5f;
 
     for (const std::string& line : lines_) {
         if (!line.empty()) {
-            const float text_w = font_->measure_text(line.c_str());
+            const float text_w = font_->measure_text(line.c_str(), text_scale_);
             float tx = bounds_.x;
             if (align_ == 1)
                 tx = bounds_.x + (bounds_.w - text_w) * 0.5f;
             else if (align_ == 2)
                 tx = bounds_.x + bounds_.w - text_w;
-            const float ty = y + (line_h - font_->line_height()) * 0.5f;
-            font_->draw_text(renderer, line.c_str(), tx, ty, color);
+            // 缩放后的文本在行盒内垂直居中（未缩放时差值为 0，行为不变）
+            const float scaled_line_h = font_->line_height() * text_scale_;
+            const float ty = y + (line_h - scaled_line_h) * 0.5f;
+            font_->draw_text(renderer, line.c_str(), tx, ty, color, text_scale_, bold_);
         }
         y += line_h;
     }

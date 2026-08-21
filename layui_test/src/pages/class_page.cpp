@@ -43,20 +43,21 @@ void build_class(PageHost& host) {
     // ---- 字体大小 ----
     field_title(host, "字体大小 layui-font-12/14/16/18/20/22");
     para_line(host,
-        "六档字号类；框架 Font 按固定像素烘培（当前统一 18px），"
-        "Label 级字号缩放能力规划中，此处先呈现类名清单。");
+        "六档字号类；框架 Font 按 18px 烘培（2x 过采样图集），"
+        "Label::set_text_scale 按 px/18 倍率缩放渲染，≤2x（36px）内清晰。");
     {
-        auto* r = new ui::HBox(0, 0, kCW, 30.f);
+        auto* r = new ui::HBox(0, 0, kCW, 44.f);
         r->set_padding(0.f);
-        r->set_spacing(20.f);
+        r->set_spacing(24.f);
         r->set_theme(host.theme);
-        const char* sizes[] = {"12", "14", "16", "18", "20", "22"};
-        for (const char* s : sizes) {
-            std::string txt = std::string("layui-font-") + s;
-            auto* l = new ui::Label(0, 0, 130.f, 0, txt.c_str());
+        static const int kSizes[] = {12, 14, 16, 18, 20, 22};
+        for (int px : kSizes) {
+            std::string txt = std::string("layui-font-") + std::to_string(px) + " 示例";
+            auto* l = new ui::Label(0, 0, 150.f, 0, txt.c_str());
             l->set_font(host.font);
             l->set_theme(host.theme);
-            l->set_color(ui::layui::bg_color("layui-bg-blue"));
+            l->set_color(host.theme->text);
+            l->set_text_scale((float)px / 18.f);
             r->add_child(l);
         }
         host.content->add_child(r);
@@ -71,12 +72,11 @@ void build_class(PageHost& host) {
         r->set_theme(host.theme);
         const char* names[] = {"red", "orange", "green", "cyan", "blue", "purple", "black", "gray"};
         for (const char* n : names) {
-            std::string cls = std::string("layui-bg-") + n;
-            std::string txt = std::string("layui-font-") + n;
-            auto* l = new ui::Label(0, 0, 112.f, 0, txt.c_str());
+            std::string cls = std::string("layui-font-") + n;
+            auto* l = new ui::Label(0, 0, 112.f, 0, cls.c_str());
             l->set_font(host.font);
             l->set_theme(host.theme);
-            l->set_color(ui::layui::bg_color(cls.c_str()));
+            l->set_color(ui::layui::font_color(cls.c_str()));
             r->add_child(l);
         }
         host.content->add_child(r);
@@ -84,9 +84,24 @@ void build_class(PageHost& host) {
 
     // ---- 字重 ----
     field_title(host, "字体加粗 layui-font-bold");
-    para_line(host,
-        "加粗依赖字体的粗体字形或描边渲染，当前 Font 未提供；"
-        "该类先纳入清单，能力补齐后本节替换为真实示例。");
+    {
+        auto* r = new ui::HBox(0, 0, kCW, 34.f);
+        r->set_padding(0.f);
+        r->set_spacing(28.f);
+        r->set_theme(host.theme);
+        auto* normal = new ui::Label(0, 0, 260.f, 0, "常规字重（默认）");
+        normal->set_font(host.font);
+        normal->set_theme(host.theme);
+        normal->set_color(host.theme->text);
+        r->add_child(normal);
+        auto* bold = new ui::Label(0, 0, 300.f, 0, "layui-font-bold —— 加粗文本示例");
+        bold->set_font(host.font);
+        bold->set_theme(host.theme);
+        bold->set_color(host.theme->text);
+        bold->set_bold(true);
+        r->add_child(bold);
+        host.content->add_child(r);
+    }
 
     // ---- 背景色 ----
     field_title(host, "背景色 layui-bg-red/orange/green/cyan/blue/purple/black/gray");
@@ -142,8 +157,11 @@ void build_class(PageHost& host) {
         host.code->set_code(
             "// pages/class_page.cpp：克隆 layui 公共类文档\n"
             "\n"
-            "// 字号缩放\n"
-            "label->set_text_scale(16.f / 14.f);\n"
+            "// 字号缩放（Font 基准 18px 烘培，图集 2x 过采样）\n"
+            "label->set_text_scale(22.f / 18.f);   // layui-font-22\n"
+            "\n"
+            "// 仿粗体（字形 x 错位叠加一次）\n"
+            "label->set_bold(true);\n"
             "\n"
             "// 工具色着色（前景/背景）\n"
             "label->set_color(ui::layui::bg_color(\"layui-bg-blue\"));\n"
@@ -157,8 +175,9 @@ void build_class(PageHost& host) {
             "公共类清单",
             "",
             "字号：layui-font-12 / 14 / 16 / 18 / 20 / 22",
+            "      映射 Label::set_text_scale(px/18)；≤2x 清晰。",
             "字色：layui-font-{red orange green cyan blue purple black gray}",
-            "字重：layui-font-bold",
+            "字重：layui-font-bold → Label::set_bold(true) 仿粗体（x 错位叠加）。",
             "背景：layui-bg-{red orange green cyan blue purple black gray}",
             "边框：layui-border 与 layui-border-{red orange green cyan blue purple black}",
             "其他：layui-circle 圆形、layui-inline 内联块",

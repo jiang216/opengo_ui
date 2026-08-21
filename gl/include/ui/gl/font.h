@@ -34,11 +34,13 @@ public:
     // 加载图标字体（M17d）：烘培 U+E600..E7FF 私用区到第二图集（layui iconfont.ttf）
     bool load_icon_font(const char* path, float pixel_height);
 
-    // (x, y) 为文本左上角（像素坐标，y 向下）；UTF-8 输入，私用区码点走图标图集
+    // (x, y) 为文本左上角（像素坐标，y 向下）；UTF-8 输入，私用区码点走图标图集。
+    // scale 为相对烘培像素号的缩放倍率（图集 2x 过采样，≤2x 仍清晰）；bold 为仿粗体
+    // （字形沿 x 错位叠加一次，偏移随字号缩放）。
     void draw_text(Renderer& renderer, const char* text, float x, float y,
-                   const Vec4& color) const;
+                   const Vec4& color, float scale = 1.f, bool bold = false) const;
 
-    float measure_text(const char* text) const;
+    float measure_text(const char* text, float scale = 1.f) const;
     // 单字符宽度：ASCII 用字形 advance；私用区图标用图标 advance；CJK 懒烘培后取真实 advance，
     // 仍缺失时按方块字近似为字号
     float char_width(unsigned int codepoint) const;

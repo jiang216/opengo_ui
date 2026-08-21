@@ -15,6 +15,11 @@ Vec4 bg_color(const char* cls);
 // 工具色背景底（layui-bg-* 的 background-color 值）
 Vec4 bg_fill(const char* cls);
 
+// 文字工具色（layui-font-* 的 color 值，2.13.x）：red/orange/green/cyan/blue/
+// purple/black/gray。色值与 layui-bg-* 不同源（green=#16baaa、blue=#01aaed、
+// black=#000、gray=#c2c2c2）；未知类回退黑色。
+Vec4 font_color(const char* cls);
+
 // 十六进制颜色串 "#16baaa" / "16baaa" -> Vec4
 Vec4 hex(const char* hex);
 

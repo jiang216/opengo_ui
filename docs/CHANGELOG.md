@@ -3253,3 +3253,47 @@ navtree 脚本重建侧栏树 67 页 0 重复，与镜像逐项一致。
 ### 相关历史条目
 
 - [UI-106](CHANGELOG.md#ui-106-侧栏缺失镜像站-14-个页面基础组整组缺--颜色图标输入框选择框单选框树形表格公共类固定条2026-08-21)：占位页注册与 order 重排（本条目为其后续补全）。
+
+## UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）
+
+严重度：中（ui 库排版能力缺口：Label 无法变字号/加粗；layui_style 缺 .layui-font-*
+文字色查询，测试程序误用 bg_color() 导致白字画白底不可见）。
+
+根因归属：**ui 库**（Font 仅按固定像素渲染、无缩放/粗体入口；layui_style 只有
+layui-bg-* 底色查询，缺 layui.css 明确存在的 .layui-font-{red|orange|green|cyan|
+blue|purple|black|gray} 文字色系列）。测试程序侧的 bg_color 误用已一并纠正。
+
+修复：
+- gl/font.h/.cpp：`draw_text(..., float scale = 1.f, bool bold = false)`——全部字形
+  度量乘 scale（baseline/x0/y0/宽高/xadvance，方块字近似同步）；仿粗体为字形沿 x
+  错位叠加一次，偏移 max(1, round(pixel_height·scale/16))；`measure_text(text,
+  scale = 1.f)` 同步。图集本就 2x 过采样（UI-055），≤2x 缩放清晰。
+- ui/label.h/.cpp：`set_text_scale(float)` / `set_bold(bool)`（变更置 dirty 重排）；
+  preferred_height、recompute_lines 逐码点宽度、on_draw 行高/对齐测量/绘制全链路
+  乘 text_scale_。
+- ui/layui_style.h/.cpp：新增 `font_color(cls)` + kFontColors 表，色值克隆自
+  layui.css 2.13.x 权威值，**与 layui-bg-* 不同源**：red #ff5722、orange #ffb800、
+  green #16baaa（bg 为 #009688）、cyan #2f4056、blue #01aaed（bg 为 #1e9fff）、
+  purple #a233c6、black #000000（bg 为 #393d49）、gray #c2c2c2（bg 为 #fafafa）；
+  未知类回退黑色。bg_color/bg_fill 行为不变。
+- layui_test class_page.cpp：字号六档改为 set_text_scale(px/18) 真实缩放演示；
+  加粗节改为常规 vs set_bold(true) 对照；字色行改用 font_color 着色。
+
+回归清单（必须保证）：
+- 默认 scale=1、bold=false 时 draw_text/measure_text 与改动前逐字节一致（默认参数，
+  所有既有调用点零改动零影响）。
+- Label 缩放联动：换行断行位置按缩放宽度和 measure、preferred_height 按缩放行高。
+- font_color 八个类名色值与 layui.css 2.13.x 一致；未知类回退黑色不崩溃。
+- 公共类页：字号行六档墨迹高度单调递增；字色行八标签全部可见且核心色与权威值
+  偏差 ≤8（抗锯齿残差）；`--smoke` 全轮换 exit 0。
+- UI-055 像素对齐防发虚逻辑在缩放路径保持（rect 对齐 round 后再乘 scale 的偏移
+  叠加仍走 align）。
+
+验证：x64 Release 编译链接通过；`--smoke 40` exit 0（67 页全轮换）；公共类页首帧
+PAM 像素分析——字号行 6 簇 pitch=174 与布局参数精确吻合、墨迹高度 10→17 单调递增；
+字色行 8 簇最暗四分位核心色与 layui.css 值最大偏差 8/6/6/7/7/6/8/1。
+
+### 相关历史条目
+
+- [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：公共类页原以说明式呈现字号/加粗（本条目为其能力补全后升级）。
+- [UI-055](CHANGELOG.md#ui-055-文字像素对齐drawtextdrawicon-字形对齐像素网格2026-08-17)：2x 过采样图集与像素对齐（本次缩放渲染的基础）。

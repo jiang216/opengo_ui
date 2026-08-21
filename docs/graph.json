@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-21T21:35:51+08:00",
+  "generatedAt": "2026-08-21T22:25:22+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -755,6 +755,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21"
     },
+    "BUG:UI-108": {
+      "id": "BUG:UI-108",
+      "type": "BUG",
+      "label": "UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-108-fontlabel-字号缩放与仿粗体--layui-文字工具色-fontcolor公共类页升级真实演示2026-08-21"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -1308,6 +1315,12 @@
       "to": "META:CHANGELOG",
       "kind": "mention",
       "context": "UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21）"
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）"
     },
     {
       "from": "DOC:PLAN",
@@ -2154,6 +2167,18 @@
       "to": "BUG:UI-107",
       "kind": "checklist",
       "context": "回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色色卡（Swatch 自绘 + layui::bg_color/bg_fill/hex）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-108",
+      "kind": "checklist",
+      "context": "回归清单#Font 缩放与仿粗体：`Font::draw_text(..., scale=1.f, bold=false)` 全度量乘 scale（≤2x 清晰，图集 2x 过采样）+ 仿粗体 x 错位叠加；`Label::set_text_scale/set_bold` 行高/换行/测量全链路联动；默认参数下既有调用零影响——禁止在测试程序内自建多份 Font 实例或手动错位双绘实现加粗"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-108",
+      "kind": "checklist",
+      "context": "回归清单#layui 文字工具色查询：`ui::layui::font_color(\"layui-font-*\")` 返回 .layui-font-{red orange green cyan blue purple black gray} 文字色（克隆 layui.css 2.13.x：green=#16baaa/blue=#01aaed/black=#000/gray=#c2c2c2 与 bg-\\* 不同源），未知类回退黑；bg_color/bg_fill 行为不变——字色行禁用 bg_color()（其 text 字段是底色上的白前景，白底面板上不可见）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -4025,6 +4050,18 @@
         "context": "回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色色卡（Swatch 自绘 + layui::bg_color/bg_fill/hex）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页"
       }
     ],
+    "BUG:UI-108": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Font 缩放与仿粗体：`Font::draw_text(..., scale=1.f, bold=false)` 全度量乘 scale（≤2x 清晰，图集 2x 过采样）+ 仿粗体 x 错位叠加；`Label::set_text_scale/set_bold` 行高/换行/测量全链路联动；默认参数下既有调用零影响——禁止在测试程序内自建多份 Font 实例或手动错位双绘实现加粗"
+      },
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#layui 文字工具色查询：`ui::layui::font_color(\"layui-font-*\")` 返回 .layui-font-{red orange green cyan blue purple black gray} 文字色（克隆 layui.css 2.13.x：green=#16baaa/blue=#01aaed/black=#000/gray=#c2c2c2 与 bg-\\* 不同源），未知类回退黑；bg_color/bg_fill 行为不变——字色行禁用 bg_color()（其 text 字段是底色上的白前景，白底面板上不可见）"
+      }
+    ],
     "META:CHANGELOG": [
       {
         "from": "META:CHANGELOG",
@@ -4065,6 +4102,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-108: Font/Label 字号缩放与仿粗体 + layui 文字工具色 font_color——公共类页升级真实演示（2026-08-21）"
       },
       {
         "from": "DOC:PLAN",

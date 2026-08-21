@@ -353,8 +353,8 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, theme.success);
 | `bool load_cjk_font(const char* path, int font_index = 0)` | 加载中文字体（懒烘培源）：保留 TTF/TTC 字节，首次遇到图集外码点按需光栅化。 .ttc 集合用 font_index 选取子字体；失败返回 false（ASCII 仍可用）。 |
 | `bool load_cjk_font_auto()` | 自动探测 CJK 字体：OPENGUI_CJK_FONT 环境变量（自定义字体）→ 系统候选 msyh.ttc / msyh.ttf / simhei.ttf / simsun.ttc / Deng.ttf；命中打日志。 |
 | `bool load_icon_font(const char* path, float pixel_height)` | 加载图标字体（M17d）：烘培 U+E600..E7FF 私用区到第二图集（layui iconfont.ttf） |
-| `void draw_text(Renderer& renderer, const char* text, float x, float y, const Vec4& color) const` | (x, y) 为文本左上角（像素坐标，y 向下）；UTF-8 输入，私用区码点走图标图集 |
-| `float measure_text(const char* text) const` |  |
+| `void draw_text(Renderer& renderer, const char* text, float x, float y, const Vec4& color, float scale = 1.f, bool bold = false) const` | (x, y) 为文本左上角（像素坐标，y 向下）；UTF-8 输入，私用区码点走图标图集；scale 为相对烘培像素号的缩放倍率（图集 2x 过采样，≤2x 清晰）；bold 仿粗体（字形 x 错位叠加一次，偏移 ≈ 字号/16） |
+| `float measure_text(const char* text, float scale = 1.f) const` | 宽度按 scale 同步缩放 |
 | `float char_width(unsigned int codepoint) const` | 单字符宽度：ASCII 用字形 advance；私用区图标用图标 advance；CJK 懒烘培后取真实 advance， 仍缺失时按方块字近似为字号 |
 | `bool icon_loaded() const` |  |
 | `void draw_icon(Renderer& renderer, unsigned codepoint, float cx, float cy, float size, const Vec4& color, float rotation = 0.f) const` | 以 (cx, cy) 为中心绘制单个图标，目标尺寸 size（像素）；rotation 绕中心旋转（弧度，0 不转） |
@@ -1486,6 +1486,8 @@ label->set_font(&font);
 label->set_theme(&theme);
 label->set_color(theme.text);
 label->set_wrap(true);                   // 超宽自动换行
+label->set_text_scale(22.f / 18.f);      // 字号缩放（Font 基准 18px 烘培）
+label->set_bold(true);                   // 仿粗体
 parent->add_child(label);
 ```
 
@@ -1505,6 +1507,10 @@ parent->add_child(label);
 | `void set_theme(const Theme* theme)` |  |
 | `void set_color(const Vec4& color)` |  |
 | `void set_align(int align)` | 0=左对齐 1=水平居中 2=右对齐 |
+| `void set_text_scale(float s)` | 字号缩放：相对 Font 烘培像素号的倍率（1=原大），行高/换行/度量随缩放；图集 2x 过采样，≤2x 清晰 |
+| `float text_scale() const` |  |
+| `void set_bold(bool b)` | 仿粗体：字形沿 x 错位叠加一次（偏移 ≈ 字号/16，随缩放同步） |
+| `bool bold() const` |  |
 | `float preferred_height() const` | 文本行高（ascent - descent）；换行时为行数 × 行高 |
 | `void on_draw(Renderer& renderer) override` |  |
 

@@ -49,6 +49,32 @@ const NamedColor* find(const char* cls) {
     return nullptr;
 }
 
+// 文字工具色（.layui-font-*，克隆自 layui.css 2.13.x；与 .layui-bg-* 色值不同源）
+struct NamedFontColor {
+    const char* name;
+    Vec4 color;
+};
+const NamedFontColor kFontColors[] = {
+    {"red",    {1.0f, 0.34f, 0.13f, 1.0f}},   // #ff5722
+    {"orange", {1.0f, 0.72f, 0.0f, 1.0f}},    // #ffb800
+    {"green",  {0.086f, 0.729f, 0.667f, 1.0f}},  // #16baaa
+    {"cyan",   {0.18f, 0.25f, 0.34f, 1.0f}},  // #2f4056
+    {"blue",   {0.004f, 0.667f, 0.929f, 1.0f}},  // #01aaed
+    {"purple", {0.64f, 0.20f, 0.78f, 1.0f}},  // #a233c6
+    {"black",  {0.f, 0.f, 0.f, 1.0f}},        // #000000
+    {"gray",   {0.761f, 0.761f, 0.761f, 1.0f}},  // #c2c2c2
+};
+
+// 类名最后一段（'-' 之后）：兼容 "layui-font-red" / "red"
+const char* color_name(const char* cls) {
+    if (!cls) return "";
+    const char* name = cls;
+    for (const char* p = cls; *p; ++p) {
+        if (*p == '-') name = p + 1;
+    }
+    return name;
+}
+
 }  // namespace
 
 Vec4 bg_color(const char* cls) {
@@ -59,6 +85,20 @@ Vec4 bg_color(const char* cls) {
 Vec4 bg_fill(const char* cls) {
     const NamedColor* c = find(cls);
     return c ? c->fill : Vec4{0, 0, 0, 1};
+}
+
+Vec4 font_color(const char* cls) {
+    const char* name = color_name(cls);
+    for (const NamedFontColor& c : kFontColors) {
+        const char* a = name;
+        const char* b = c.name;
+        while (*a && *b && *a == *b) {
+            ++a;
+            ++b;
+        }
+        if (*a == '\0' && *b == '\0') return c.color;
+    }
+    return Vec4{0, 0, 0, 1};  // 未知类回退黑色
 }
 
 Vec4 hex(const char* hex) {
