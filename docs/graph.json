@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T01:14:01+08:00",
+  "generatedAt": "2026-08-22T01:21:54+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -811,6 +811,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-115-textarea-垂直滚动条2026-08-22"
     },
+    "BUG:UI-116": {
+      "id": "BUG:UI-116",
+      "type": "BUG",
+      "label": "UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-116-垂直滚动条-overlay-风格化自动隐藏--悬停加宽--三态色2026-08-22"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -1408,6 +1415,12 @@
       "context": "UI-115: TextArea 垂直滚动条（2026-08-22）"
     },
     {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）"
+    },
+    {
       "from": "DOC:PLAN",
       "to": "META:CHANGELOG",
       "kind": "mention",
@@ -1669,7 +1682,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-115",
       "kind": "checklist",
-      "context": "回归清单#TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb（对齐 ScrollBox 风格），点击轨道跳转 + 拖拽映射 scroll_（capture_mouse，不抢焦点不动光标）；avail_width 恒定让出滚动条列防换行跳动"
+      "context": "回归清单#TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb，点击轨道跳转 + 拖拽映射 scroll_；avail_width 恒定让出滚动条列防换行跳动"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-116",
+      "kind": "checklist",
+      "context": "回归清单#垂直滚动条 overlay 风格化（TextArea+ScrollBox 共享 scrollbar_style.h）：自动隐藏（悬停/拖拽/2s 内滚过才显示）、悬停右缘列 6→8px 加宽、thumb 三态色（默认半透明→悬停全色→拖拽 accent）；隐藏期间滚轮照常滚动"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -4257,7 +4276,14 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb（对齐 ScrollBox 风格），点击轨道跳转 + 拖拽映射 scroll_（capture_mouse，不抢焦点不动光标）；avail_width 恒定让出滚动条列防换行跳动"
+        "context": "回归清单#TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb，点击轨道跳转 + 拖拽映射 scroll_；avail_width 恒定让出滚动条列防换行跳动"
+      }
+    ],
+    "BUG:UI-116": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#垂直滚动条 overlay 风格化（TextArea+ScrollBox 共享 scrollbar_style.h）：自动隐藏（悬停/拖拽/2s 内滚过才显示）、悬停右缘列 6→8px 加宽、thumb 三态色（默认半透明→悬停全色→拖拽 accent）；隐藏期间滚轮照常滚动"
       }
     ],
     "META:CHANGELOG": [
@@ -4335,6 +4361,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-115: TextArea 垂直滚动条（2026-08-22）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）"
       },
       {
         "from": "DOC:PLAN",

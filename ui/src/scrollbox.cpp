@@ -7,11 +7,6 @@
 
 namespace ui {
 
-namespace {
-constexpr float kScrollbarW = 6.f;
-constexpr float kScrollbarMargin = 4.f;
-}  // namespace
-
 ScrollBox::ScrollBox(float x, float y, float w, float h) : Widget(x, y, w, h) {}
 
 float ScrollBox::content_height() const {
@@ -76,7 +71,8 @@ void ScrollBox::on_layout() {
     needs_layout_ = false;
     clamp_scroll();
     // 内容宽度让出右侧滚动条列
-    const float content_w = bounds_.w - 2.f * padding_ - kScrollbarW - kScrollbarMargin;
+    const float content_w =
+        bounds_.w - 2.f * padding_ - scrollbar::kBarW - scrollbar::kMargin;
     float cursor_y = bounds_.y + padding_ - scroll_offset_;
     for (Widget* child : children_) {
         if (!child->visible) continue;
@@ -110,33 +106,24 @@ void ScrollBox::on_layout() {
     }
 }
 
+bool ScrollBox::over_bar() const {
+    return hovered() && mx_ >= bounds_.w - scrollbar::kMargin - scrollbar::kBarWHover;
+}
+
 Rect ScrollBox::track_rect() const {
-    const float x = bounds_.x + bounds_.w - kScrollbarMargin - kScrollbarW;
-    return {x, bounds_.y + 4.f, kScrollbarW, std::max(1.f, bounds_.h - 8.f)};
+    return scrollbar::track_rect(bounds_, scrollbar::bar_w(sb_, over_bar()));
 }
 
 Rect ScrollBox::thumb_rect() const {
-    const Rect track = track_rect();
-    const float content = content_height();
-    if (content <= 0.f) return {track.x, track.y, track.w, track.h};
-    const float frac = bounds_.h / content;
-    const float thumb_h = std::max(20.f, track.h * frac);
-    const float max_off = scroll_max();
-    const float t = max_off > 0.f ? scroll_offset_ / max_off : 0.f;
-    const float thumb_y = track.y + (track.h - thumb_h) * t;
-    return {track.x, thumb_y, track.w, thumb_h};
+    return scrollbar::thumb_rect(track_rect(), content_height(), bounds_.h, scroll_offset_);
 }
 
 bool ScrollBox::in_scrollbar(float x, float y) const {
-    const Rect track = track_rect();
-    return x >= track.x - 2.f && x <= track.x + track.w + 2.f && y >= track.y && y <= track.y + track.h;
+    return scrollbar::hit(track_rect(), x, y);
 }
 
 float ScrollBox::scroll_from_y(float y) const {
-    const Rect track = track_rect();
-    if (track.h <= 0.f) return 0.f;
-    const float t = std::min(std::max((y - track.y) / track.h, 0.f), 1.f);
-    return t * scroll_max();
+    return scrollbar::scroll_from_y(track_rect(), y, scroll_max());
 }
 
 bool ScrollBox::on_mouse_scroll(float x, float y, float dx, float dy) {
@@ -145,13 +132,17 @@ bool ScrollBox::on_mouse_scroll(float x, float y, float dx, float dy) {
     (void)dx;
     if (scroll_max() <= 0.f) return false;
     set_scroll(scroll_offset_ - dy * scroll_step_);  // dy>0 向上滚
+    scrollbar::touch(sb_);  // 滚动活动：滚动条浮现并保持 2s
     return true;
 }
 
 bool ScrollBox::on_mouse_down(float x, float y, int button) {
     if (button != 0) return false;
+    mx_ = x - bounds_.x;
+    my_ = y - bounds_.y;
     if (scroll_max() > 0.f && in_scrollbar(x, y)) {
-        dragging_ = true;
+        scrollbar::touch(sb_);
+        sb_.dragging = true;
         set_scroll(scroll_from_y(y));
         return true;  // 捕获鼠标，拖动滑块
     }
@@ -161,7 +152,9 @@ bool ScrollBox::on_mouse_down(float x, float y, int button) {
 }
 
 bool ScrollBox::on_mouse_move(float x, float y) {
-    if (!dragging_) return false;
+    mx_ = x - bounds_.x;
+    my_ = y - bounds_.y;
+    if (!sb_.dragging) return false;
     set_scroll(scroll_from_y(y));
     return true;
 }
@@ -170,7 +163,7 @@ bool ScrollBox::on_mouse_up(float x, float y, int button) {
     (void)x;
     (void)y;
     if (button != 0) return false;
-    dragging_ = false;
+    sb_.dragging = false;
     return true;
 }
 
@@ -213,12 +206,11 @@ void ScrollBox::draw(Renderer& renderer) {
         if (child->visible) child->draw_overlay(renderer);
     }
     renderer.pop_scissor();
-    // 滚动条（仅溢出时显示；子树变化后抑制一帧防闪烁）
-    if (!needs_layout_ && scroll_max() > 0.f) {
+    // 滚动条（overlay 风格：悬停/拖拽/2s 内滚过才显示；子树变化后抑制一帧防闪烁）
+    if (!needs_layout_ && scroll_max() > 0.f && scrollbar::active(sb_, hovered())) {
         static const Theme kDefaultTheme;
         const Theme* t = theme_ ? theme_ : &kDefaultTheme;
-        renderer.draw_rounded_rect(track_rect(), kScrollbarW * 0.5f, t->button_pressed);
-        renderer.draw_rounded_rect(thumb_rect(), kScrollbarW * 0.5f, t->text_dim);
+        scrollbar::draw(renderer, t, track_rect(), thumb_rect(), sb_, over_bar());
     }
 }
 

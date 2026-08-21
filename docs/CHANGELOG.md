@@ -3555,3 +3555,43 @@ Release 构建通过 + regression.ps1 全 PASS。
 ### 相关历史条目
 
 - [UI-103](CHANGELOG.md#ui-103-textarea-剪贴板默认实现回调未注入时-ctrlcxv-静默失效2026-08-21)：TextArea readonly/剪贴板前置能力（日志框场景依赖）。
+
+## UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）
+
+严重度：低（视觉/交互打磨，无缺陷回归）。
+
+背景：UI-115 滚动条为恒显单色静态样式，无状态反馈且常驻占用视觉；
+参照现代 overlay scrollbar 惯例风格化，并将 TextArea / ScrollBox 两处
+实现统一到共享模块，消除样式漂移。
+
+实现：
+- 新增 ui/ui/scrollbar_style.h（内部协作头，不进 all.h）：常量
+  （常态 6px / 悬停拖拽 8px、右距 4、命中容差 ±2px、thumb 最小高 28px、
+  自动隐藏延时 2s）、State{dragging,last_active}、track/thumb 几何、
+  hit/scroll_from_y/draw 共享实现。
+- 自动隐藏：控件未悬停、未拖拽、且超过 2s 无滚动活动时不绘制；
+  滚轮滚动 / 点击轨道 / 拖拽均刷新活动时刻（glfwGetTime）。
+- 三态色：thumb 默认 text_dim@55% → 悬停 text_dim 全色 → 拖拽 accent；
+  track 仅活动期绘制 button_pressed@40%。
+- 宽度反馈：悬停右缘列或拖拽时 6→8px；内容让出宽度保持恒定
+  （kBarW+kMargin），换行/子控件布局不随宽度态跳动。
+- TextArea / ScrollBox 全部切换到共享实现；ScrollBox 删 dragging_ 私有
+  布尔改用 State，新增 over_bar()；既有 needs_layout_ 抑制、下拉面板
+  点击消费、触底回调等语义不变。
+
+回归清单（必须保证）：
+- 未溢出内容永不显示滚动条、滚轮不消费（返回 false 透传）。
+- 滚动条隐藏期间滚轮滚动照常工作（隐藏≠禁用），滚动即浮现。
+- 悬停 thumb 加宽后命中区随 8px 几何；±2px 容差不抢正文点击。
+- 拖拽中松开（on_mouse_up）结束拖拽；拖拽不改变焦点与文本光标/选区。
+- ScrollBox 下拉面板（layui-form-select-panel）点击消费、ComboBox 翻转
+  定位、pinned 锚定控件不受影响。
+- 设置页整页 ScrollBox / 规则页表格区 / 日志框行为一致。
+
+验证：x64 Release ui_ui 编译 + install 通过；下游 voice_assistant_cpp
+Release 构建通过 + regression.ps1 全 PASS；视觉三态与自动隐藏节奏待
+GUI 人工冒烟。
+
+### 相关历史条目
+
+- [UI-115](CHANGELOG.md#ui-115-textarea-垂直滚动条2026-08-22)：TextArea 滚动条基础能力（本条目将其风格化并与 ScrollBox 统一）。

@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 123（BUG 115 / DOC 6 / META 2）
-- 边: 307
+- 节点: 124（BUG 116 / DOC 6 / META 2）
+- 边: 309
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -849,7 +849,13 @@
 
 - 路径: `docs/CHANGELOG.md#ui-115-textarea-垂直滚动条2026-08-22`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb（对齐 ScrollBox 风格），点击轨道跳转 + 拖拽映射 scroll_（capture_mouse，不抢焦点不动光标）；avail_width 恒定让出滚动条列防换行跳动
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb，点击轨道跳转 + 拖拽映射 scroll_；avail_width 恒定让出滚动条列防换行跳动
+
+### BUG:UI-116 · UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-116-垂直滚动条-overlay-风格化自动隐藏--悬停加宽--三态色2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#垂直滚动条 overlay 风格化（TextArea+ScrollBox 共享 scrollbar_style.h）：自动隐藏（悬停/拖拽/2s 内滚过才显示）、悬停右缘列 6→8px 加宽、thumb 三态色（默认半透明→悬停全色→拖拽 accent）；隐藏期间滚轮照常滚动
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -911,7 +917,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(20):
+- 反链(21):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -927,6 +933,7 @@
   - `META:CHANGELOG` (mention) — UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-115: TextArea 垂直滚动条（2026-08-22）
+  - `META:CHANGELOG` (mention) — UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -1052,6 +1059,7 @@
 | `BUG:UI-113` | BUG | UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-114` | BUG | UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-115` | BUG | UI-115: TextArea 垂直滚动条（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-116` | BUG | UI-116: 垂直滚动条 overlay 风格化：自动隐藏 + 悬停加宽 + 三态色（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1255,6 +1263,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-114` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-114` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-115` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-116` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1357,6 +1366,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

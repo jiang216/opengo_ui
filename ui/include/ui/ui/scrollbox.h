@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ui/ui/scrollbar_style.h"
 #include "ui/ui/widget.h"
 
 #include <functional>
@@ -74,10 +75,12 @@ private:
     void set_scroll(float value);
     // 由 y 坐标换算滚动值（拖滚动条用）
     float scroll_from_y(float y) const;
-    // 滚动条轨道/滑块矩形（右缘内侧）
+    // 滚动条轨道/滑块矩形（右缘内侧；宽度随悬停/拖拽态）
     Rect track_rect() const;
     Rect thumb_rect() const;
     bool in_scrollbar(float x, float y) const;
+    // 鼠标是否悬停在右缘滚动条列（控件内坐标 mx_ 判定）
+    bool over_bar() const;
     // 滚动触底时触发一次 on_bottom_（离开底部后重新武装）
     void check_bottom();
     // 是否为锚定子控件（不参与流式排布/内容高度）
@@ -87,13 +90,16 @@ private:
     float padding_ = 8.f;
     float scroll_step_ = 40.f;
     float scroll_offset_ = 0.f;
-    bool dragging_ = false;
     bool needs_layout_ = false;  // 子树变化后抑制滚动条绘制，直到下一次 on_layout()
     const Theme* theme_ = nullptr;
     std::function<void()> on_bottom_;
     bool bottom_fired_ = false;
     float bottom_margin_ = 0.f;  // 距底部触发距离（镜像 layui flow mb；0=严格滚到底）
     std::function<void()> on_scroll_;
+
+    // ---- 垂直滚动条（共享样式/状态，见 ui/ui/scrollbar_style.h）----
+    scrollbar::State sb_;
+    float mx_ = -1.f, my_ = -1.f;  // 最近鼠标点（控件内坐标）
 
     // 锚定子控件（w 悬空——被 clear_children 释放——的条目在 on_layout 自动剔除）
     struct Pinned {
