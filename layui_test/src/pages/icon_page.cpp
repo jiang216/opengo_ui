@@ -1,6 +1,7 @@
 #include "../page_registry.h"
 
 #include "ui/ui/blockquote.h"
+#include "ui/ui/button.h"
 #include "ui/ui/code.h"
 #include "ui/ui/fieldset.h"
 #include "ui/ui/hbox.h"
@@ -108,6 +109,82 @@ void build_icon(PageHost& host) {
         host.content->add_child(r);
     }
 
+    // ---- 按钮图标（镜像 h2#icon 三组） ----
+    {
+        auto* title = new ui::FieldsetTitle(kCW, 26, "按钮图标");
+        title->set_font(host.font);
+        title->set_theme(host.theme);
+        host.content->add_child(title);
+
+        // 第一组：默认尺寸 + 默认主题（1 个文字+图标 + 4 个纯图标）
+        {
+            auto* r = new ui::HBox(0, 0, kCW, 38.f);
+            r->set_padding(0.f);
+            r->set_spacing(8.f);
+            r->set_theme(host.theme);
+
+            auto* b1 = new ui::Button(0, 0, 80.f, 38.f, "按钮");
+            b1->set_font(host.font);
+            b1->set_theme(host.theme);
+            b1->set_icon("down");
+            r->add_child(b1);
+
+            struct I { const char* icon; };
+            static const I kDef[] = {{"left"}, {"right"}, {"edit"}, {"share"}};
+            for (const I& i : kDef) {
+                auto* b = new ui::Button(0, 0, 44.f, 38.f, "");
+                b->set_font(host.font);
+                b->set_theme(host.theme);
+                b->set_icon(i.icon);
+                r->add_child(b);
+            }
+            host.content->add_child(r);
+        }
+
+        // 第二组：小号 + primary（5 个纯图标）
+        {
+            auto* r = new ui::HBox(0, 0, kCW, 30.f);
+            r->set_padding(0.f);
+            r->set_spacing(8.f);
+            r->set_theme(host.theme);
+            struct I { const char* icon; };
+            static const I kSmP[] = {{"left"}, {"right"}, {"edit"}, {"delete"}, {"share"}};
+            for (const I& i : kSmP) {
+                auto* b = new ui::Button(0, 0, 34.f, 30.f, "");
+                b->set_font(host.font);
+                b->set_theme(host.theme);
+                b->set_icon(i.icon);
+                b->add_class("layui-btn layui-btn-primary layui-btn-sm");
+                r->add_child(b);
+            }
+            host.content->add_child(r);
+        }
+
+        // 第三组：小号 + 混合主题（disabled/normal/warm/danger）
+        {
+            auto* r = new ui::HBox(0, 0, kCW, 30.f);
+            r->set_padding(0.f);
+            r->set_spacing(8.f);
+            r->set_theme(host.theme);
+            struct I { const char* icon; const char* cls; };
+            static const I kSmM[] = {
+                {"delete", "layui-btn layui-btn-sm layui-btn-disabled"},
+                {"left",   "layui-btn layui-btn-sm"},
+                {"right",  "layui-btn layui-btn-sm layui-btn-warm"},
+                {"edit",   "layui-btn layui-btn-sm layui-btn-danger"},
+            };
+            for (const I& i : kSmM) {
+                auto* b = new ui::Button(0, 0, 34.f, 30.f, "");
+                b->set_font(host.font);
+                b->set_theme(host.theme);
+                b->set_icon(i.icon);
+                b->add_class(i.cls);
+                r->add_child(b);
+            }
+            host.content->add_child(r);
+        }
+    }
+
     // ---- 全部图标 ----
     {
         auto* title = new ui::FieldsetTitle(kCW, 26, "全部图标");
@@ -172,7 +249,7 @@ void build_icon(PageHost& host) {
 
 static void build(PageHost& host) { build_icon(host); }
 
-static const PageDef kIconPage{11, "通用", "图标", "layui-icon 图标库：190 项全量网格 + 彩色示例", build, nullptr, false, nullptr, 0, "Icon"};
+static const PageDef kIconPage{11, "通用", "图标", "layui-icon 图标库：按钮图标 + 彩色示例 + 190 项全量网格", build, nullptr, false, nullptr, 0, "Icon"};
 
 static const bool kRegistered = []() {
     page::register_page(kIconPage);

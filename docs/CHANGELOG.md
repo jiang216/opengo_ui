@@ -3455,3 +3455,34 @@ script/mouse/json/combo 尾部选项；所有无 ScrollBox 祖先、位于页面
 
 - [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：颜色页初版真实化（本条目按镜像站一比一重写升级）。
 - [UI-108](CHANGELOG.md#ui-108-fontlabel-字号缩放与仿粗体--layui-文字工具色-fontcolor公共类页升级真实演示2026-08-21)：Label set_text_scale/set_bold（本页 h2 小节标题使用）。
+
+## UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22）
+
+严重度：低（新增演示内容，无缺陷回归）。
+
+根因归属：**测试程序**。原图标页仅有彩色图标行 + 190 全量网格，未包含
+镜像 docs/2/button/index.html 的 h2#icon「按钮图标」段落。非 ui 库缺陷——
+Button::set_icon / add_class 已具备全部能力，图标页仅需新增 demo 段。
+
+修复/实现：
+- layui_test/pages/icon_page.cpp：在「彩色图标」与「全部图标」之间新增
+  「按钮图标」段，克隆镜像 h2#icon 三组内容：
+  - 第一组：默认尺寸 + 默认主题——「按钮 ▾」（set_text+set_icon）+
+    left/right/edit/share 四个纯图标按钮；
+  - 第二组：小号 + primary——left/right/edit/delete/share 五个纯图标；
+  - 第三组：小号 + 混合主题——disabled(normal delete) + normal(left) +
+    warm(right) + danger(edit)。
+- PageDef tip 更新为「按钮图标 + 彩色示例 + 190 项全量网格」。
+
+回归清单（必须保证）：
+- 190 全量网格 / 彩色图标行不受新增段落影响。
+- PageDef order=11 / 组=通用 / 标题=图标不变，侧栏插位不受影响。
+- --smoke 全轮换 exit 0。
+
+验证：x64 Release 编译链接通过；`--smoke 15` exit 0（67 页轮换）；PAM
+截图按钮图标段三组像素核对——红/橙/蓝/紫按钮背景 + 小号 mixed 主题行
+可见。
+
+### 相关历史条目
+
+- [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：图标页初版（190 全量网格 + 彩色图标），本条目补充按钮图标段。
