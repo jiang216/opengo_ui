@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 127（BUG 119 / DOC 6 / META 2）
-- 边: 317
+- 节点: 128（BUG 120 / DOC 6 / META 2）
+- 边: 318
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -877,6 +877,12 @@
   - `DOC:BUILD` (checklist) — 回归清单#布局相关 constexpr 公开头（如 gl/font.h 字形数组尺寸）变更后，凡经历过编译失败/中断的构建树必须全量重建再验证；增量混合产物会触发 ODR 违例型堆崩溃（症状：仅个别页 0xC0000374/0xC0000005 且崩溃码漂移）
   - `DOC:BUILD` (checklist) — 回归清单#layui_test 崩溃时自动打印符号化调用栈（SetUnhandledExceptionFilter + dbghelp）；定位崩溃帧需 Release+/Z7 生成 PDB
 
+### BUG:UI-120 · UI-120: Slider 聚焦外框改为默认不显示 + set_focus_ring 可选开启（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-120-slider-聚焦外框改为默认不显示--setfocusring-可选开启2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Slider 聚焦外框默认不显示：任何状态（hover/拖拽/键盘聚焦/禁用）均不绘制 bounds 外框；`set_focus_ring(true)` 后 focused() 且非 disabled 才恢复外框；滑块其余行为（轨道/填充/圆钮/range 双钮/step/showstep/tips/input/vertical/disabled）不变
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1086,6 +1092,7 @@
 | `BUG:UI-117` | BUG | UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-118` | BUG | UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-119` | BUG | UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-120` | BUG | UI-120: Slider 聚焦外框改为默认不显示 + set_focus_ring 可选开启（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1292,6 +1299,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-116` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-117` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-118` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-120` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

@@ -3749,3 +3749,27 @@ Font 成员函数按大布局写入小布局对象越界，破坏堆元数据；
 
 - [UI-117](CHANGELOG.md#ui-117-图标页克隆镜像列表-195-项--hbox-自适应高度与图标字体扩段2026-08-22)：C1189 编译缺陷与字体扩段是本次混合布局产物的源头。
 - [UI-046](CHANGELOG.md#ui-046-font-烘培计数误用-stbttbakefontbitmap-返回值ascii图标大量字形缺失2026-08-16)：bottom_y 语义沿用，第二段烘培依赖之。
+
+
+## UI-120: Slider 聚焦外框改为默认不显示 + set_focus_ring 可选开启（2026-08-22）
+
+严重度：低（交互反馈观感问题；layui 镜像无此反馈）。
+
+背景：用户反馈「交互 > 滑块」页滑块点击聚焦后出现外框。定位为 ui 库
+Slider::on_draw 末尾 `focused()` 时按 bounds_ 画 1.5px 主题色描边
+（`draw_rect_outline`），属本库自加的焦点可视反馈；layui slider 原型
+（div 实现）聚焦并无外框，克隆保真度上应默认关闭。
+
+修复（ui/ui/slider.*）：新增 `focus_ring_` 标志（默认 false）与
+`set_focus_ring(bool)` 开关，原描边调用改为 `focus_ring_ && focused() &&
+!grey` 才绘制。需要焦点指示的场景可显式 `set_focus_ring(true)` 开启；
+键盘可达性不受影响（方向键/Home/End 微调逻辑不变）。
+
+验证：Release 全量重建通过；`--smoke 5` exit=0；滑块页（--shot-page 41）
+exit=0 渲染正常。
+
+回归清单（必须保证）：
+- Slider 默认任何状态（hover/拖拽/键盘聚焦/禁用）均不绘制 bounds 外框。
+- set_focus_ring(true) 后 focused() 且非 disabled 时恢复外框绘制。
+- 滑块其余行为不变：轨道/填充/圆钮、range 双钮、step/showstep 刻度、
+  tips 提示、input 输入框、vertical 布局、disabled 灰化。

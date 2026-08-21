@@ -278,7 +278,7 @@ void Slider::on_draw(Renderer& renderer) {
     } else {
         draw_handle(coord_for(value_));
     }
-    if (focused() && !grey) renderer.draw_rect_outline(bounds_, 1.5f, fill_col);
+    if (focus_ring_ && focused() && !grey) renderer.draw_rect_outline(bounds_, 1.5f, fill_col);
 
     // 提示文本（tips）：hover / 拖拽时显示
     if (tips_ && font_ && !grey && (hovered_ || dragging_)) {

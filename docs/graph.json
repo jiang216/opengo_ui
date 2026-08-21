@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T04:05:14+08:00",
+  "generatedAt": "2026-08-22T04:35:54+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -838,6 +838,13 @@
       "label": "UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22）",
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-119-表单选择框分页页崩溃排查陈旧增量构建产物-odr-混合布局--崩溃诊断钩子2026-08-22"
+    },
+    "BUG:UI-120": {
+      "id": "BUG:UI-120",
+      "type": "BUG",
+      "label": "UI-120: Slider 聚焦外框改为默认不显示 + set_focus_ring 可选开启（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-120-slider-聚焦外框改为默认不显示--setfocusring-可选开启2026-08-22"
     },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
@@ -2388,6 +2395,12 @@
       "to": "BUG:UI-118",
       "kind": "checklist",
       "context": "回归清单#图标页全量网格一比一克隆镜像 docs/2/icon 列表：6 列描边卡片（Card::set_outline #e8e8e8）×每卡四行（字形/中文名/&#x码点;/类名，均水平居中，后两行 0.78 缩放小字；数据源 icon_catalog.h），192 项同序 + layim×3 末尾保留 = 195；依赖 HBox h≤0 自适应行高、Font 双段图标烘培（E600..ECFF + 1000..100F）、iconfont.ttf 2.13.9"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-120",
+      "kind": "checklist",
+      "context": "回归清单#Slider 聚焦外框默认不显示：任何状态（hover/拖拽/键盘聚焦/禁用）均不绘制 bounds 外框；`set_focus_ring(true)` 后 focused() 且非 disabled 才恢复外框；滑块其余行为（轨道/填充/圆钮/range 双钮/step/showstep/tips/input/vertical/disabled）不变"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -4384,6 +4397,13 @@
         "from": "DOC:BUILD",
         "kind": "checklist",
         "context": "回归清单#layui_test 崩溃时自动打印符号化调用栈（SetUnhandledExceptionFilter + dbghelp）；定位崩溃帧需 Release+/Z7 生成 PDB"
+      }
+    ],
+    "BUG:UI-120": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Slider 聚焦外框默认不显示：任何状态（hover/拖拽/键盘聚焦/禁用）均不绘制 bounds 外框；`set_focus_ring(true)` 后 focused() 且非 disabled 才恢复外框；滑块其余行为（轨道/填充/圆钮/range 双钮/step/showstep/tips/input/vertical/disabled）不变"
       }
     ],
     "META:CHANGELOG": [

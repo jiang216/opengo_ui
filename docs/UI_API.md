@@ -2279,6 +2279,7 @@ parent->add_child(sl);
 | `void set_theme_color(const Vec4& c)` | 主题色 |
 | `void set_vertical(bool on)` | type:vertical |
 | `void set_track_height(float h)` | vertical 高度 |
+| `void set_focus_ring(bool on)` | 聚焦外框反馈（默认不显示，[UI-120](CHANGELOG.md#ui-120-slider-聚焦外框改为默认不显示--setfocusring-可选开启2026-08-22)） |
 | `void set_theme(const Theme* theme)` |  |
 | `void set_on_change(std::function<void(float)> cb)` | 值变化回调（普通模式返回单值） |
 | `void set_on_range_change(std::function<void(float, float)> cb)` | 范围模式回调整（start, end） |

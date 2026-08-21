@@ -39,6 +39,7 @@ public:
     void set_theme_color(const Vec4& c) { theme_color_ = c; has_theme_color_ = true; } // 主题色
     void set_vertical(bool on) { vertical_ = on; }     // type:vertical
     void set_track_height(float h) { track_len_ = h > 0.f ? h : 200.f; } // vertical 高度
+    void set_focus_ring(bool on) { focus_ring_ = on; } // 聚焦外框反馈（默认不显示）
 
     void set_theme(const Theme* theme) { theme_ = theme; }
     // 值变化回调（普通模式返回单值）
@@ -74,6 +75,7 @@ private:
     bool input_ = false;
     bool disabled_ = false;
     bool vertical_ = false;
+    bool focus_ring_ = false;   // 聚焦时外框反馈，默认关
     bool has_theme_color_ = false;
     Vec4 theme_color_{0.0f, 0.59f, 0.53f, 1.f};  // #009688
     bool dragging_ = false;
