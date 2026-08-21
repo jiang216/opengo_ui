@@ -28,6 +28,10 @@ public:
 
     // layui 图标按钮：图标类名（如 "left"，即 layui-icon-left 去前缀）
     void set_icon(const char* icon_name);
+    // 图标放文本右侧（镜像「按钮 <i class="layui-icon-down">」文字在前语义）；
+    // 默认 false = 图标居左（既有行为不变）
+    void set_icon_right(bool on) { icon_right_ = on; }
+    bool icon_right() const { return icon_right_; }
 
     // 按钮内嵌徽章（layui-badge 红底白字，内嵌在文本右缘，如 `<button>查看消息<span layui-badge>1</span>`）
     // 叠加 layui-bg-* 可换底（如 layui-bg-gray / layui-bg-orange）；dot 为 8px 圆点
@@ -58,6 +62,7 @@ private:
     bool has_badge_ = false; // 内嵌徽章
     std::string badge_text_;
     bool has_dot_ = false;   // 内嵌小圆点
+    bool icon_right_ = false; // 图标置于文本右侧
 };
 
 }  // namespace ui

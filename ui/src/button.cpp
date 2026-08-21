@@ -63,9 +63,11 @@ float Button::preferred_height() const {
 }
 
 namespace {
-// 在按钮内绘制「图标居左 + 文本居右」整体居中的内容；无图标时退化为纯文本居中
+// 在按钮内绘制「图标居左 + 文本居右」整体居中的内容；无图标时退化为纯文本居中；
+// icon_right=true 时为「文本居左 + 图标居右」（镜像「按钮 <i layui-icon-down>」）
 void draw_content(Font* font, Renderer& renderer, const std::string& text, unsigned icon_cp,
-                  float icon_size, const Rect& bounds, const Vec4& color) {
+                  float icon_size, const Rect& bounds, const Vec4& color,
+                  bool icon_right = false) {
     if (!font) return;
     const bool has_icon = icon_cp != 0 && font->icon_loaded();
     const float gap = has_icon ? 6.f : 0.f;  // layui i padding 0 2px + 图标与文本间距
@@ -75,12 +77,16 @@ void draw_content(Font* font, Renderer& renderer, const std::string& text, unsig
     // 文本块高度用 line_height（ascent-descent），descent 为负值；
     // 旧式 (ascent+descent) 少算 2*|descent|，文本整体下移 ~4px（UI-053）
     const float ty = bounds.y + (bounds.h - font->line_height()) * 0.5f;
+    const float cy = bounds.y + bounds.h * 0.5f;
     if (has_icon) {
-        const float cy = bounds.y + bounds.h * 0.5f;
-        font->draw_icon(renderer, icon_cp, left + icon_size * 0.5f, cy, icon_size, color);
+        const float cx = icon_right ? left + text_w + gap + icon_size * 0.5f
+                                    : left + icon_size * 0.5f;
+        font->draw_icon(renderer, icon_cp, cx, cy, icon_size, color);
     }
-    if (!text.empty())
-        font->draw_text(renderer, text.c_str(), left + (has_icon ? icon_size + gap : 0.f), ty, color);
+    if (!text.empty()) {
+        const float tx = icon_right ? left : left + (has_icon ? icon_size + gap : 0.f);
+        font->draw_text(renderer, text.c_str(), tx, ty, color);
+    }
 }
 
 // 按钮内图标字号（layui：默认 14px，sm/xs 12px）
@@ -178,7 +184,7 @@ void Button::on_draw(Renderer& renderer) {
             renderer.draw_rounded_rect(bounds_, r, Vec4{0.98f, 0.98f, 0.98f, 1.0f});
             renderer.draw_rounded_rect_outline(bounds_, r, 1.f, t->border);
             draw_content(font_, renderer, text_, icon_cp_, icon_size, bounds_,
-                         Vec4{0.82f, 0.82f, 0.82f, 1.0f});
+                         Vec4{0.82f, 0.82f, 0.82f, 1.0f}, icon_right_);
             return;
         }
 
@@ -228,7 +234,7 @@ void Button::on_draw(Renderer& renderer) {
             renderer.draw_rounded_rect_outline(bounds_, r, 2.f, t->accent);
         }
 
-        draw_content(font_, renderer, text_, icon_cp_, icon_size, bounds_, text_color);
+        draw_content(font_, renderer, text_, icon_cp_, icon_size, bounds_, text_color, icon_right_);
 
         // 内嵌徽章 / 小圆点：紧随文本右缘（layui-badge 默认红底白字，可叠加 layui-bg-* 换底）
         if ((has_badge_ || has_dot_) && font_) {
@@ -278,7 +284,7 @@ void Button::on_draw(Renderer& renderer) {
         renderer.draw_rounded_rect(inner, t->radius - 1.f, *bg);
     }
 
-    draw_content(font_, renderer, text_, icon_cp_, icon_size_for(*this), bounds_, t->text);
+    draw_content(font_, renderer, text_, icon_cp_, icon_size_for(*this), bounds_, t->text, icon_right_);
 }
 
 }  // namespace ui

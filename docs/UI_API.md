@@ -898,6 +898,8 @@ parent->add_child(b);
 | `void set_font(Font* font)` |  |
 | `void set_theme(const Theme* theme)` |  |
 | `void set_icon(const char* icon_name)` | layui 图标按钮：图标类名（如 "left"，即 layui-icon-left 去前缀） |
+| `void set_icon_right(bool on)` | 图标置于文本右侧（默认 false = 图标居左，既有行为不变；镜像「文字 <i layui-icon>」顺序 demo 必备，UI-114） |
+| `bool icon_right() const` |  |
 | `void set_badge(const char* text)` | 按钮内嵌徽章（layui-badge 红底白字，内嵌在文本右缘，如 `<button>查看消息<span layui-badge>1</span>`） 叠加 layui-bg-* 可换底（如 layui-bg-gray / layui-bg-orange）；dot 为 8px 圆点 |
 | `void set_dot_badge()` |  |
 | `void set_group_role(int role)` | 按钮组角色（ButtonGroup 自动维护）：0=普通，1=首，2=中间，3=尾 |

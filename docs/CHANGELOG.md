@@ -3487,6 +3487,42 @@ Button::set_icon / add_class 已具备全部能力，图标页仅需新增 demo 
 
 - [UI-107](CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21)：图标页初版（190 全量网格 + 彩色图标），本条目补充按钮图标段。
 
+## UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22）
+
+严重度：中（ui 库能力缺口导致演示页无法一比一；API 向后兼容）。
+
+根因归属：**ui 库能力缺口**。`Button` 内容绘制固定「图标居左 + 文本居右」
+（button.cpp draw_content），而镜像 docs/2/button h2#icon 的「按钮 ▾」demo 是
+文字在前、down 图标在后（HTML 顺序即视觉顺序），测试程序无从绕过——按工作流
+回归 ui 库补能力。另发现上一次（UI-113）按钮图标段与镜像有出入：第二容器被拆成
+两行且首行按钮缺 layui-btn 类名主题语义，本条目一并修正。
+
+修复：
+- ui/include/ui/ui/button.h + ui/src/button.cpp：新增 `set_icon_right(bool)` /
+  `icon_right()`（默认 false = 图标居左，既有全部调用零影响）；draw_content 增
+  icon_right 参数，true 时布局为「文本居左 + 图标居右」，整体仍居中。
+- layui_test/pages/icon_page.cpp 按钮图标段改为严格两容器（同镜像两个
+  layui-btn-container）：
+  - 容器一：默认尺寸「按钮 ▾」（set_text("按钮")+set_icon("down")+
+    set_icon_right(true)，76px）+ left/right/edit/share 四个默认纯图标按钮；
+  - 容器二单行 9 个：sm primary×5（left/right/edit/delete/share）+ sm disabled
+    delete + sm normal left + sm warm right + sm danger edit。
+
+回归清单（必须保证）：
+- 默认 icon_right=false 时绘制结果与改动前逐像素一致（图标居左语义不变）。
+- disabled / primary / normal / warm / danger 各类按钮的填充、描边、字色不受影响。
+- Button::preferred_height 尺寸类（lg/sm/xs）行为不变。
+- 图标页 190 全量网格与彩色图标行零变化。
+
+验证：ui_ui + layui_test 全量编译链接通过；`--smoke 15` exit 0；PAM 像素验证——
+行1 五个 accent(#17baab) 填充按钮，「按钮 ▾」ASCII 放大确认文字在左、▼ 箭头在右；
+行2 九个按钮依次 primary×5（白底灰框）+ disabled 灰 + normal 蓝(#1f9eff) +
+warm 橙(#ffb800) + danger 红(#ff5721)。
+
+### 相关历史条目
+
+- [UI-113](CHANGELOG.md#ui-113-图标页新增按钮图标段克隆镜像-h2icon2026-08-22)：按钮图标段首次加入（本条目修正为一比一两容器结构）。
+
 ## UI-115: TextArea 垂直滚动条（2026-08-22）
 
 严重度：低（能力补全，无缺陷回归）。

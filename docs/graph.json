@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T01:07:30+08:00",
+  "generatedAt": "2026-08-22T01:14:01+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -797,6 +797,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-113-图标页新增按钮图标段克隆镜像-h2icon2026-08-22"
     },
+    "BUG:UI-114": {
+      "id": "BUG:UI-114",
+      "type": "BUG",
+      "label": "UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-114-button-图标右置-seticonright--图标页按钮图标段一比一修正2026-08-22"
+    },
     "BUG:UI-115": {
       "id": "BUG:UI-115",
       "type": "BUG",
@@ -1387,6 +1394,12 @@
       "to": "META:CHANGELOG",
       "kind": "mention",
       "context": "UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22）"
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22）"
     },
     {
       "from": "META:CHANGELOG",
@@ -2292,7 +2305,19 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-113",
       "kind": "checklist",
-      "context": "回归清单#图标页按钮图标段：克隆镜像 h2#icon 三组——默认文字+图标（set_text+set_icon）+ 纯图标 / 小号 primary 五图标 / 小号 disabled+normal+warm+danger 混合；Button::set_icon + add_class 能力复用，190 全量网格不受影响"
+      "context": "回归清单#图标页按钮图标段：克隆镜像 h2#icon 两容器（UI-114 一比一修正）——容器一「按钮 ▾」(`set_icon_right` 文字左图标右) + left/right/edit/share 纯图标 / 容器二单行 9 个 sm：primary×5 + disabled + normal/warm/danger；Button::set_icon + add_class 能力复用，190 全量网格不受影响"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-114",
+      "kind": "checklist",
+      "context": "回归清单#图标页按钮图标段：克隆镜像 h2#icon 两容器（UI-114 一比一修正）——容器一「按钮 ▾」(`set_icon_right` 文字左图标右) + left/right/edit/share 纯图标 / 容器二单行 9 个 sm：primary×5 + disabled + normal/warm/danger；Button::set_icon + add_class 能力复用，190 全量网格不受影响"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-114",
+      "kind": "checklist",
+      "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -4213,7 +4238,19 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#图标页按钮图标段：克隆镜像 h2#icon 三组——默认文字+图标（set_text+set_icon）+ 纯图标 / 小号 primary 五图标 / 小号 disabled+normal+warm+danger 混合；Button::set_icon + add_class 能力复用，190 全量网格不受影响"
+        "context": "回归清单#图标页按钮图标段：克隆镜像 h2#icon 两容器（UI-114 一比一修正）——容器一「按钮 ▾」(`set_icon_right` 文字左图标右) + left/right/edit/share 纯图标 / 容器二单行 9 个 sm：primary×5 + disabled + normal/warm/danger；Button::set_icon + add_class 能力复用，190 全量网格不受影响"
+      }
+    ],
+    "BUG:UI-114": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#图标页按钮图标段：克隆镜像 h2#icon 两容器（UI-114 一比一修正）——容器一「按钮 ▾」(`set_icon_right` 文字左图标右) + left/right/edit/share 纯图标 / 容器二单行 9 个 sm：primary×5 + disabled + normal/warm/danger；Button::set_icon + add_class 能力复用，190 全量网格不受影响"
+      },
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
       }
     ],
     "BUG:UI-115": [
@@ -4288,6 +4325,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22）"
       },
       {
         "from": "META:CHANGELOG",

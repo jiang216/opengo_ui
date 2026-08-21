@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ui/ui/scrollbar_style.h"
 #include "ui/ui/widget.h"
 
 #include <functional>
@@ -75,11 +76,6 @@ private:
     float avail_width() const;
     // 内容总高度（换行后行数 * 行高 + 上下 padding）
     float content_height(float line_h) const;
-    // 垂直滚动条（对齐 ScrollBox 风格：仅内容溢出时绘制，可点击/拖拽）
-    Rect scrollbar_track_rect() const;
-    Rect scrollbar_thumb_rect(float content_h) const;
-    bool in_scrollbar(float x, float y, float content_h) const;
-    float scroll_from_y(float y, float content_h) const;
 
     std::string text_;
     std::string placeholder_;
@@ -94,8 +90,9 @@ private:
     bool selecting_ = false;      // 鼠标拖拽中
     bool has_selection_ = false;
 
-    // ---- 滚动条拖拽 ----
-    bool dragging_scrollbar_ = false;
+    // ---- 垂直滚动条（共享样式/状态，见 src/scrollbar_style.h）----
+    scrollbar::State sb_;
+    float mx_ = -1.f, my_ = -1.f;  // 最近鼠标点（控件内坐标，判定悬停 thumb 列）
 
     // ---- 只读 ----
     bool readonly_ = false;

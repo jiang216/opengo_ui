@@ -109,71 +109,59 @@ void build_icon(PageHost& host) {
         host.content->add_child(r);
     }
 
-    // ---- 按钮图标（镜像 h2#icon 三组） ----
+    // ---- 按钮图标（镜像 h2#icon 两个 layui-btn-container） ----
     {
         auto* title = new ui::FieldsetTitle(kCW, 26, "按钮图标");
         title->set_font(host.font);
         title->set_theme(host.theme);
         host.content->add_child(title);
 
-        // 第一组：默认尺寸 + 默认主题（1 个文字+图标 + 4 个纯图标）
+        // 容器一：默认尺寸——「按钮 ▾」（文字在前图标在后）+ left/right/edit/share 纯图标
         {
             auto* r = new ui::HBox(0, 0, kCW, 38.f);
             r->set_padding(0.f);
             r->set_spacing(8.f);
             r->set_theme(host.theme);
 
-            auto* b1 = new ui::Button(0, 0, 80.f, 38.f, "按钮");
+            auto* b1 = new ui::Button(0, 0, 76.f, 38.f, "按钮");
             b1->set_font(host.font);
             b1->set_theme(host.theme);
             b1->set_icon("down");
+            b1->set_icon_right(true);  // 镜像：文字在前、down 图标在后
             r->add_child(b1);
 
-            struct I { const char* icon; };
-            static const I kDef[] = {{"left"}, {"right"}, {"edit"}, {"share"}};
-            for (const I& i : kDef) {
+            static const char* const kDef[] = {"left", "right", "edit", "share"};
+            for (const char* name : kDef) {
                 auto* b = new ui::Button(0, 0, 44.f, 38.f, "");
                 b->set_font(host.font);
                 b->set_theme(host.theme);
-                b->set_icon(i.icon);
+                b->set_icon(name);
                 r->add_child(b);
             }
             host.content->add_child(r);
         }
 
-        // 第二组：小号 + primary（5 个纯图标）
-        {
-            auto* r = new ui::HBox(0, 0, kCW, 30.f);
-            r->set_padding(0.f);
-            r->set_spacing(8.f);
-            r->set_theme(host.theme);
-            struct I { const char* icon; };
-            static const I kSmP[] = {{"left"}, {"right"}, {"edit"}, {"delete"}, {"share"}};
-            for (const I& i : kSmP) {
-                auto* b = new ui::Button(0, 0, 34.f, 30.f, "");
-                b->set_font(host.font);
-                b->set_theme(host.theme);
-                b->set_icon(i.icon);
-                b->add_class("layui-btn layui-btn-primary layui-btn-sm");
-                r->add_child(b);
-            }
-            host.content->add_child(r);
-        }
-
-        // 第三组：小号 + 混合主题（disabled/normal/warm/danger）
+        // 容器二（单行 9 个，同镜像一个 container）：
+        // sm primary×5（left/right/edit/delete/share）+ sm disabled delete
+        // + sm normal left + sm warm right + sm danger edit
         {
             auto* r = new ui::HBox(0, 0, kCW, 30.f);
             r->set_padding(0.f);
             r->set_spacing(8.f);
             r->set_theme(host.theme);
             struct I { const char* icon; const char* cls; };
-            static const I kSmM[] = {
+            static const I kSm[] = {
+                {"left",   "layui-btn layui-btn-sm layui-btn-primary"},
+                {"right",  "layui-btn layui-btn-sm layui-btn-primary"},
+                {"edit",   "layui-btn layui-btn-sm layui-btn-primary"},
+                {"delete", "layui-btn layui-btn-sm layui-btn-primary"},
+                {"share",  "layui-btn layui-btn-sm layui-btn-primary"},
                 {"delete", "layui-btn layui-btn-sm layui-btn-disabled"},
-                {"left",   "layui-btn layui-btn-sm"},
+                {"left",   "layui-btn layui-btn-sm layui-btn-normal"},
                 {"right",  "layui-btn layui-btn-sm layui-btn-warm"},
                 {"edit",   "layui-btn layui-btn-sm layui-btn-danger"},
             };
-            for (const I& i : kSmM) {
+            for (const I& i : kSm) {
                 auto* b = new ui::Button(0, 0, 34.f, 30.f, "");
                 b->set_font(host.font);
                 b->set_theme(host.theme);

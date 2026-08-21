@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 122（BUG 114 / DOC 6 / META 2）
-- 边: 304
+- 节点: 123（BUG 115 / DOC 6 / META 2）
+- 边: 307
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -836,7 +836,14 @@
 
 - 路径: `docs/CHANGELOG.md#ui-113-图标页新增按钮图标段克隆镜像-h2icon2026-08-22`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页按钮图标段：克隆镜像 h2#icon 三组——默认文字+图标（set_text+set_icon）+ 纯图标 / 小号 primary 五图标 / 小号 disabled+normal+warm+danger 混合；Button::set_icon + add_class 能力复用，190 全量网格不受影响
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页按钮图标段：克隆镜像 h2#icon 两容器（UI-114 一比一修正）——容器一「按钮 ▾」(`set_icon_right` 文字左图标右) + left/right/edit/share 纯图标 / 容器二单行 9 个 sm：primary×5 + disabled + normal/warm/danger；Button::set_icon + add_class 能力复用，190 全量网格不受影响
+
+### BUG:UI-114 · UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-114-button-图标右置-seticonright--图标页按钮图标段一比一修正2026-08-22`
+- 反链(2):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#图标页按钮图标段：克隆镜像 h2#icon 两容器（UI-114 一比一修正）——容器一「按钮 ▾」(`set_icon_right` 文字左图标右) + left/right/edit/share 纯图标 / 容器二单行 9 个 sm：primary×5 + disabled + normal/warm/danger；Button::set_icon + add_class 能力复用，190 全量网格不受影响
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备
 
 ### BUG:UI-115 · UI-115: TextArea 垂直滚动条（2026-08-22）
 
@@ -904,7 +911,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(19):
+- 反链(20):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -918,6 +925,7 @@
   - `META:CHANGELOG` (mention) — UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22）
+  - `META:CHANGELOG` (mention) — UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-115: TextArea 垂直滚动条（2026-08-22）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
@@ -1042,6 +1050,7 @@
 | `BUG:UI-111` | BUG | UI-111: ScrollBox 视口锚定 add_pinned（layui fixbar）+ PageHost 栈局部悬空修复——固定条页升级真实常驻工具组（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-112` | BUG | UI-112: 颜色页一比一克隆镜像 docs/2/color（基色调/辅色调/中色调/七色调/标语）+ --list-pages 调试设施（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-113` | BUG | UI-113: 图标页新增按钮图标段克隆镜像 h2#icon（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-114` | BUG | UI-114: Button 图标右置 set_icon_right + 图标页按钮图标段一比一修正（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-115` | BUG | UI-115: TextArea 垂直滚动条（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
@@ -1243,6 +1252,8 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-111` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-112` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-113` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-114` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-114` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-115` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1346,6 +1357,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
