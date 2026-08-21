@@ -3212,3 +3212,44 @@ timeline 40→42、tree 41→44、carousel 42→45、flow 43→46、text 44→47
 
 - [UI-099](CHANGELOG.md#ui-099-外壳垂直布局按新镜像重构--页面分组映射2026-08-21)：侧栏分组映射与 subtitle 字段来源。
 - [UI-104](CHANGELOG.md#ui-104-侧栏分组逐级嵌套成子级折叠菜单menu-addgroup-未配对-endgroup2026-08-21)：分组同级保证（本次新增组沿用 end_group 配对逻辑）。
+
+## UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21）
+
+严重度：低（功能补全，非缺陷；UI-106 计划内后续）。
+
+根因归属：**测试程序**（layui_test 页面内容建设；未暴露 ui 库能力缺陷——本轮全部用
+既有控件能力组装，仅发现 Label 无字号缩放/加粗 API、Button 无 set_custom_content，
+均按既有 API 形态调整实现，未改 ui 库）。
+
+实现（layui_test/src/pages/ 新增 9 文件 + 清空占位数组）：
+- basic_pages.cpp：基础组 6 页文档摘要（开始使用/底层方法/模块系统/组件构建/国际化/
+  更新日志），BlockQuote 导语 + FieldsetTitle 小节 + Code 块。
+- color_page.cpp：本地 Swatch 自绘控件（draw_rounded_rect 4px 圆角 + 描边）色卡；
+  主色 #16baaa/#009688、工具色 8 卡、文字颜色（layui::bg_color）、背景色（layui::bg_fill）。
+- icon_page.cpp：190 图标全量网格（5 列，cell = Icon 22px + 类名 Label）+ 彩色示例行
+  （from_class 存在性守卫）。
+- input_page.cpp / select_page.cpp / radio_page.cpp：TextBox（含密码框/即时监听）、
+  ComboBox（初始选中/禁用/省市区联动）、RadioGroup（默认选中/选项禁用/整组禁用/事件）
+  真实交互演示。
+- treetable_page.cpp：Table 静态还原树形层级示例（全角空格 + ├─│└─ 符号缩进；
+  行展开折叠待 Table 层级能力，help 中注明）。
+- class_page.cpp：字色/背景/边框工具类真实演示；字号六档与加粗因 Font 固定像素烘培
+  （Label 无 set_text_scale/set_bold）以说明式呈现并注明规划项，不做假缩放。
+- fixbar_page.cpp：fixbar 工具组（VBox + Button::set_icon：top/service/email）+
+  「返回顶部」真实滚动复位（content->set_scroll_offset(0)）；视口级常驻定位注明规划项。
+- placeholder_pages.cpp：kPlaceholders 清空为哨兵条目（MSVC 不支持零长数组），
+  占位机制保留供后续新增页使用。
+
+回归清单（必须保证）：
+- 14 页全部可进入且有真实内容（预览 + 查看代码 + 帮助三 tab），无「尚未克隆」提示。
+- 侧栏树与 UI-106 完全一致：67 页、order 与标题不变（占位→真实页仅替换 build 函数）。
+- `--smoke` 全轮换 exit 0（含新页反复进出，Swatch 自绘控件无泄漏崩溃）。
+- 「返回顶部」点击后内容区滚动位置复位到顶部。
+- UI-106 全部清单继续成立（侧栏对齐、分组同级、HUD 不重叠）。
+
+验证：layui_test x64 Release 编译链接通过；`--smoke 40` exit 0（67 页全轮换）；
+navtree 脚本重建侧栏树 67 页 0 重复，与镜像逐项一致。
+
+### 相关历史条目
+
+- [UI-106](CHANGELOG.md#ui-106-侧栏缺失镜像站-14-个页面基础组整组缺--颜色图标输入框选择框单选框树形表格公共类固定条2026-08-21)：占位页注册与 order 重排（本条目为其后续补全）。

@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 114（BUG 106 / DOC 6 / META 2）
-- 边: 287
+- 节点: 115（BUG 107 / DOC 6 / META 2）
+- 边: 289
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -794,6 +794,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui_test 侧栏与镜像 docs/2 菜单树对齐：7 组顺序 基础(6)/布局(2)/通用(4)/表单(5)/展示(18)/交互(8)/其他(2)，组内次序同镜像（通用 颜色→按钮→图标→动画；表单 表单→输入框→选择框→复选框→单选框；展示含 树形表格/公共类/固定条 插位）；未实现页走 `placeholder_pages.cpp` 占位注册（导航项 + 「尚未克隆」提示），新增页先在此数组登记并按镜像插位排 order——禁止绕过占位机制硬编码导航项
 
+### BUG:UI-107 · UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21）
+
+- 路径: `docs/CHANGELOG.md#ui-107-ui-106-的-14-个占位页全部实现为真实内容页2026-08-21`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui_test UI-106 的 14 个占位页全部为真实内容页：基础组 6 页文档摘要（basic_pages）、颜色色卡（Swatch 自绘 + layui::bg_color/bg_fill/hex）、图标 190 全量网格、输入框/选择框/单选框真实交互演示、树形表格静态还原、公共类工具类演示（字号缩放/加粗因 Font 固定像素烘培以说明呈现，禁止做假缩放）、固定条（返回顶部真实复位 content 滚动）；占位数组保留哨兵机制供后续新增页
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -854,7 +860,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(12):
+- 反链(13):
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-102: 键盘修饰键快照——SendInput 粘贴到自绘输入框丢失 mods（2026-08-21）
@@ -862,6 +868,7 @@
   - `META:CHANGELOG` (mention) — UI-104: 侧栏分组逐级嵌套成子级折叠菜单——Menu add_group 未配对 end_group（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-105: 帧率 HUD 与头部右侧控件重叠——HUD 右对齐压在生态/版本下拉上（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-106: 侧栏缺失镜像站 14 个页面——基础组整组缺 + 颜色/图标/输入框/选择框/单选框/树形表格/公共类/固定条（2026-08-21）
+  - `META:CHANGELOG` (mention) — UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21）
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -978,6 +985,7 @@
 | `BUG:UI-104` | BUG | UI-104: 侧栏分组逐级嵌套成子级折叠菜单——Menu add_group 未配对 end_group（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-105` | BUG | UI-105: 帧率 HUD 与头部右侧控件重叠——HUD 右对齐压在生态/版本下拉上（2026-08-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-106` | BUG | UI-106: 侧栏缺失镜像站 14 个页面——基础组整组缺 + 颜色/图标/输入框/选择框/单选框/树形表格/公共类/固定条（2026-08-21） | `docs/CHANGELOG.md` |
+| `BUG:UI-107` | BUG | UI-107: UI-106 的 14 个占位页全部实现为真实内容页（2026-08-21） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1169,6 +1177,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-104` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-105` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-106` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-107` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1271,6 +1280,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

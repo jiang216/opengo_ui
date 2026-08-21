@@ -27,41 +27,26 @@ void build_placeholder(PageHost& host) {
     }
 }
 
-// 与镜像站 docs/2 侧栏对齐的缺失页（UI-106）：仅注册导航项 + 占位内容，
-// 官方示例详情后续逐页补全。order 按镜像侧栏顺序插入既有编号体系：
-//   基础组整体前置于「布局」(0/1)，取负值；通用/表单/展示组内按镜像顺序插空，
-//   受影响的已实现页 order 同步顺延（anim 11→12、checkbox 21→23、
-//   breadcrumb 33→34、menubar 34→35、tabs 35→36、badge 36→37、auxiliar 37→38、
-//   card 38→40、progress 39→41、timeline 40→42、tree 41→44、carousel 42→45、
-//   flow 43→46、text 44→47）。
+// UI-106 注册的 14 个占位页已全部由真实内容页取代：
+//   基础组 6 页 → basic_pages.cpp（-9..-4）
+//   颜色 → color_page.cpp（9）、图标 → icon_page.cpp（11）
+//   输入框 → input_page.cpp（21）、选择框 → select_page.cpp（22）、单选框 → radio_page.cpp（24）
+//   树形表格 → treetable_page.cpp（33）、公共类 → class_page.cpp（39）、固定条 → fixbar_page.cpp（43）
+// 本文件保留占位机制：后续对齐镜像站新增页面时，向 kPlaceholders 追加条目即可。
 struct PlaceholderDef {
     int order;
     const char* group;
     const char* title;
     const char* subtitle;
 };
+// 哨兵条目（title == nullptr 时跳过）：MSVC 不支持零长数组，追加真实占位页时
+// 在哨兵前插入 {order, group, title, subtitle} 即可。
 const PlaceholderDef kPlaceholders[] = {
-    // —— 基础（Getting Started）：镜像整组缺失 ——
-    {-9, "基础", "开始使用", "Getting Started"},
-    {-8, "基础", "底层方法", "Base Function"},
-    {-7, "基础", "模块系统", "Modules"},
-    {-6, "基础", "组件构建", "Component"},
-    {-5, "基础", "国际化", "i18n"},
-    {-4, "基础", "更新日志", "Versions"},
-    // —— 通用：颜色在按钮前、图标在按钮与动画之间（镜像顺序：颜色/按钮/图标/动画）——
-    {9, "通用", "颜色", "Color"},
-    {11, "通用", "图标", "Icon"},
-    // —— 表单：镜像顺序 表单组件/输入框/选择框/复选框/单选框 ——
-    {21, "表单", "输入框", "Input / Textarea"},
-    {22, "表单", "选择框", "Select"},
-    {24, "表单", "单选框", "Radio"},
-    // —— 展示：镜像顺序 分页→树形表格→导航…辅助→公共类→面板…时间线→固定条→树组件 ——
-    {33, "展示", "树形表格", "TreeTable"},
-    {39, "展示", "公共类", "Class"},
-    {43, "展示", "固定条", "Fixbar"},
+    {0, nullptr, nullptr, nullptr},
 };
 const bool kRegistered = []() {
     for (const PlaceholderDef& p : kPlaceholders) {
+        if (!p.title) continue;
         page::register_page({p.order, p.group, p.title, "官方示例内容待后续补全",
                              build_placeholder, nullptr, false, nullptr, 0, p.subtitle});
     }
