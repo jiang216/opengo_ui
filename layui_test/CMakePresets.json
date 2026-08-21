@@ -1,0 +1,39 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 29, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "x64-Release",
+      "displayName": "x64 Release (VS 2026)",
+      "generator": "Visual Studio 18 2026",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "binaryDir": "${sourceDir}/build/x64-Release",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "x64-Debug",
+      "displayName": "x64 Debug (VS 2026)",
+      "generator": "Visual Studio 18 2026",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "binaryDir": "${sourceDir}/build/x64-Debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "x64-installed",
+      "displayName": "x64 Release (find_package mode)",
+      "generator": "Visual Studio 18 2026",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "binaryDir": "${sourceDir}/build/x64-installed",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "LAYUI_TEST_USE_FIND_PACKAGE": "ON",
+        "CMAKE_PREFIX_PATH": "${sourceDir}/../install"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "x64-Release", "configurePreset": "x64-Release" },
+    { "name": "x64-Debug", "configurePreset": "x64-Debug" },
+    { "name": "x64-installed", "configurePreset": "x64-installed" }
+  ]
+}

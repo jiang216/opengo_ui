@@ -1,0 +1,563 @@
+#include "ui/ui/widget.h"
+
+namespace ui {
+
+namespace {
+// 延迟销毁队列（UI-072）：destroy() 标记待销毁，帧末由根节点统一冲刷。
+// 事件分发/遍历期间子树保持存活，避免悬空 this 与迭代器失效。
+std::vector<Widget*> g_pending_destroy;
+}  // namespace
+
+Widget::Widget(float x, float y, float w, float h)
+    : bounds_{x, y, w, h} {}
+
+Widget::~Widget() {
+    // 子树由外部所有者管理；基类不负责 delete 子节点
+}
+
+void Widget::set_bounds(float x, float y, float w, float h) {
+    bounds_ = {x, y, w, h};
+}
+
+void Widget::set_enabled(bool en) {
+    enabled = en;
+    if (!en) blur();  // 禁用时立即释放焦点
+}
+
+void Widget::add_class(const char* cls) {
+    if (!cls) return;
+    // 空格分隔拆成多个类名；空串/已存在跳过
+    const char* p = cls;
+    while (*p) {
+        while (*p == ' ' || *p == '\t') ++p;
+        const char* start = p;
+        while (*p && *p != ' ' && *p != '\t') ++p;
+        if (p > start) {
+            const std::string token(start, (size_t)(p - start));
+            bool found = false;
+            for (const std::string& c : classes_) {
+                if (c == token) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) classes_.push_back(token);
+        }
+    }
+}
+
+void Widget::remove_class(const char* cls) {
+    if (!cls) return;
+    const std::string target(cls);
+    for (auto it = classes_.begin(); it != classes_.end();) {
+        if (*it == target)
+            it = classes_.erase(it);
+        else
+            ++it;
+    }
+}
+
+bool Widget::has_class(const char* cls) const {
+    if (!cls) return false;
+    const std::string target(cls);
+    for (const std::string& c : classes_) {
+        if (c == target) return true;
+    }
+    return false;
+}
+
+void Widget::add_child(Widget* child) {
+    if (!child || child->parent_ == this) return;
+    if (child->parent_) child->parent_->remove_child(child);
+    child->parent_ = this;
+    children_.push_back(child);
+    on_children_changed();
+}
+
+void Widget::remove_child(Widget* child) {
+    for (auto it = children_.begin(); it != children_.end(); ++it) {
+        if (*it == child) {
+            (*it)->parent_ = nullptr;
+            children_.erase(it);
+            on_children_changed();
+            return;
+        }
+    }
+}
+
+void Widget::clear_children() {
+    std::vector<Widget*> kids = std::move(children_);
+    children_.clear();
+    for (Widget* k : kids) {
+        k->parent_ = nullptr;
+        k->clear_children();  // 递归释放 k 的整个子树
+        delete k;
+    }
+    on_children_changed();
+}
+
+void Widget::destroy() {
+    // UI-072：延迟销毁。仅标记 + 立即隐藏，实际释放延迟到帧末 flush_pending_destroys()。
+    // 避免在 dispatch_mouse_down / advance / draw 遍历期间销毁自身/兄弟导致的悬空 this 与迭代器失效。
+    for (Widget* w : g_pending_destroy) {
+        if (w == this) return;  // 幂等：已在待销毁队列，忽略重复调用
+    }
+    visible = false;  // 立即不可见：dispatch/advance/draw 随即跳过，帧内不再命中
+    g_pending_destroy.push_back(this);
+}
+
+void Widget::flush_pending_destroys() {
+    if (g_pending_destroy.empty()) return;
+    std::vector<Widget*> pending;
+    pending.swap(g_pending_destroy);
+    for (Widget* w : pending) {
+        // 摘除根节点 popups_ 中的自身（UI-071 语义）与模态/捕获引用，防止下一帧遍历到悬空指针
+        Widget* r = w->root();
+        if (r) {
+            if (r->modal_ == w) r->modal_ = nullptr;
+            if (r->capture_ == w) r->capture_ = nullptr;
+            if (!r->popups_.empty()) {
+                std::vector<Popup> kept;
+                kept.reserve(r->popups_.size());
+                for (const Popup& p : r->popups_) {
+                    if (p.popup != w) kept.push_back(p);
+                }
+                if (kept.size() != r->popups_.size()) r->popups_.swap(kept);
+            }
+        }
+        if (w->parent_) w->parent_->remove_child(w);
+        w->clear_children();  // 递归释放 w 的整个子树
+        delete w;
+    }
+}
+
+void Widget::bring_to_front() {
+    if (!parent_) return;
+    for (auto it = parent_->children_.begin(); it != parent_->children_.end(); ++it) {
+        if (*it == this) {
+            parent_->children_.erase(it);
+            parent_->children_.push_back(this);
+            return;
+        }
+    }
+}
+
+bool Widget::contains(float x, float y) const {
+    return x >= bounds_.x && x < bounds_.x + bounds_.w &&
+           y >= bounds_.y && y < bounds_.y + bounds_.h;
+}
+
+bool Widget::on_mouse_move(float x, float y) {
+    (void)x;
+    (void)y;
+    return false;
+}
+
+bool Widget::on_mouse_down(float x, float y, int button) {
+    (void)x;
+    (void)y;
+    (void)button;
+    return false;
+}
+
+bool Widget::on_mouse_scroll(float x, float y, float dx, float dy) {
+    (void)x;
+    (void)y;
+    (void)dx;
+    (void)dy;
+    return false;
+}
+
+bool Widget::on_mouse_up(float x, float y, int button) {
+    (void)x;
+    (void)y;
+    (void)button;
+    return false;
+}
+
+void Widget::capture_mouse() {
+    root()->capture_ = this;
+}
+
+void Widget::release_mouse_capture() {
+    if (root()->capture_ == this) root()->capture_ = nullptr;
+}
+
+bool Widget::dispatch_mouse_move(float x, float y) {
+    // 模态：事件仅路由给模态子树，模态外一律屏蔽，且清除模态外残留 hover 态
+    if (!parent_ && modal_) {
+        clear_hover_outside(modal_);
+        return modal_->dispatch_mouse_move(x, y);
+    }
+    // 鼠标捕获优先：移动事件直接给捕获者（即使指针已移出其范围）
+    Widget* cap = root()->capture_;
+    if (cap && cap != this) {
+        cap->hovered_ = true;
+        return cap->on_mouse_move(x, y);
+    }
+    // 子节点在父之上，后添加的优先命中（禁用/隐藏的子节点不参与）
+    // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
+    const std::vector<Widget*> kids(children_);
+    for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
+        Widget* child = *it;
+        if (!child->visible || !child->enabled) continue;
+        if (child->dispatch_mouse_move(x, y)) return true;
+    }
+    if (contains(x, y) && enabled) {
+        const bool was_hovered = hovered_;
+        hovered_ = true;
+        if (on_mouse_move(x, y)) return true;
+        (void)was_hovered;
+        return false;
+    }
+    if (hovered_) {
+        hovered_ = false;
+        on_mouse_move(x, y);
+    }
+    return false;
+}
+
+bool Widget::dispatch_mouse_down(float x, float y, int button) {
+    // 模态：事件仅路由给模态子树，模态外一律屏蔽
+    if (!parent_ && modal_) return modal_->dispatch_mouse_down(x, y, button);
+    prune_popups(x, y);
+    // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
+    const std::vector<Widget*> kids(children_);
+    for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
+        Widget* child = *it;
+        if (!child->visible || !child->enabled) continue;
+        if (child->dispatch_mouse_down(x, y, button)) return true;
+    }
+    if (contains(x, y) && enabled) {
+        pressed_ = true;
+        // 命中即获焦（仅 focusable 生效），子类无需自行 focus()
+        if (focusable) focus();
+        if (on_mouse_down(x, y, button)) {
+            capture_mouse();  // 消费按下即捕获（拖拽控件）
+            return true;
+        }
+        return false;
+    }
+    return false;
+}
+
+bool Widget::dispatch_mouse_up(float x, float y, int button) {
+    // 模态：事件仅路由给模态子树，模态外一律屏蔽
+    if (!parent_ && modal_) return modal_->dispatch_mouse_up(x, y, button);
+    // 捕获者优先：鼠标抬起路由给捕获者并释放捕获
+    Widget* cap = root()->capture_;
+    if (cap && cap != this) {
+        cap->pressed_ = false;
+        const bool handled = cap->on_mouse_up(x, y, button);
+        cap->release_mouse_capture();
+        return handled;
+    }
+    // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
+    const std::vector<Widget*> kids2(children_);
+    for (auto it = kids2.rbegin(); it != kids2.rend(); ++it) {
+        Widget* child = *it;
+        if (!child->visible || !child->enabled) continue;
+        if (child->dispatch_mouse_up(x, y, button)) return true;
+    }
+    if (contains(x, y)) {
+        const bool was_pressed = pressed_;
+        pressed_ = false;
+        if (was_pressed) {
+            if (on_mouse_up(x, y, button)) return true;
+        }
+        return false;
+    }
+    pressed_ = false;
+    return false;
+}
+
+bool Widget::dispatch_mouse_scroll(float x, float y, float dx, float dy) {
+    // 模态：事件仅路由给模态子树，模态外一律屏蔽
+    if (!parent_ && modal_) return modal_->dispatch_mouse_scroll(x, y, dx, dy);
+    // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
+    const std::vector<Widget*> kids3(children_);
+    for (auto it = kids3.rbegin(); it != kids3.rend(); ++it) {
+        Widget* child = *it;
+        if (!child->visible || !child->enabled) continue;
+        if (child->dispatch_mouse_scroll(x, y, dx, dy)) return true;
+    }
+    if (contains(x, y)) {
+        if (on_mouse_scroll(x, y, dx, dy)) return true;
+        return false;
+    }
+    return false;
+}
+
+void Widget::on_layout() {}
+
+void Widget::layout() {
+    on_layout();
+    for (Widget* child : children_) child->layout();
+}
+
+Widget* Widget::root() {
+    Widget* w = this;
+    while (w->parent_) w = w->parent_;
+    return w;
+}
+
+void Widget::set_focused(bool focused) {
+    if (focused_ == focused) return;
+    focused_ = focused;
+    on_focus_changed(focused);
+}
+
+void Widget::focus() {
+    if (!focusable || !enabled) return;
+    // 先从根清掉现有焦点（保证整棵树唯一焦点），再聚焦自身
+    Widget* r = root();
+    if (r != this) r->clear_focus_recursive();
+    set_focused(true);
+}
+
+void Widget::blur() {
+    if (!focused_) return;
+    set_focused(false);
+}
+
+void Widget::clear_focus_recursive() {
+    if (focused_) {
+        set_focused(false);
+        return;
+    }
+    for (Widget* child : children_) child->clear_focus_recursive();
+}
+
+void Widget::on_focus_changed(bool focused) {
+    (void)focused;
+}
+
+bool Widget::on_key_down(int key, int mods) {
+    (void)key;
+    (void)mods;
+    return false;
+}
+
+bool Widget::on_key_up(int key, int mods) {
+    (void)key;
+    (void)mods;
+    return false;
+}
+
+bool Widget::on_char(unsigned int codepoint) {
+    (void)codepoint;
+    return false;
+}
+
+void Widget::set_modal(Widget* modal) {
+    modal_ = modal;
+}
+
+bool Widget::dispatch_key_down(int key, int mods) {
+    // 模态：键盘仅路由给模态子树
+    if (!parent_ && modal_) return modal_->dispatch_key_down(key, mods);
+    // 优先让焦点控件消费（如 TextBox 光标移动/删除）；导航键未被消费才做焦点遍历
+    Widget* f = focused_descendant();
+    if (f) {
+        if (f->on_key_down(key, mods)) return true;
+        if (key == KeyTab || key == KeyUp || key == KeyDown || key == KeyLeft || key == KeyRight) {
+            const bool reverse = (mods & ModShift) != 0 || key == KeyUp || key == KeyLeft;
+            if (reverse)
+                f->focus_prev();
+            else
+                f->focus_next();
+            return true;
+        }
+        return false;
+    }
+    // 无焦点：Tab 落到第一个可聚焦控件
+    if (key == KeyTab) {
+        focus_next();
+        return true;
+    }
+    return false;
+}
+
+bool Widget::dispatch_key_up(int key, int mods) {
+    // 模态：键盘仅路由给模态子树
+    if (!parent_ && modal_) return modal_->dispatch_key_up(key, mods);
+    Widget* f = focused_descendant();
+    if (f) return f->on_key_up(key, mods);
+    return false;
+}
+
+bool Widget::dispatch_char(unsigned int codepoint) {
+    // 模态：键盘仅路由给模态子树
+    if (!parent_ && modal_) return modal_->dispatch_char(codepoint);
+    Widget* f = focused_descendant();
+    if (f) return f->on_char(codepoint);
+    return false;
+}
+
+Widget* Widget::focused_descendant() {
+    if (focused_) return this;
+    for (Widget* child : children_) {
+        Widget* f = child->focused_descendant();
+        if (f) return f;
+    }
+    return nullptr;
+}
+
+void Widget::focus_next() {
+    // 以根为起点先序收集可聚焦控件，找当前焦点位置的下一个
+    Widget* r = root();
+    std::vector<Widget*> list;
+    r->collect_focusables(list);
+    if (list.empty()) return;
+    size_t idx = 0;
+    bool found = false;
+    for (size_t i = 0; i < list.size(); ++i) {
+        if (list[i]->focused_) {
+            idx = i;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {  // 无焦点：落到第一个
+        list[0]->focus();
+        return;
+    }
+    const size_t next = (idx + 1) % list.size();
+    list[idx]->blur();
+    list[next]->focus();
+}
+
+void Widget::focus_prev() {
+    Widget* r = root();
+    std::vector<Widget*> list;
+    r->collect_focusables(list);
+    if (list.empty()) return;
+    size_t idx = 0;
+    bool found = false;
+    for (size_t i = 0; i < list.size(); ++i) {
+        if (list[i]->focused_) {
+            idx = i;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {  // 无焦点：落到最后一个
+        list[list.size() - 1]->focus();
+        return;
+    }
+    const size_t prev = (idx + list.size() - 1) % list.size();
+    list[idx]->blur();
+    list[prev]->focus();
+}
+
+void Widget::collect_focusables(std::vector<Widget*>& out) {
+    if (focusable && visible && enabled) out.push_back(this);
+    for (Widget* child : children_) child->collect_focusables(out);
+}
+
+void Widget::on_draw(Renderer&) {}
+
+void Widget::on_advance(float) {}
+
+void Widget::advance(float dt) {
+    on_advance(dt);
+    for (Widget* child : children_) {
+        if (child->visible) child->advance(dt);
+    }
+    if (!parent_ && !popups_.empty()) {
+        // 拷贝遍历：popup 的 on_advance（如自动关闭）可能 close_popups/销毁自身，原地迭代会失效（UI-071）
+        const std::vector<Popup> snap = popups_;
+        for (const Popup& p : snap) {
+            if (p.popup->visible) p.popup->advance(dt);
+        }
+    }
+    // 根节点帧末冲刷延迟销毁队列（UI-072）：事件分发/遍历期间被 destroy() 标记的控件在此统一释放
+    if (!parent_) flush_pending_destroys();
+}
+
+void Widget::draw(Renderer& renderer) {
+    if (!visible) return;
+    on_draw(renderer);
+    for (Widget* child : children_) {
+        if (child->visible) child->draw(renderer);
+    }
+    // 弹出面板最后绘制，置于控件树最上层（仅根节点）
+    if (!parent_ && !popups_.empty()) {
+        for (const Popup& p : popups_) {
+            if (p.popup->visible) p.popup->draw(renderer);
+        }
+    }
+}
+
+void Widget::open_popup(Widget* owner, Widget* popup) {
+    if (!popup) return;
+    Widget* r = root();
+    for (const Popup& p : r->popups_) {
+        if (p.popup == popup) return;  // 已在打开列表
+    }
+    r->popups_.push_back({owner, popup});
+    popup->visible = true;
+}
+
+void Widget::close_popups() {
+    Widget* r = root();
+    for (const Popup& p : r->popups_) {
+        p.popup->visible = false;
+        // 弹出面板通常挂在根节点下（事件路由需要），关闭时从根分离，
+        // 避免切页/销毁控件后根节点残留悬空子指针（UI-033 生命周期修复）
+        if (p.popup->parent()) p.popup->parent()->remove_child(p.popup);
+    }
+    r->popups_.clear();
+}
+
+bool Widget::has_open_popups() {
+    return root()->popups_.size() > 0;
+}
+
+void Widget::close_topmost_popup() {
+    Widget* r = root();
+    if (r->popups_.empty()) return;
+    const Popup& p = r->popups_.back();
+    p.popup->visible = false;
+    if (p.popup->parent()) p.popup->parent()->remove_child(p.popup);
+    r->popups_.pop_back();
+}
+
+void Widget::prune_popups(float x, float y) {
+    Widget* r = root();
+    for (auto it = r->popups_.begin(); it != r->popups_.end();) {
+        const bool inside_popup = it->popup->contains(x, y);
+        const bool inside_owner = it->owner && it->owner->contains(x, y);
+        if (!inside_popup && !inside_owner) {
+            it->popup->visible = false;
+            it = r->popups_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+namespace {
+// keep 是否在某子树的祖先链上（含自身）
+bool in_subtree(Widget* sub, Widget* node) {
+    while (node) {
+        if (node == sub) return true;
+        node = node->parent();
+    }
+    return false;
+}
+}  // namespace
+
+// 清除所有不在 keep 子树内的控件 hover 态（模态打开时残留高亮清理）
+void Widget::clear_hover_outside(Widget* keep) {
+    if (!in_subtree(keep, this)) {
+        if (hovered_) {
+            hovered_ = false;
+            on_mouse_move(0.f, 0.f);  // 通知控件退出 hover（如按钮还原高亮）
+        }
+        return;
+    }
+    for (Widget* child : children_) child->clear_hover_outside(keep);
+}
+
+}  // namespace ui

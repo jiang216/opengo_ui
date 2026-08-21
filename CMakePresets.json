@@ -1,0 +1,80 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 24, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Visual Studio 18 2026",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64",
+      "displayName": "x64 Release",
+      "inherits": "base",
+      "architecture": { "value": "x64", "strategy": "external" }
+    },
+    {
+      "name": "x64-debug",
+      "displayName": "x64 Debug",
+      "inherits": "base",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "x64-ffmpeg",
+      "displayName": "x64 Release + FFmpeg",
+      "inherits": "x64",
+      "cacheVariables": {
+        "OPENGUI_MEDIA_FFMPEG": "ON"
+      }
+    },
+    {
+      "name": "x64-opencv",
+      "displayName": "x64 Release + OpenCV",
+      "inherits": "x64",
+      "cacheVariables": {
+        "OPENGUI_MEDIA_OPENCV": "ON"
+      }
+    },
+    {
+      "name": "x64-all",
+      "displayName": "x64 Release + All Media",
+      "inherits": "x64",
+      "cacheVariables": {
+        "OPENGUI_MEDIA_FFMPEG": "ON",
+        "OPENGUI_MEDIA_OPENCV": "ON"
+      }
+    },
+    {
+      "name": "install",
+      "displayName": "Install (x64 Release)",
+      "inherits": "x64",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+      }
+    },
+    {
+      "name": "install-all",
+      "displayName": "Install All Media (x64 Release)",
+      "inherits": "x64-all",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "x64", "configurePreset": "x64" },
+    { "name": "x64-debug", "configurePreset": "x64-debug" },
+    { "name": "x64-ffmpeg", "configurePreset": "x64-ffmpeg" },
+    { "name": "x64-opencv", "configurePreset": "x64-opencv" },
+    { "name": "x64-all", "configurePreset": "x64-all" },
+    { "name": "install", "configurePreset": "install" },
+    { "name": "install-all", "configurePreset": "install-all" }
+  ]
+}

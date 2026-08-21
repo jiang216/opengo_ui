@@ -1,0 +1,950 @@
+### core/include/ui/core/keycodes.h
+  enum Key (78 entries)
+  enum KeyMod (4 entries)
+### core/include/ui/core/log.h
+  func log_info                 void log_info(const char* fmt, ...)
+  func log_error                void log_error(const char* fmt, ...)
+### core/include/ui/core/math.h
+  struct Vec2
+    field    x                        float x = 0, y = 0;
+  struct Vec4
+    field    r                        float r = 0, g = 0, b = 0, a = 1;
+  struct Rect
+    field    x                        float x = 0, y = 0, w = 0, h = 0;
+### core/include/ui/core/version.h
+  func version_string           inline const char* version_string()
+### gl/include/ui/gl/window.h
+  class Window
+    method   Window                   Window(int width, int height, const char* title)
+    method   should_close             bool should_close() const
+    method   poll_events              void poll_events()
+    method   swap_buffers             void swap_buffers()
+    method   set_vsync                void set_vsync(int interval)
+    method   width                    int width() const
+    method   height                   int height() const
+    method   handle                   GLFWwindow* handle() const
+    method   resized                  bool resized()
+    method   mouse_x                  float mouse_x() const
+    method   mouse_y                  float mouse_y() const
+    method   mouse_down               bool mouse_down(int button) const
+    method   mouse_pressed            bool mouse_pressed(int button)
+    method   mouse_released           bool mouse_released(int button)
+    method   scroll_dx                float scroll_dx()
+    method   scroll_dy                float scroll_dy()
+    method   key_down                 bool key_down(int key) const
+    method   key_pressed              bool key_pressed(int key)
+    method   key_released             bool key_released(int key)
+    method   char_pressed_count       int char_pressed_count() const
+    method   char_pressed_at          unsigned int char_pressed_at(int i) const
+    method   clear_chars              void clear_chars()
+### gl/include/ui/gl/renderer.h
+  class Renderer
+    method   Renderer                 Renderer() = default
+    method   init                     bool init()
+    method   begin_frame              void begin_frame(const Vec4& clear_color)
+    method   set_viewport             void set_viewport(int width, int height)
+    method   draw_quad                void draw_quad(const Rect& rect, const Vec4& color)
+    method   draw_rounded_rect        void draw_rounded_rect(const Rect& rect, float radius, const Vec4& color)
+    method   draw_rect_outline        void draw_rect_outline(const Rect& rect, float thickness, const Vec4& color)
+    method   draw_textured_quad       void draw_textured_quad(const Rect& rect, unsigned int texture_id, const Rect& uv, const Vec4& color)
+    method   draw_polygon             void draw_polygon(const Vec2* points, int count, const Vec4& color)
+    method   push_scissor             void push_scissor(const Rect& rect)
+    method   pop_scissor              void pop_scissor()
+    method   viewport_width           int viewport_width() const
+    method   viewport_height          int viewport_height() const
+### gl/include/ui/gl/texture.h
+  class Texture
+    method   Texture                  Texture() = default
+    field    operator                 Texture& operator=(const Texture&) = delete;
+    method   load_from_file           bool load_from_file(const char* path)
+    method   create                   void create(int width, int height, const void* rgba)
+    method   update                   void update(const void* rgba)
+    method   update_sub               void update_sub(int x, int y, int w, int h, const void* rgba)
+    method   bind                     void bind(unsigned int unit = 0) const
+    method   id                       unsigned int id() const
+    method   width                    int width() const
+    method   height                   int height() const
+### gl/include/ui/gl/font.h
+  class Font
+    method   Font                     Font() = default
+    field    operator                 Font& operator=(const Font&) = delete;
+    method   load_from_file           bool load_from_file(const char* path, float pixel_height = 32.f)
+    method   load_cjk_font            bool load_cjk_font(const char* path, int font_index = 0)
+    method   load_cjk_font_auto       bool load_cjk_font_auto()
+    method   load_icon_font           bool load_icon_font(const char* path, float pixel_height)
+    method   draw_text                void draw_text(Renderer& renderer, const char* text, float x, float y, const Vec4& color) const
+    method   measure_text             float measure_text(const char* text) const
+    method   char_width               float char_width(unsigned int codepoint) const
+    method   icon_loaded              bool icon_loaded() const
+    method   draw_icon                void draw_icon(Renderer& renderer, unsigned codepoint, float cx, float cy, float size, const Vec4& color) const
+    method   ascent                   float ascent() const
+    method   descent                  float descent() const
+    method   line_height              float line_height() const
+    method   pixel_height             float pixel_height() const
+    method   cjk_ready                bool cjk_ready() const
+  struct Glyph
+    field    x0                       float x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+    field    u0                       float u0 = 0, v0 = 0, u1 = 0, v1 = 0;
+    field    xadvance                 float xadvance = 0;
+  func decode_utf8              static unsigned decode_utf8(const char*& in)
+  func ensure_dynamic           const Glyph* ensure_dynamic(unsigned int cp) const
+  func bake_cjk                 void bake_cjk(unsigned int cp) const
+### ui/include/ui/ui/widget.h
+  class Widget
+    method   Widget                   explicit Widget(float x = 0, float y = 0, float w = 0, float h = 0)
+    field    operator                 Widget& operator=(const Widget&) = delete;
+    method   set_bounds               void set_bounds(float x, float y, float w, float h)
+    method   bounds                   const Rect& bounds() const
+    field    visible                  bool visible = true;
+    method   add_class                void add_class(const char* cls)
+    method   remove_class             void remove_class(const char* cls)
+    method   has_class                bool has_class(const char* cls) const
+    method   classes                  const std::vector<std::string>& classes() const
+    method   add_child                void add_child(Widget* child)
+    method   remove_child             void remove_child(Widget* child)
+    method   clear_children           void clear_children()
+    method   destroy                  void destroy()
+    method   parent                   Widget* parent() const
+    method   children                 const std::vector<Widget*>& children() const
+    method   bring_to_front           void bring_to_front()
+    method   contains                 bool contains(float x, float y) const
+    method   on_mouse_move            virtual bool on_mouse_move(float x, float y)
+    method   on_mouse_down            virtual bool on_mouse_down(float x, float y, int button)
+    method   on_mouse_up              virtual bool on_mouse_up(float x, float y, int button)
+    method   on_mouse_scroll          virtual bool on_mouse_scroll(float x, float y, float dx, float dy)
+    method   capture_mouse            void capture_mouse()
+    method   release_mouse_capture    void release_mouse_capture()
+    method   open_popup               void open_popup(Widget* owner, Widget* popup)
+    method   close_popups             void close_popups()
+    method   has_open_popups          bool has_open_popups()
+    method   set_modal                void set_modal(Widget* modal)
+    method   modal                    Widget* modal() const
+    method   set_tooltip              void set_tooltip(const char* text)
+    method   tooltip                  const std::string& tooltip() const
+    method   dispatch_mouse_move      bool dispatch_mouse_move(float x, float y)
+    method   dispatch_mouse_down      bool dispatch_mouse_down(float x, float y, int button)
+    method   dispatch_mouse_up        bool dispatch_mouse_up(float x, float y, int button)
+    method   dispatch_mouse_scroll    bool dispatch_mouse_scroll(float x, float y, float dx, float dy)
+    method   hovered                  bool hovered() const
+    method   pressed                  bool pressed() const
+    field    focusable                bool focusable = false;
+    method   on_focus_changed         virtual void on_focus_changed(bool focused)
+    method   on_key_down              virtual bool on_key_down(int key, int mods)
+    method   on_key_up                virtual bool on_key_up(int key, int mods)
+    method   on_char                  virtual bool on_char(unsigned int codepoint)
+    method   focus                    void focus()
+    method   blur                     void blur()
+    method   focused                  bool focused() const
+    method   dispatch_key_down        bool dispatch_key_down(int key, int mods)
+    method   dispatch_key_up          bool dispatch_key_up(int key, int mods)
+    method   dispatch_char            bool dispatch_char(unsigned int codepoint)
+    method   focus_next               void focus_next()
+    method   focus_prev               void focus_prev()
+    method   root                     Widget* root()
+    method   on_layout                virtual void on_layout()
+    method   layout                   void layout()
+    method   preferred_height         virtual float preferred_height() const
+    method   on_draw                  virtual void on_draw(Renderer& renderer)
+    method   draw                     virtual void draw(Renderer& renderer)
+  struct Popup
+    field    owner                    Widget* owner;
+    field    popup                    Widget* popup;
+### ui/include/ui/ui/theme.h
+  struct Theme
+    field    window_bg                Vec4 window_bg{0.12f, 0.13f, 0.15f, 1.0f};
+    field    button_normal            Vec4 button_normal{0.22f, 0.23f, 0.26f, 1.0f};
+    field    button_hover             Vec4 button_hover{0.28f, 0.29f, 0.33f, 1.0f};
+    field    button_pressed           Vec4 button_pressed{0.16f, 0.17f, 0.20f, 1.0f};
+    field    accent                   Vec4 accent{0.13f, 0.58f, 0.95f, 1.0f};
+    field    accent_hover             Vec4 accent_hover{0.10f, 0.49f, 0.84f, 1.0f};
+    field    accent_pressed           Vec4 accent_pressed{0.08f, 0.40f, 0.72f, 1.0f};
+    field    text                     Vec4 text{0.92f, 0.93f, 0.95f, 1.0f};
+    field    text_dim                 Vec4 text_dim{0.62f, 0.64f, 0.68f, 1.0f};
+    field    radius                   float radius = 6.f;
+    field    success                  Vec4 success{0.09f, 0.72f, 0.47f, 1.0f};
+    field    info                     Vec4 info{0.12f, 0.62f, 1.0f, 1.0f};
+    field    warning                  Vec4 warning{1.0f, 0.72f, 0.0f, 1.0f};
+    field    danger                   Vec4 danger{1.0f, 0.34f, 0.13f, 1.0f};
+    field    border                   Vec4 border{0.93f, 0.93f, 0.93f, 1.0f};
+    field    panel                    Vec4 panel{1.0f, 1.0f, 1.0f, 1.0f};
+    field    text_secondary           Vec4 text_secondary{0.37f, 0.37f, 0.37f, 1.0f};
+    field    text_muted               Vec4 text_muted{0.6f, 0.6f, 0.6f, 1.0f};
+    method   make_dark                static Theme make_dark()
+    method   make_light               static Theme make_light()
+    method   make_layui               static Theme make_layui()
+### ui/include/ui/ui/layui_style.h
+  func bg_color                 Vec4 bg_color(const char* cls)
+  func bg_fill                  Vec4 bg_fill(const char* cls)
+  func hex                      Vec4 hex(const char* hex)
+  func has_class                bool has_class(const Widget* w, const char* cls)
+### ui/include/ui/ui/layui_icons.h
+  func from_class               uint32_t from_class(const char* name)
+  const ic_404                   constexpr uint32_t ic_404 = 0xE61C;
+  const about                    constexpr uint32_t about = 0xE60B;
+  const add_1                    constexpr uint32_t add_1 = 0xE654;
+  const add_circle               constexpr uint32_t add_circle = 0xE61F;
+  const add_circle_fine          constexpr uint32_t add_circle_fine = 0xE608;
+  const addition                 constexpr uint32_t addition = 0xE624;
+  const align_center             constexpr uint32_t align_center = 0xE647;
+  const align_left               constexpr uint32_t align_left = 0xE649;
+  const align_right              constexpr uint32_t align_right = 0xE648;
+  const android                  constexpr uint32_t android = 0xE684;
+  const app                      constexpr uint32_t app = 0xE653;
+  const at                       constexpr uint32_t at = 0xE687;
+  const auz                      constexpr uint32_t auz = 0xE672;
+  const backspace                constexpr uint32_t backspace = 0xE694;
+  const bluetooth                constexpr uint32_t bluetooth = 0xE689;
+  const camera                   constexpr uint32_t camera = 0xE660;
+  const camera_fill              constexpr uint32_t camera_fill = 0xE65D;
+  const carousel                 constexpr uint32_t carousel = 0xE634;
+  const cart                     constexpr uint32_t cart = 0xE657;
+  const cart_simple              constexpr uint32_t cart_simple = 0xE698;
+  const cellphone                constexpr uint32_t cellphone = 0xE678;
+  const cellphone_fine           constexpr uint32_t cellphone_fine = 0xE63B;
+  const chart                    constexpr uint32_t chart = 0xE62C;
+  const chart_screen             constexpr uint32_t chart_screen = 0xE629;
+  const chat                     constexpr uint32_t chat = 0xE606;
+  const chrome                   constexpr uint32_t chrome = 0xE68A;
+  const circle                   constexpr uint32_t circle = 0xE63F;
+  const circle_dot               constexpr uint32_t circle_dot = 0xE617;
+  const clear                    constexpr uint32_t clear = 0xE788;
+  const code_circle              constexpr uint32_t code_circle = 0xE635;
+  const cols                     constexpr uint32_t cols = 0xE610;
+  const component                constexpr uint32_t component = 0xE857;
+  const console                  constexpr uint32_t console = 0xE665;
+  const date                     constexpr uint32_t date = 0xE637;
+  const ic_delete                constexpr uint32_t ic_delete = 0xE640;
+  const dialogue                 constexpr uint32_t dialogue = 0xE63A;
+  const diamond                  constexpr uint32_t diamond = 0xE735;
+  const disabled                 constexpr uint32_t disabled = 0xE6CC;
+  const dollar                   constexpr uint32_t dollar = 0xE659;
+  const down                     constexpr uint32_t down = 0xE61A;
+  const download_circle          constexpr uint32_t download_circle = 0xE601;
+  const edge                     constexpr uint32_t edge = 0xE68B;
+  const edit                     constexpr uint32_t edit = 0xE642;
+  const email                    constexpr uint32_t email = 0xE618;
+  const engine                   constexpr uint32_t engine = 0xE628;
+  const error                    constexpr uint32_t error = 0xE693;
+  const ic_export                constexpr uint32_t ic_export = 0xE67D;
+  const eye                      constexpr uint32_t eye = 0xE695;
+  const eye_invisible            constexpr uint32_t eye_invisible = 0xE696;
+  const face_cry                 constexpr uint32_t face_cry = 0xE69C;
+  const face_smile               constexpr uint32_t face_smile = 0xE6AF;
+  const face_smile_b             constexpr uint32_t face_smile_b = 0xE650;
+  const face_smile_fine          constexpr uint32_t face_smile_fine = 0xE60C;
+  const face_surprised           constexpr uint32_t face_surprised = 0xE664;
+  const female                   constexpr uint32_t female = 0xE661;
+  const file                     constexpr uint32_t file = 0xE621;
+  const file_b                   constexpr uint32_t file_b = 0xE655;
+  const find_fill                constexpr uint32_t find_fill = 0xE670;
+  const fire                     constexpr uint32_t fire = 0xE756;
+  const firefox                  constexpr uint32_t firefox = 0xE686;
+  const flag                     constexpr uint32_t flag = 0xE66C;
+  const folder                   constexpr uint32_t folder = 0xEABE;
+  const folder_open              constexpr uint32_t folder_open = 0xEAC1;
+  const fonts_clear              constexpr uint32_t fonts_clear = 0xE639;
+  const fonts_code               constexpr uint32_t fonts_code = 0xE64E;
+  const fonts_del                constexpr uint32_t fonts_del = 0xE64F;
+  const fonts_html               constexpr uint32_t fonts_html = 0xE64B;
+  const fonts_i                  constexpr uint32_t fonts_i = 0xE644;
+  const fonts_strong             constexpr uint32_t fonts_strong = 0xE62B;
+  const fonts_u                  constexpr uint32_t fonts_u = 0xE646;
+  const form                     constexpr uint32_t form = 0xE63C;
+  const friends                  constexpr uint32_t friends = 0xE612;
+  const gift                     constexpr uint32_t gift = 0xE627;
+  const gitee                    constexpr uint32_t gitee = 0xE69B;
+  const github                   constexpr uint32_t github = 0xE6A7;
+  const group                    constexpr uint32_t group = 0xE613;
+  const headset                  constexpr uint32_t headset = 0xE6FC;
+  const heart                    constexpr uint32_t heart = 0xE68C;
+  const heart_fill               constexpr uint32_t heart_fill = 0xE68F;
+  const help                     constexpr uint32_t help = 0xE607;
+  const home                     constexpr uint32_t home = 0xE68E;
+  const ie                       constexpr uint32_t ie = 0xE7BB;
+  const ios                      constexpr uint32_t ios = 0xE680;
+  const key                      constexpr uint32_t key = 0xE683;
+  const layer                    constexpr uint32_t layer = 0xE638;
+  const layim_download           constexpr uint32_t layim_download = 0xE61E;
+  const layim_theme              constexpr uint32_t layim_theme = 0xE61B;
+  const layim_uploadfile         constexpr uint32_t layim_uploadfile = 0xE61D;
+  const layouts                  constexpr uint32_t layouts = 0xE632;
+  const leaf                     constexpr uint32_t leaf = 0xE701;
+  const left                     constexpr uint32_t left = 0xE603;
+  const light                    constexpr uint32_t light = 0xE748;
+  const link                     constexpr uint32_t link = 0xE64C;
+  const list                     constexpr uint32_t list = 0xE60A;
+  const loading                  constexpr uint32_t loading = 0xE63D;
+  const loading_1                constexpr uint32_t loading_1 = 0xE63E;
+  const location                 constexpr uint32_t location = 0xE715;
+  const lock                     constexpr uint32_t lock = 0xE69A;
+  const log                      constexpr uint32_t log = 0xE60E;
+  const login_qq                 constexpr uint32_t login_qq = 0xE676;
+  const login_wechat             constexpr uint32_t login_wechat = 0xE677;
+  const login_weibo              constexpr uint32_t login_weibo = 0xE675;
+  const logout                   constexpr uint32_t logout = 0xE682;
+  const male                     constexpr uint32_t male = 0xE662;
+  const menu_fill                constexpr uint32_t menu_fill = 0xE60F;
+  const mike                     constexpr uint32_t mike = 0xE6DC;
+  const moon                     constexpr uint32_t moon = 0xE6C2;
+  const more                     constexpr uint32_t more = 0xE65F;
+  const more_vertical            constexpr uint32_t more_vertical = 0xE671;
+  const music                    constexpr uint32_t music = 0xE690;
+  const mute                     constexpr uint32_t mute = 0xE685;
+  const next                     constexpr uint32_t next = 0xE65B;
+  const note                     constexpr uint32_t note = 0xE66E;
+  const notice                   constexpr uint32_t notice = 0xE667;
+  const ok                       constexpr uint32_t ok = 0xE605;
+  const password                 constexpr uint32_t password = 0xE673;
+  const pause                    constexpr uint32_t pause = 0xE651;
+  const picture                  constexpr uint32_t picture = 0xE64A;
+  const picture_fine             constexpr uint32_t picture_fine = 0xE60D;
+  const play                     constexpr uint32_t play = 0xE652;
+  const praise                   constexpr uint32_t praise = 0xE6C6;
+  const prev                     constexpr uint32_t prev = 0xE65A;
+  const prev_circle              constexpr uint32_t prev_circle = 0xE633;
+  const print                    constexpr uint32_t print = 0xE66D;
+  const question                 constexpr uint32_t question = 0xE699;
+  const radio                    constexpr uint32_t radio = 0xE643;
+  const rate                     constexpr uint32_t rate = 0xE67B;
+  const rate_half                constexpr uint32_t rate_half = 0xE6C9;
+  const rate_solid               constexpr uint32_t rate_solid = 0xE67A;
+  const read                     constexpr uint32_t read = 0xE705;
+  const reduce_circle            constexpr uint32_t reduce_circle = 0xE616;
+  const refresh                  constexpr uint32_t refresh = 0xE669;
+  const refresh_1                constexpr uint32_t refresh_1 = 0xE666;
+  const refresh_3                constexpr uint32_t refresh_3 = 0xE9AA;
+  const release                  constexpr uint32_t release = 0xE609;
+  const reply_fill               constexpr uint32_t reply_fill = 0xE611;
+  const ic_return                constexpr uint32_t ic_return = 0xE65C;
+  const right                    constexpr uint32_t right = 0xE602;
+  const rmb                      constexpr uint32_t rmb = 0xE65E;
+  const rss                      constexpr uint32_t rss = 0xE808;
+  const screen_full              constexpr uint32_t screen_full = 0xE622;
+  const screen_restore           constexpr uint32_t screen_restore = 0xE758;
+  const search                   constexpr uint32_t search = 0xE615;
+  const senior                   constexpr uint32_t senior = 0xE674;
+  const service                  constexpr uint32_t service = 0xE626;
+  const set                      constexpr uint32_t set = 0xE716;
+  const set_fill                 constexpr uint32_t set_fill = 0xE614;
+  const set_sm                   constexpr uint32_t set_sm = 0xE620;
+  const share                    constexpr uint32_t share = 0xE641;
+  const shrink_right             constexpr uint32_t shrink_right = 0xE668;
+  const slider                   constexpr uint32_t slider = 0xE714;
+  const snowflake                constexpr uint32_t snowflake = 0xE6B1;
+  const speaker                  constexpr uint32_t speaker = 0xE645;
+  const spread_left              constexpr uint32_t spread_left = 0xE66B;
+  const star                     constexpr uint32_t star = 0xE600;
+  const star_fill                constexpr uint32_t star_fill = 0xE658;
+  const subtraction              constexpr uint32_t subtraction = 0xE67E;
+  const success                  constexpr uint32_t success = 0xE697;
+  const survey                   constexpr uint32_t survey = 0xE6B2;
+  const table                    constexpr uint32_t table = 0xE62D;
+  const tabs                     constexpr uint32_t tabs = 0xE62A;
+  const ic_template              constexpr uint32_t ic_template = 0xE663;
+  const template_1               constexpr uint32_t template_1 = 0xE656;
+  const templeate_1              constexpr uint32_t templeate_1 = 0xE630;
+  const test                     constexpr uint32_t test = 0xE692;
+  const theme                    constexpr uint32_t theme = 0xE66A;
+  const time                     constexpr uint32_t time = 0xE68D;
+  const tips                     constexpr uint32_t tips = 0xE702;
+  const tips_fill                constexpr uint32_t tips_fill = 0xEB2E;
+  const top                      constexpr uint32_t top = 0xE604;
+  const transfer                 constexpr uint32_t transfer = 0xE691;
+  const tread                    constexpr uint32_t tread = 0xE6C5;
+  const tree                     constexpr uint32_t tree = 0xE62E;
+  const triangle_d               constexpr uint32_t triangle_d = 0xE625;
+  const triangle_r               constexpr uint32_t triangle_r = 0xE623;
+  const unlink                   constexpr uint32_t unlink = 0xE64D;
+  const up                       constexpr uint32_t up = 0xE619;
+  const upload                   constexpr uint32_t upload = 0xE67C;
+  const upload_circle            constexpr uint32_t upload_circle = 0xE62F;
+  const upload_drag              constexpr uint32_t upload_drag = 0xE681;
+  const user                     constexpr uint32_t user = 0xE770;
+  const username                 constexpr uint32_t username = 0xE66F;
+  const util                     constexpr uint32_t util = 0xE631;
+  const vercode                  constexpr uint32_t vercode = 0xE679;
+  const video                    constexpr uint32_t video = 0xE6ED;
+  const voice                    constexpr uint32_t voice = 0xE688;
+  const water                    constexpr uint32_t water = 0xE636;
+  const website                  constexpr uint32_t website = 0xE7AE;
+  const wifi                     constexpr uint32_t wifi = 0xE7E0;
+  const windows                  constexpr uint32_t windows = 0xE67F;
+### ui/include/ui/ui/badge.h
+  class Badge
+    method   Badge                    Badge(float x, float y, const char* text)
+    method   set_text                 void set_text(const char* text)
+    method   text                     const std::string& text() const
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   preferred_width          float preferred_width() const
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/blockquote.h
+  class BlockQuote
+    method   BlockQuote               BlockQuote(float w, float h, const char* text, bool nm = false)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_text                 void set_text(const char* text)
+    method   preferred_height         float preferred_height() const
+    method   on_layout                void on_layout() override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/breadcrumb.h
+  class Breadcrumb
+    method   Breadcrumb               Breadcrumb(float x, float y, float w, float h)
+    method   add_item                 void add_item(const char* text)
+    method   add_current              void add_current(const char* text)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   preferred_height         float preferred_height() const
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  struct Item
+    field    text                     std::string text;
+    field    current                  bool current = false;
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/button.h
+  class Button
+    method   Button                   Button(float x, float y, float w, float h, const char* text)
+    method   set_text                 void set_text(const char* text)
+    method   text                     const std::string& text() const
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_on_click             void set_on_click(std::function<void()> cb)
+    method   on_mouse_up              bool on_mouse_up(float x, float y, int button) override
+    method   on_key_down              bool on_key_down(int key, int mods) override
+    method   preferred_height         float preferred_height() const
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/card.h
+  class Card
+    method   Card                     Card(float x, float y, float w, float h)
+    method   set_header               void set_header(const char* text)
+    method   header                   const std::string& header() const
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_spacing              void set_spacing(float spacing)
+    method   on_layout                void on_layout() override
+    method   preferred_height         float preferred_height() const
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/carousel.h
+  class Carousel
+    method   Carousel                 Carousel(float x, float y, float w, float h)
+    method   add_slide                void add_slide(const Vec4& bg, const char* title)
+    method   count                    int count() const
+    method   current                  int current() const
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_on_change            void set_on_change(std::function<void(int)> cb)
+    method   set_auto_play            void set_auto_play(bool on, float seconds = 3.f)
+    method   next                     void next()
+    method   prev                     void prev()
+    method   advance                  void advance(float dt)
+    method   on_layout                void on_layout() override
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  struct Slide
+    field    bg                       Vec4 bg{0.9f, 0.9f, 0.9f, 1.0f};
+    field    title                    std::string title;
+  func set_current              void set_current(int idx)
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/checkbox.h
+  class CheckBox
+    method   CheckBox                 CheckBox(float x, float y, float w, float h, const char* text)
+    method   set_text                 void set_text(const char* text)
+    method   set_checked              void set_checked(bool checked)
+    method   checked                  bool checked() const
+    method   toggle                   void toggle()
+    method   set_on_change            void set_on_change(std::function<void(bool)> cb)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_key_down              bool on_key_down(int key, int mods) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/circle.h
+  class Circle
+    method   Circle                   Circle(float size, const char* text)
+    method   set_font                 void set_font(Font* font)
+    method   set_color                void set_color(const Vec4& c)
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/code.h
+  class Code
+    method   Code                     Code(float x, float y, float w, float h)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_lang                 void set_lang(const char* lang)
+    method   set_code                 void set_code(const char* code)
+    method   clear                    void clear()
+    method   add_line                 void add_line(const char* line)
+    method   empty                    bool empty() const
+    method   on_mouse_scroll          bool on_mouse_scroll(float x, float y, float dx, float dy) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/collapse.h
+  class Collapse
+    method   Collapse                 Collapse(float x, float y, float w, float h)
+    method   add_item                 void add_item(const char* title)
+    method   set_active               void set_active(int index)
+    method   active                   int active() const
+    method   set_on_change            void set_on_change(std::function<void(int)> cb)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_layout                void on_layout() override
+    method   preferred_height         float preferred_height() const
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  struct Item
+    field    title                    std::string title;
+    field    child_begin              size_t child_begin = 0;
+    field    y0                       float y0 = 0.f, y1 = 0.f;
+  func layout_items             void layout_items()
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/colorpicker.h
+  class ColorPicker
+    method   ColorPicker              ColorPicker(float x, float y, float w, float h)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_color                void set_color(const Vec4& c)
+    method   color                    const Vec4& color() const
+    method   set_on_change            void set_on_change(std::function<void(const Vec4&)> cb)
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/combobox.h
+  class ComboBox
+    method   ComboBox                 ComboBox(float x, float y, float w, float h)
+    method   add_option               void add_option(const char* text)
+    method   select                   void select(int index)
+    method   selected                 int selected() const
+    method   set_on_change            void set_on_change(std::function<void(int)> cb)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_layout                void on_layout() override
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_key_down              bool on_key_down(int key, int mods) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/countdown_text.h
+  class CountdownText
+    method   CountdownText            CountdownText(float x, float y, float w, float h)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_total                void set_total(float seconds)
+    method   restart                  void restart()
+    method   preferred_height         float preferred_height() const
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/dropdown.h
+  class Dropdown
+    method   Dropdown                 Dropdown(float x, float y, float w, float h, const char* title = )
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   add_item                 void add_item(const char* title, std::function<void()> cb = {})
+    method   add_separator            void add_separator()
+    method   on_layout                void on_layout() override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/fieldset.h
+  class FieldsetTitle
+    method   FieldsetTitle            FieldsetTitle(float w, float h, const char* text)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  class Fieldset
+    method   Fieldset                 Fieldset(float w, float h, const char* legend)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   preferred_height         float preferred_height() const
+    method   on_layout                void on_layout() override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/grid.h
+  class Grid
+    method   Grid                     Grid(float x, float y, float w, float h, int cols)
+    method   set_cols                 void set_cols(int cols)
+    method   set_row_height           void set_row_height(float h)
+    method   set_spacing              void set_spacing(float s)
+    method   set_padding              void set_padding(float p)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_span_cols            void set_span_cols(int cols)
+    method   set_breakpoint           void set_breakpoint(int bp)
+    method   on_layout                void on_layout() override
+    method   preferred_height         float preferred_height() const
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/hbox.h
+  class HBox
+    method   HBox                     HBox(float x, float y, float w, float h)
+    method   set_spacing              void set_spacing(float spacing)
+    method   set_padding              void set_padding(float padding)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_layout                void on_layout() override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/hline.h
+  class HLine
+    method   HLine                    HLine(float w, float h, const Vec4& color)
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/icon.h
+  class Icon
+    method   Icon                     Icon(float x, float y, float w, float h, const char* icon_name = )
+    method   set_icon                 void set_icon(const char* name)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_color                void set_color(const Vec4& c)
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/label.h
+  class Label
+    method   Label                    Label(float x, float y, float w, float h, const char* text)
+    method   set_text                 void set_text(const char* text)
+    method   text                     const std::string& text() const
+    method   set_wrap                 void set_wrap(bool wrap)
+    method   wrap                     bool wrap() const
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_color                void set_color(const Vec4& color)
+    method   set_align                void set_align(int align)
+    method   preferred_height         float preferred_height() const
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/laydate.h
+  class Laydate
+    method   Laydate                  Laydate(float x, float y, float w, float h)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_on_change            void set_on_change(std::function<void(int, int, int)> cb)
+    method   set_date                 void set_date(int y, int m, int d)
+    method   next_month               void next_month()
+    method   prev_month               void prev_month()
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/laypage.h
+  class Laypage
+    method   Laypage                  Laypage(float x, float y, float w, float h)
+    method   set_total                void set_total(int total)
+    method   set_page                 void set_page(int page)
+    method   page                     int page() const
+    method   set_on_change            void set_on_change(std::function<void(int)> cb)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_layout                void on_layout() override
+    method   preferred_height         float preferred_height() const
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/menubar.h
+  class MenuBar
+    method   MenuBar                  MenuBar(float x, float y, float w, float h)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   add_menu                 void add_menu(const char* title)
+    method   add_item                 void add_item(const char* title, std::function<void()> cb)
+    method   on_layout                void on_layout() override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  struct Menu
+    field    trigger                  Button* trigger = nullptr;
+    field    popup                    VBox* popup = nullptr;
+  func toggle_menu              void toggle_menu(Menu& m)
+  func close_all_menus          void close_all_menus()
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/navmenu.h
+  class NavMenu
+    method   NavMenu                  NavMenu(float x, float y, float w, float h)
+    method   add_group                void add_group(const char* title)
+    method   add_item                 void add_item(const char* title, std::function<void()> cb = {})
+    method   set_active               void set_active(int group)
+    method   expand_all               void expand_all()
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_layout                void on_layout() override
+    method   preferred_height         float preferred_height() const
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_mouse_move            bool on_mouse_move(float x, float y) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  struct Item
+    field    text                     std::string text;
+    field    cb                       std::function<void()> cb;
+    field    y0                       float y0 = 0.f, y1 = 0.f;
+  struct Group
+    field    title                    std::string title;
+    field    items                    std::vector<Item> items;
+    field    expanded                 bool expanded = false;
+    field    y0                       float y0 = 0.f, y1 = 0.f;
+    field    body_y0                  float body_y0 = 0.f;
+  func layout_groups            void layout_groups()
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/panel.h
+  class Panel
+    method   Panel                    Panel(float x, float y, float w, float h)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/panelwindow.h
+  class PanelWindow
+    method   PanelWindow              PanelWindow(float x, float y, float w, float h, const char* title)
+    method   set_title                void set_title(const char* title)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_on_close             void set_on_close(std::function<void()> cb)
+    method   client_rect              Rect client_rect() const
+    method   on_layout                void on_layout() override
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_mouse_move            bool on_mouse_move(float x, float y) override
+    method   on_mouse_up              bool on_mouse_up(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/progress.h
+  class Progress
+    method   Progress                 Progress(float x, float y, float w, float h)
+    method   set_value                void set_value(float v)
+    method   value                    float value() const
+    method   set_show_text            void set_show_text(bool show)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/radiobutton.h
+  class RadioButton
+    method   RadioButton              RadioButton(float x, float y, float w, float h, const char* text)
+    method   set_text                 void set_text(const char* text)
+    method   set_checked              void set_checked(bool checked)
+    method   checked                  bool checked() const
+    method   set_on_activate          void set_on_activate(std::function<void()> cb)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_key_down              bool on_key_down(int key, int mods) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/radiogroup.h
+  class RadioGroup
+    method   RadioGroup               RadioGroup(float x, float y, float w, float h)
+    method   add_option               void add_option(const char* text)
+    method   selected                 int selected() const
+    method   select                   void select(int index)
+    method   set_on_change            void set_on_change(std::function<void(int)> cb)
+    method   set_option_height        void set_option_height(float h)
+    method   set_spacing              void set_spacing(float s)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_layout                void on_layout() override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/rate.h
+  class Rate
+    method   Rate                     Rate(float x, float y, float w, float h)
+    method   set_value                void set_value(int v)
+    method   value                    int value() const
+    method   set_readonly             void set_readonly(bool readonly)
+    method   readonly                 bool readonly() const
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_on_change            void set_on_change(std::function<void(int)> cb)
+    method   on_mouse_move            bool on_mouse_move(float x, float y) override
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_mouse_up              bool on_mouse_up(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/scrollbox.h
+  class ScrollBox
+    method   ScrollBox                ScrollBox(float x, float y, float w, float h)
+    method   set_spacing              void set_spacing(float spacing)
+    method   set_padding              void set_padding(float padding)
+    method   set_scroll_step          void set_scroll_step(float step)
+    method   scroll_offset            float scroll_offset() const
+    method   set_on_scroll_to_bottom  void set_on_scroll_to_bottom(std::function<void()> cb)
+    method   on_layout                void on_layout() override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+    method   draw                     void draw(Renderer& renderer) override
+    method   on_mouse_scroll          bool on_mouse_scroll(float x, float y, float dx, float dy) override
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_mouse_move            bool on_mouse_move(float x, float y) override
+    method   on_mouse_up              bool on_mouse_up(float x, float y, int button) override
+    method   set_theme                void set_theme(const Theme* theme)
+### ui/include/ui/ui/slider.h
+  class Slider
+    method   Slider                   Slider(float x, float y, float w, float h)
+    method   set_range                void set_range(float min_value, float max_value)
+    method   set_value                void set_value(float v)
+    method   set_value_silent         void set_value_silent(float v)
+    method   value                    float value() const
+    method   dragging                 bool dragging() const
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_on_change            void set_on_change(std::function<void(float)> cb)
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_mouse_move            bool on_mouse_move(float x, float y) override
+    method   on_mouse_up              bool on_mouse_up(float x, float y, int button) override
+    method   on_key_down              bool on_key_down(int key, int mods) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/switch.h
+  class Switch
+    method   Switch                   Switch(float x, float y, float w, float h)
+    method   set_text                 void set_text(const char* text)
+    method   text                     const std::string& text() const
+    method   set_checked              void set_checked(bool on)
+    method   checked                  bool checked() const
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_on_change            void set_on_change(std::function<void(bool)> cb)
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_key_down              bool on_key_down(int key, int mods) override
+    method   preferred_height         float preferred_height() const
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/table.h
+  class Table
+    method   Table                    Table(float x, float y, float w, float h)
+    method   add_column               void add_column(const char* title, float width, bool sortable = false)
+    method   add_row                  void add_row(const std::vector<std::string>& cells)
+    method   clear_rows               void clear_rows()
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_on_sort              void set_on_sort(std::function<void(int col, bool asc)> cb)
+    method   set_on_row_click         void set_on_row_click(std::function<void(int row)> cb)
+    method   col_count                int col_count() const
+    method   col_width                float col_width(int c) const
+    method   row                      const std::vector<std::string>& row(int r) const
+    method   selected_row             int selected_row() const
+    method   on_layout                void on_layout() override
+    method   preferred_height         float preferred_height() const
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  struct Column
+    field    title                    std::string title;
+    field    width                    float width = 0.f;
+    field    sortable                 bool sortable = false;
+    field    ascending                bool ascending = true;
+  func layout_columns           void layout_columns()
+  func rebuild_rows             void rebuild_rows()
+  func sort_rows                void sort_rows(int col)
+  func begin_edit               void begin_edit(int row, int col)
+  func commit_edit              void commit_edit()
+  func in_header                bool in_header(float x, float y) const
+  func header_col_at            int header_col_at(float x) const
+  func row_h                    float row_h() const
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/tabs.h
+  class Tabs
+    method   Tabs                     Tabs(float x, float y, float w, float h)
+    method   add_tab                  void add_tab(const char* title)
+    method   set_active               void set_active(int index)
+    method   active                   int active() const
+    method   set_on_change            void set_on_change(std::function<void(int)> cb)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_layout                void on_layout() override
+    method   preferred_height         float preferred_height() const
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  struct Tab
+    field    title                    std::string title;
+    field    x0                       float x0 = 0.f, x1 = 0.f;
+  func hit_tab                  int hit_tab(float x) const
+  func layout_titles            void layout_titles()
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/textbox.h
+  class TextBox
+    method   TextBox                  TextBox(float x, float y, float w, float h)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_text                 void set_text(const char* text)
+    method   text                     const std::string& text() const
+    method   set_on_change            void set_on_change(std::function<void(const char*)> cb)
+    method   set_on_enter             void set_on_enter(std::function<void()> cb)
+    method   on_key_down              bool on_key_down(int key, int mods) override
+    method   on_char                  bool on_char(unsigned int codepoint) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/timeline.h
+  class Timeline
+    method   Timeline                 Timeline(float x, float y, float w, float h)
+    method   add_item                 void add_item(const char* title, const char* content)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   preferred_height         float preferred_height() const
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  struct Item
+    field    title                    std::string title;
+    field    content                  std::string content;
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/transfer.h
+  class Transfer
+    method   Transfer                 Transfer(float x, float y, float w, float h)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_left_label           void set_left_label(const char* s)
+    method   set_right_label          void set_right_label(const char* s)
+    method   add_item                 void add_item(const char* name)
+    method   set_on_change            void set_on_change(std::function<void(const std::vector<std::string>&)> cb)
+    method   right_items              const std::vector<std::string>& right_items() const
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### ui/include/ui/ui/tree.h
+  class Tree
+    method   Tree                     Tree(float x, float y, float w, float h)
+    method   add_node                 int add_node(const char* text, int parent = -1)
+    method   set_node_text            void set_node_text(int index, const char* text)
+    method   set_expanded             void set_expanded(int index, bool expanded)
+    method   is_expanded              bool is_expanded(int index) const
+    method   expand_all               void expand_all(bool expanded)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   set_on_click             void set_on_click(std::function<void(int)> cb)
+    method   on_layout                void on_layout() override
+    method   preferred_height         float preferred_height() const
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_mouse_move            bool on_mouse_move(float x, float y) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+  struct Node
+    field    text                     std::string text;
+    field    parent                   int parent = -1;
+    field    children                 std::vector<int> children;
+    field    expanded                 bool expanded = false;
+  func layout_nodes             void layout_nodes() const
+  func hit_node                 int hit_node(float y) const
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/upload.h
+  class Upload
+    method   Upload                   Upload(float x, float y, float w, float h)
+    method   set_font                 void set_font(Font* font)
+    method   set_theme                void set_theme(const Theme* theme)
+    method   add_file                 void add_file(const char* name, int size_bytes)
+    method   advance                  void advance(float dt)
+    method   on_mouse_down            bool on_mouse_down(float x, float y, int button) override
+    method   on_draw                  void on_draw(Renderer& renderer) override
+    field    on_pick                  std::function<void()> on_pick;
+  struct File
+    field    name                     std::string name;
+    field    size                     int size = 0;
+    field    progress                 float progress = 0.f;
+    field    done                     bool done = false;
+  func remove_done              void remove_done()
+  const theme_                   const Theme* theme_ = nullptr;
+### ui/include/ui/ui/vbox.h
+  class VBox
+    method   VBox                     VBox(float x, float y, float w, float h)
+    method   set_spacing              void set_spacing(float spacing)
+    method   set_padding              void set_padding(float padding)
+    method   on_layout                void on_layout() override
+    method   preferred_height         float preferred_height() const
+    method   set_theme                void set_theme(const Theme* theme)
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### media/ffmpeg/include/ui/media/audio_out.h
+  class AudioOut
+    method   AudioOut                 AudioOut()
+    field    operator                 AudioOut& operator=(const AudioOut&) = delete;
+    method   open                     bool open(int sample_rate, int channels)
+    method   close                    void close()
+    method   is_open                  bool is_open() const
+    method   write                    void write(const std::int16_t* samples, int count)
+    method   pause                    void pause()
+    method   resume                   void resume()
+    method   flush                    void flush()
+### media/ffmpeg/include/ui/media/video_view.h
+  class VideoView
+    method   VideoView                VideoView()
+    method   open_source              bool open_source(const char* path)
+    method   close_source             void close_source()
+    method   has_video                bool has_video() const
+    method   play                     void play()
+    method   pause                    void pause()
+    method   set_playing              void set_playing(bool playing)
+    method   playing                  bool playing() const
+    method   set_loop                 void set_loop(bool loop)
+    method   loop                     bool loop() const
+    method   set_speed                void set_speed(float speed)
+    method   speed                    float speed() const
+    method   step_frame               void step_frame()
+    method   seek                     void seek(float seconds)
+    method   duration                 double duration() const
+    method   position                 float position() const
+    method   has_audio                bool has_audio() const
+    method   set_volume               void set_volume(float volume)
+    method   volume                   float volume() const
+    method   advance                  bool advance(float dt)
+    method   on_draw                  void on_draw(Renderer& renderer) override
+### media/opencv/include/ui/media/image_view.h
+  class ImageView
+    method   ImageView                ImageView()
+    method   load_from_file           bool load_from_file(const char* path)
+    method   has_image                bool has_image() const
+    method   image_width              int image_width() const
+    method   image_height             int image_height() const
+    method   on_draw                  void on_draw(Renderer& renderer) override

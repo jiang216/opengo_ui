@@ -1,0 +1,101 @@
+@PACKAGE_INIT@
+
+# opengl_ui CMake package config
+# 下游用法：find_package(opengl_ui REQUIRED [COMPONENTS ffmpeg opencv])
+#
+# 可用 components：
+#   core    - ui_core（自动包含）
+#   gl      - ui_gl  （自动包含）
+#   ui      - ui_ui  （自动包含）
+#   ffmpeg  - ui_media_ffmpeg（需要 FFmpeg）
+#   opencv  - ui_media_opencv（需要 OpenCV）
+
+include(CMakeFindDependencyMacro)
+
+# ---- 把本包的 install prefix 加入搜索路径（GLFW/OpenCV 等第三方依赖已随包打包） ----
+list(APPEND CMAKE_PREFIX_PATH "${PACKAGE_PREFIX_DIR}")
+
+# ---- 查找核心依赖 ----
+# GLFW（共享库，随包打包在 install prefix 下）
+find_dependency(glfw3 CONFIG)
+
+# OpenGL
+find_dependency(OpenGL)
+
+# ---- 查找可选依赖（FFmpeg/OpenCV） ----
+# 编译时配置决定哪些可选模块可用
+set(_opengl_ui_want_ffmpeg "@OPENGUI_MEDIA_FFMPEG@")
+set(_opengl_ui_want_opencv "@OPENGUI_MEDIA_OPENCV@")
+
+# 组件请求处理
+set(_opengl_ui_requested_components "")
+if(opengl_ui_FIND_COMPONENTS)
+    set(_opengl_ui_requested_components ${opengl_ui_FIND_COMPONENTS})
+else()
+    # 未指定组件时，根据编译时配置决定启用哪些
+    if(_opengl_ui_want_ffmpeg)
+        list(APPEND _opengl_ui_requested_components ffmpeg)
+    endif()
+    if(_opengl_ui_want_opencv)
+        list(APPEND _opengl_ui_requested_components opencv)
+    endif()
+endif()
+
+# FFmpeg component
+if("ffmpeg" IN_LIST _opengl_ui_requested_components)
+    if(NOT _opengl_ui_want_ffmpeg)
+        if(opengl_ui_FIND_REQUIRED_ffmpeg)
+            message(FATAL_ERROR "opengl_ui was built without FFmpeg support (OPENGUI_MEDIA_FFMPEG=OFF)")
+        else()
+            message(STATUS "opengl_ui: skipping ffmpeg component (not built)")
+        endif()
+    else()
+        # 把本包安装的 FindFFmpeg.cmake 加入 module path
+        list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+        find_dependency(FFmpeg)
+    endif()
+endif()
+
+# OpenCV component
+if("opencv" IN_LIST _opengl_ui_requested_components)
+    if(NOT _opengl_ui_want_opencv)
+        if(opengl_ui_FIND_REQUIRED_opencv)
+            message(FATAL_ERROR "opengl_ui was built without OpenCV support (OPENGUI_MEDIA_OPENCV=OFF)")
+        else()
+            message(STATUS "opengl_ui: skipping opencv component (not built)")
+        endif()
+    else()
+        # OpenCV 随包打包在 install prefix 的 cmake/opencv/ 下
+        list(APPEND CMAKE_PREFIX_PATH "${PACKAGE_PREFIX_DIR}/lib/cmake/opencv")
+        find_dependency(OpenCV CONFIG)
+    endif()
+endif()
+
+# ---- 导入 targets ----
+include("${CMAKE_CURRENT_LIST_DIR}/opengl_uiTargets.cmake")
+
+# ---- 设置组件变量 ----
+set(opengl_ui_FOUND TRUE)
+set(opengl_ui_VERSION @_OPENGUI_PROJECT_VERSION@)
+
+if(_opengl_ui_want_ffmpeg)
+    set(opengl_ui_ffmpeg_FOUND TRUE)
+else()
+    set(opengl_ui_ffmpeg_FOUND FALSE)
+endif()
+if(_opengl_ui_want_opencv)
+    set(opengl_ui_opencv_FOUND TRUE)
+else()
+    set(opengl_ui_opencv_FOUND FALSE)
+endif()
+
+# ---- 检查必需组件是否满足 ----
+foreach(_comp ${opengl_ui_FIND_COMPONENTS})
+    if(NOT opengl_ui_${_comp}_FOUND)
+        if(opengl_ui_FIND_REQUIRED_${_comp})
+            message(FATAL_ERROR "Required component '${_comp}' not found in opengl_ui")
+        endif()
+    endif()
+endforeach()
+
+check_required_components(opengl_ui)

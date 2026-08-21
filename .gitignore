@@ -1,0 +1,30 @@
+# ---- 构建输出（根目录锚定 + layui_test 子工程；不误伤 scripts/build 源码目录）----
+/build/
+/cmake-build-*/
+/install/
+/tmp/
+layui_test/build/
+layui_test/cmake-build-*/
+
+# ---- 3rdparty：仅入库 glad/stb 源码与 sources.md 清单 ----
+# src/ 为第三方源码+参考素材镜像（opencv/ffmpeg/glfw/layui 等，见 3rdparty/sources.md），
+# build/、install/ 为编译产物，均可按清单重新获取
+3rdparty/*
+!3rdparty/glad/
+!3rdparty/stb/
+!3rdparty/sources.md
+
+# ---- 测试媒体素材（file/audio|img|video，323MB，不入库）----
+/file/
+
+# ---- IDE / 工具本地状态 ----
+.idea/
+.aiassistant/
+.opencode/node_modules/
+.github/modernize/
+__pycache__/
+
+# ---- 编译中间产物 / 历史截图 ----
+*.obj
+*.ppm
+shot_*.png
