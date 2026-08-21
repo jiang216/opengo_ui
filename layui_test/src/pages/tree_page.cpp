@@ -293,7 +293,7 @@ static void build(PageHost& host) {
     build_tree(host);
 }
 
-static const PageDef kTreePage{41, "展示", "树形组件", "树形组件：基本/复选框/手风琴/操作图标", build, nullptr, false, nullptr, 0, "Tree"};
+static const PageDef kTreePage{44, "展示", "树形组件", "树形组件：基本/复选框/手风琴/操作图标", build, nullptr, false, nullptr, 0, "Tree"};
 
 static const bool kRegistered = []() {
     page::register_page(kTreePage);

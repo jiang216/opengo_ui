@@ -280,7 +280,7 @@ static void build(PageHost& host) {
     build_tabs(host);
 }
 
-static const PageDef kTabsPage{35, "展示", "选项卡", "选项卡：默认/卡片/简约", build, nullptr, false, nullptr, 0, "Tabs"};
+static const PageDef kTabsPage{36, "展示", "选项卡", "选项卡：默认/卡片/简约", build, nullptr, false, nullptr, 0, "Tabs"};
 
 static const bool kRegistered = []() {
     page::register_page(kTabsPage);

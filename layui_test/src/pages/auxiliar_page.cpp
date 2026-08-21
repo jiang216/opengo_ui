@@ -141,7 +141,7 @@ static void build(PageHost& host) {
     build_auxiliar(host);
 }
 
-static const PageDef kAuxiliarPage{37, "展示", "辅助元素", "引用区块/字段集/分割线/圆角", build, nullptr, false, nullptr, 0, "Blockquote / Fieldset / hr"};
+static const PageDef kAuxiliarPage{38, "展示", "辅助元素", "引用区块/字段集/分割线/圆角", build, nullptr, false, nullptr, 0, "Blockquote / Fieldset / hr"};
 
 static const bool kRegistered = []() {
     page::register_page(kAuxiliarPage);

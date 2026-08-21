@@ -221,7 +221,7 @@ static void build(PageHost& host) {
     build_badges(host);
 }
 
-static const PageDef kBadgePage{36, "展示", "徽章", "徽章：弧形/圆点/描边 + 结合按钮导航选项卡", build, nullptr, false, nullptr, 0, "Badge"};
+static const PageDef kBadgePage{37, "展示", "徽章", "徽章：弧形/圆点/描边 + 结合按钮导航选项卡", build, nullptr, false, nullptr, 0, "Badge"};
 
 static const bool kRegistered = []() {
     page::register_page(kBadgePage);

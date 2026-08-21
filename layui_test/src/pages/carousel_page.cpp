@@ -199,7 +199,7 @@ static void build(PageHost& host) {
     build_carousel(host);
 }
 
-static const PageDef kCarouselPage{42, "展示", "轮播", "轮播：常规/参数/图片", build, nullptr, false, nullptr, 0, "Carousel"};
+static const PageDef kCarouselPage{45, "展示", "轮播", "轮播：常规/参数/图片", build, nullptr, false, nullptr, 0, "Carousel"};
 
 static const bool kRegistered = []() {
     page::register_page(kCarouselPage);

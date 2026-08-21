@@ -88,7 +88,7 @@ static void build(PageHost& host) {
     build_timeline(host);
 }
 
-static const PageDef kTimelinePage{40, "展示", "时间线", "时间线：常规/简约（镜像 demo/timeline.html）", build, nullptr, false, nullptr, 0, "Timeline"};
+static const PageDef kTimelinePage{42, "展示", "时间线", "时间线：常规/简约（镜像 demo/timeline.html）", build, nullptr, false, nullptr, 0, "Timeline"};
 
 static const bool kRegistered = []() {
     page::register_page(kTimelinePage);

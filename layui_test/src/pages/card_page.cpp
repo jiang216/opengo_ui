@@ -232,7 +232,7 @@ static void build(PageHost& host) {
     build_panels(host);
 }
 
-static const PageDef kCardPage{38, "展示", "面板", "面板：普通/卡片/折叠/手风琴/嵌套", build, nullptr, false, nullptr, 0, "Panel / Card / Collapse"};
+static const PageDef kCardPage{40, "展示", "面板", "面板：普通/卡片/折叠/手风琴/嵌套", build, nullptr, false, nullptr, 0, "Panel / Card / Collapse"};
 
 static const bool kRegistered = []() {
     page::register_page(kCardPage);

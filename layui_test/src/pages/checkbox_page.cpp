@@ -609,7 +609,7 @@ void build_checkbox(PageHost& host) {
 static void build(PageHost& host) { build_checkbox(host); }
 
 static const PageDef kCheckboxPage{
-    21, "表单", "复选框",
+    23, "表单", "复选框",
     "复选框：默认/标签/全部/事件/自定义",
     build, nullptr, false, nullptr, 0, "Checkbox"
 };

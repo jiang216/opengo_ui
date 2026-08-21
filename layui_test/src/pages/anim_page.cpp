@@ -212,7 +212,7 @@ static void build(PageHost& host) {
     build_anim(host);
 }
 
-static const PageDef kAnimPage{11, "通用", "动画", "12 种内置动画：点击重放", build, nullptr, false, nullptr, 0, "Anim"};
+static const PageDef kAnimPage{12, "通用", "动画", "12 种内置动画：点击重放", build, nullptr, false, nullptr, 0, "Anim"};
 
 static const bool kRegistered = []() {
     page::register_page(kAnimPage);

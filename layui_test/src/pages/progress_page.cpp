@@ -150,7 +150,7 @@ static void build(PageHost& host) {
     build_progress(host);
 }
 
-static const PageDef kProgressPage{39, "展示", "进度条", "进度条：默认/颜色/大尺寸/分数/动态", build, nullptr, false, nullptr, 0, "Progress"};
+static const PageDef kProgressPage{41, "展示", "进度条", "进度条：默认/颜色/大尺寸/分数/动态", build, nullptr, false, nullptr, 0, "Progress"};
 
 static const bool kRegistered = []() {
     page::register_page(kProgressPage);

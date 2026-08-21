@@ -294,7 +294,7 @@ static void build(PageHost& host) {
     build_flow(host);
 }
 
-static const PageDef kFlowPage{43, "展示", "流加载", "流加载：分批/自动加载数据", build, destroy_flow, false, nullptr, 0, "Flow"};
+static const PageDef kFlowPage{46, "展示", "流加载", "流加载：分批/自动加载数据", build, destroy_flow, false, nullptr, 0, "Flow"};
 
 static const bool kRegistered = []() {
     page::register_page(kFlowPage);

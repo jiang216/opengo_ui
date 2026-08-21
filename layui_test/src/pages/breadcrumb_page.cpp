@@ -248,7 +248,7 @@ void build_nav(PageHost& host) {
 
 static void build(PageHost& host) { build_nav(host); }
 
-static const PageDef kBreadcrumbPage{33, "展示", "导航/面包屑",
+static const PageDef kBreadcrumbPage{34, "展示", "导航/面包屑",
                                      "\xe5\xaf\xbc\xe8\x88\xaa/\xe9\x9d\xa2\xe5\x8c\x85\xe5\xb1\x91", build, nullptr, false, nullptr, 0, "Nav"};
 
 static const bool kRegistered = []() {

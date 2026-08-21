@@ -180,7 +180,7 @@ static void build(PageHost& host) {
     build_text(host);
 }
 
-static const PageDef kTextPage{44, "展示", "文本行修饰", "layui-code 代码块组件：默认/notepad/叠加/固定高度", build, nullptr, false, nullptr, 0, "Code"};
+static const PageDef kTextPage{47, "展示", "文本行修饰", "layui-code 代码块组件：默认/notepad/叠加/固定高度", build, nullptr, false, nullptr, 0, "Code"};
 
 static const bool kRegistered = []() {
     page::register_page(kTextPage);

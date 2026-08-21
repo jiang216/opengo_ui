@@ -197,7 +197,7 @@ static void build(PageHost& host) {
     build_menubar(host);
 }
 
-static const PageDef kMenubarPage{34, "展示", "基础菜单", "基础菜单：垂直菜单 + 分组 + 父级子面板", build, nullptr, false, nullptr, 0, "Menu"};
+static const PageDef kMenubarPage{35, "展示", "基础菜单", "基础菜单：垂直菜单 + 分组 + 父级子面板", build, nullptr, false, nullptr, 0, "Menu"};
 
 static const bool kRegistered = []() {
     page::register_page(kMenubarPage);
