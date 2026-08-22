@@ -3,6 +3,21 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-125: CJK 字形逐帧烘焙配额 + prebake_text 预热（2026-08-22）
+- **类型**：性能修复（audio_text 用户报告：页面切换瞬间预览区闪烁；排查确认非渲染逻辑缺陷，为首次打开新页时一帧内数十个新 CJK 码点逐字 stbtt 光栅化 + glTexSubImage2D 上传拉长单帧所致）
+- **根因**：`ensure_dynamic` 无烘焙速率限制——首次绘制含新汉字的页面时，全部字形在同一帧内光栅化并上传图集，vsync 下该帧耗时激增，呈可感知卡顿/闪烁。
+- **实现**：
+  - 逐帧配额：按 16ms 时间窗口限量烘焙（默认 12 字形/窗口），超配额本帧返回 nullptr——draw/measure 已有方块字宽回退，文本宽度短暂近似、后续帧渐进补齐，单帧不再长卡；
+  - 公开 `Font::prebake_text(const char* utf8)`：不受配额强制烘焙一段文本全部 CJK 字形，供启动预热一次性消除首绘开销（重复码点/ASCII/图标自动跳过）。
+- **回归清单**：
+  1. 首次打开含大量新汉字的页面：无整帧冻结观感，文字在数帧内渐进完整显示。
+  2. 已烘焙字形绘制与度量不变；超配额帧内缺失字形按字号方块宽近似，不崩溃不错位累积。
+  3. `prebake_text` 后同批文本首绘即为完整字形。
+  4. 图集满日志行为不变（atlas full 后停止烘焙）。
+  5. 下游 audio_text regression.ps1 全 PASS。
+- **验证**：opengl_UI Release 构建+install 通过；下游 regression.ps1 全 PASS（163 项）。
+- **影响范围**：`gl/include/ui/gl/font.h`、`gl/src/font.cpp`。
+
 ## UI-124: 表格行单击选中高亮（2026-08-22）
 - **类型**：功能补全（audio_text 用户报告：表格选中后无状态反馈，无法看到当前定位到哪一行）
 - **根因**：`TableRow::on_draw` 三个分支（hover / 选中 / 偶数行）全部画同一颜色 #FAFAFA——注释写"hover/选中行高亮 #f8f8f8"但从未使用区分色；且 `Table::selected_row()` 仅 radio 模式返回值、普通模式恒 -1，Table 不跟踪单击选中行，无 `set_selected_row` API。

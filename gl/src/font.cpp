@@ -306,9 +306,32 @@ const Font::Glyph* Font::ensure_dynamic(unsigned int cp) const {
     auto it = dyn_.find(cp);
     if (it != dyn_.end()) return &it->second;
     if (!cjk_ready_) return nullptr;
+    // UI-125：逐帧烘焙配额。首次打开新页面时一帧内可能遇到数十个新 CJK 码点，
+    // 逐字 stbtt 光栅化 + glTexSubImage2D 上传会拉长单帧，vsync 下呈可感知闪烁。
+    // 按 16ms 窗口限量烘焙，超配额本帧返回 nullptr（draw/measure 已有方块字宽
+    // 回退，文本宽度短暂近似），后续帧继续补齐；prebake_text 不受配额限制。
+    const auto now = std::chrono::steady_clock::now();
+    if (std::chrono::duration<double>(now - bake_window_).count() >= kBakeWindowSec) {
+        bake_window_ = now;
+        bake_budget_ = kBakeBudgetPerWindow;
+    }
+    if (bake_budget_ <= 0) return nullptr;
+    --bake_budget_;
     bake_cjk(cp);
     it = dyn_.find(cp);
     return it != dyn_.end() ? &it->second : nullptr;
+}
+
+void Font::prebake_text(const char* utf8) {
+    if (!utf8 || !cjk_ready_) return;
+    for (const char* p = utf8; *p;) {
+        const unsigned cp = decode_utf8(p);
+        if (cp == 0) break;
+        if (cp >= kFirstChar && cp < kFirstChar + kNumChars) continue;  // ASCII 已在图集
+        if (icon_glyph(cp)) continue;                                   // 图标已烘焙
+        if (dyn_.count(cp)) continue;                                   // 已烘焙
+        bake_cjk(cp);
+    }
 }
 
 void Font::bake_cjk(unsigned int cp) const {

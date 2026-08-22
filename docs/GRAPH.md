@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 132（BUG 124 / DOC 6 / META 2）
-- 边: 322
+- 节点: 133（BUG 125 / DOC 6 / META 2）
+- 边: 323
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -907,6 +907,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 行单击选中高亮：单击数据行记录可见行号（`sel_row_` + 公开 `set_selected_row()`），选中行 #16baaa α0.18 叠加、hover #EFEFEF，与底色可区分（修复三分支同画 #FAFAFA 零反馈）；reload/翻页/排序自动清除；radio 模式语义不变
 
+### BUG:UI-125 · UI-125: CJK 字形逐帧烘焙配额 + prebake_text 预热（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-125-cjk-字形逐帧烘焙配额--prebaketext-预热2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#CJK 字形逐帧烘焙配额：懒烘培按 16ms 窗口限量（默认 12 字形），超配额本帧回退方块字宽近似、后续帧渐进补齐，消除首次打开新页一帧内数十次光栅化+纹理上传的单帧卡顿/闪烁；`Font::prebake_text()` 不受限强制预热
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1121,6 +1127,7 @@
 | `BUG:UI-122` | BUG | UI-122: Laypage/Table 分页条区域点击穿透——容器自身 chrome 一律消费（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-123` | BUG | UI-123: Table auto_page_size 扣除分页条高度 + set_paginated 保持页码（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-124` | BUG | UI-124: 表格行单击选中高亮（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-125` | BUG | UI-125: CJK 字形逐帧烘焙配额 + prebake_text 预热（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1332,6 +1339,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-122` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-123` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-124` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-125` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

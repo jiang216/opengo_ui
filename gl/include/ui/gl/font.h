@@ -2,6 +2,7 @@
 
 #include "ui/core/math.h"
 
+#include <chrono>
 #include <unordered_map>
 #include <vector>
 
@@ -47,6 +48,9 @@ public:
     float char_width(unsigned int codepoint) const;
 
     bool icon_loaded() const { return icon_atlas_ != nullptr; }
+    // 强制烘焙一段 UTF-8 文本的全部 CJK 字形（UI-125）：不受逐帧配额限制，
+    // 供启动预热等场景一次性消除首绘卡顿；重复码点/图集内字形自动跳过
+    void prebake_text(const char* utf8);
     // 以 (cx, cy) 为中心绘制单个图标，目标尺寸 size（像素）；rotation 绕中心旋转（弧度，0 不转）
     void draw_icon(Renderer& renderer, unsigned codepoint, float cx, float cy, float size,
                    const Vec4& color, float rotation = 0.f) const;
@@ -99,6 +103,13 @@ private:
     mutable int pack_y_ = 0;
     mutable int pack_row_h_ = 0;
     mutable bool atlas_full_logged_ = false;
+
+    // ---- 逐帧烘焙配额（UI-125）：单帧大量新字形逐字光栅化+纹理上传会造成
+    // 可感知卡顿/闪烁；按时间窗口限量烘焙，超配额本帧回退方块字宽近似 ----
+    static constexpr int kBakeBudgetPerWindow = 12;
+    static constexpr double kBakeWindowSec = 0.016;
+    mutable int bake_budget_ = kBakeBudgetPerWindow;
+    mutable std::chrono::steady_clock::time_point bake_window_;
 };
 
 }  // namespace ui

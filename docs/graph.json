@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T18:40:51+08:00",
+  "generatedAt": "2026-08-22T18:54:20+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-125": {
+      "id": "BUG:UI-125",
+      "type": "BUG",
+      "label": "UI-125: CJK 字形逐帧烘焙配额 + prebake_text 预热（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-125-cjk-字形逐帧烘焙配额--prebaketext-预热2026-08-22"
+    },
     "BUG:UI-124": {
       "id": "BUG:UI-124",
       "type": "BUG",
@@ -2456,6 +2463,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-125",
+      "kind": "checklist",
+      "context": "回归清单#CJK 字形逐帧烘焙配额：懒烘培按 16ms 窗口限量（默认 12 字形），超配额本帧回退方块字宽近似、后续帧渐进补齐，消除首次打开新页一帧内数十次光栅化+纹理上传的单帧卡顿/闪烁；`Font::prebake_text()` 不受限强制预热"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -2858,6 +2871,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-125": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#CJK 字形逐帧烘焙配额：懒烘培按 16ms 窗口限量（默认 12 字形），超配额本帧回退方块字宽近似、后续帧渐进补齐，消除首次打开新页一帧内数十次光栅化+纹理上传的单帧卡顿/闪烁；`Font::prebake_text()` 不受限强制预热"
+      }
+    ],
     "BUG:UI-124": [
       {
         "from": "DOC:ARCHITECTURE",
