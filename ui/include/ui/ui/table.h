@@ -115,6 +115,9 @@ public:
     // —— 单元格表单列（layui templet 内嵌 switch/checkbox，form.html）——
     void set_cell_switch(int col);    // 该列每格渲染 Switch（基于该行第 col 列文本非空与否预置开）
     void set_cell_checkbox(int col);  // 该列每格渲染 CheckBox（默认勾选：文本为 "1"/"true"）
+    // 单元格表单切换回调（UI-129）：点击 Switch/CheckBox 格翻转后触发
+    // （参数：可见行号, 列号, 切换后的选中态）；此前仅翻转单元格文本不通知，调用方无法感知
+    void set_on_cell_form(std::function<void(int visible_row, int col, bool checked)> cb) { on_cell_form_ = std::move(cb); }
 
     // —— 合计行（layui totalRow，totalRow.html / parseData.html）——
     void set_total_row(bool on) { total_row_ = on; }
@@ -245,6 +248,9 @@ private:
     // 列点击事件
     int cell_event_col_ = -1;
     std::function<void(int, int)> on_cell_event_;
+
+    // 单元格表单切换（UI-129）
+    std::function<void(int, int, bool)> on_cell_form_;
 
     // 操作列（行内按钮）
     int button_col_ = -1;

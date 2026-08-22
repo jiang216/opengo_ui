@@ -3,6 +3,18 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-129: Table 单元格表单切换回调——set_on_cell_form 点击翻转通知调用方（2026-08-23）
+- **类型**：功能补全（audio_text SPK-003 声纹管理页「启用/禁用」由操作列按钮改为状态列行内开关，需感知 cell switch 切换事件；此前 `set_cell_switch`/`set_cell_checkbox` 点击仅翻转单元格文本、无任何回调，调用方无法响应）
+- **实现**：
+  - `Table::set_on_cell_form(cb)`：单元格表单切换回调（参数：可见行号, 列号, 切换后的选中态）；
+  - `on_mouse_down` 单元格表单分支翻转 `rows_[data][col]` 文本后触发回调（"1"/"0" 语义不变）。
+- **回归清单**：
+  1. 未注册回调时行为与之前完全一致（仅翻转文本），既有调用方零影响。
+  2. 复选/单选列（on_selection_）、操作列按钮（on_action_）、单元格事件列（on_cell_event_）、树形/分页/流加载路径均不受影响。
+  3. 回调内触发行控件重建安全（dispatch 子节点快照迭代 + 表格自身不销毁，与操作列删除按钮同一既有模式）。
+- **验证**：Release 构建+install 通过；下游 audio_text SPK-003 接入后 regression.ps1 全 PASS（193 项 0 失败）。
+- **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`。
+
 ## UI-128: emoji 渲染回退链——缺字 tofu 防护 + Segoe UI Emoji 单色轮廓烘焙（2026-08-22）
 - **类型**：Bug 修复（audio_text 用户报告：ASR 模型输出 emoji（😔 U+1F614 / 🎼 U+1F3BC / 😊 U+1F60A），界面只绘制出矩形方块；正则规则层无法影响显示——rule_engine 规则作用于识别文本→命令匹配链路，与字形渲染互不相干）
 - **根因**：

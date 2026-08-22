@@ -886,6 +886,8 @@ bool Table::on_mouse_down(float x, float y, int button) {
             if (data >= 0) {
                 bool on = rows_[data][col] == "1" || rows_[data][col] == "true";
                 rows_[data][col] = !on ? "1" : "0";
+                // UI-129：翻转后通知调用方（此前仅改文本，调用方无法感知切换）
+                if (on_cell_form_) on_cell_form_(row, col, !on);
             }
             return true;
         }

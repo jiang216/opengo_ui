@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-23T00:17:56+08:00",
+  "generatedAt": "2026-08-23T01:22:16+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-129": {
+      "id": "BUG:UI-129",
+      "type": "BUG",
+      "label": "UI-129: Table 单元格表单切换回调——set_on_cell_form 点击翻转通知调用方（2026-08-23）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-129-table-单元格表单切换回调setoncellform-点击翻转通知调用方2026-08-23"
+    },
     "BUG:UI-128": {
       "id": "BUG:UI-128",
       "type": "BUG",
@@ -2508,6 +2515,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-129",
+      "kind": "checklist",
+      "context": "回归清单#Table 单元格表单切换回调：`set_on_cell_form(cb)`（可见行号, 列号, 切换后选中态），点击 Switch/CheckBox 格翻转文本后触发（此前仅翻转不通知）；未注册回调行为不变；复选/单选/操作列/树形/分页/流加载路径零影响"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -2910,6 +2923,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-129": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table 单元格表单切换回调：`set_on_cell_form(cb)`（可见行号, 列号, 切换后选中态），点击 Switch/CheckBox 格翻转文本后触发（此前仅翻转不通知）；未注册回调行为不变；复选/单选/操作列/树形/分页/流加载路径零影响"
+      }
+    ],
     "BUG:UI-128": [
       {
         "from": "DOC:ARCHITECTURE",
