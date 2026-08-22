@@ -20,6 +20,11 @@ public:
     ~ComboBox() override;
 
     void add_option(const char* text);
+    // 就地重载全部选项（UI-121）：清空并递归释放旧选项按钮后重建；
+    // 调用方无需再「delete+new 销毁重建」整个下拉框——重建孤儿控件（可见性/坐标
+    // 失管）是幽灵下拉类缺陷的根源。重载非用户选择事件：不触发 on_change，
+    // 原选中项若仍在新列表范围内则保持，否则复位为未选中（显示回退到首项文本）。
+    void set_options(const std::vector<std::string>& options);
     void select(int index);  // 选中并触发 on_change
     void close();
     int selected() const { return selected_; }

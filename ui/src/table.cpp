@@ -360,7 +360,9 @@ void Table::set_paginated(bool on, int page_size) {
     }
     paginated_ = on;
     page_size_ = std::max(1, page_size);
-    page_ = 0;
+    // UI-123：页码保持——窗口缩放等触发重设 page_size 时不再无条件跳回首页，
+    // 仅 clamp 到新总页数范围（数据重载 reload() 仍显式归零，属 layui reload 语义）
+    page_ = std::min(std::max(0, page_), std::max(0, page_count() - 1));
     if (page_bar_) {
         page_bar_->visible = on;
         page_bar_->set_total(page_count());
@@ -368,6 +370,15 @@ void Table::set_paginated(bool on, int page_size) {
     }
     rebuild_rows();
     on_layout();
+}
+
+int Table::auto_page_size() const {
+    // UI-123：可用高度须扣除表头与内部分页条（28px）——本接口的约定用途是
+    // 为 set_paginated(true, n) 提供条数，分页条必然占位，恒定预留
+    if (bounds_.h <= 0.f) return 1;
+    const float avail = bounds_.h - header_h() - 28.f;
+    if (avail <= 0.f) return 1;
+    return std::max(1, static_cast<int>(avail / row_h()));
 }
 
 void Table::set_page(int page) {
@@ -773,11 +784,13 @@ bool Table::on_mouse_down(float x, float y, int button) {
         return true;
     }
 
-    // 分页条区域交给 Laypage（其自身处理点击）；此处若命中页条不处理
-    if (page_bar_) {
+    // 分页条区域：Laypage 子控件在 dispatch 阶段先于本节点获得事件并消费；
+    // 这里兜底消费自身 chrome（UI-122），此前 return false 放行导致点击穿透到
+    // 表格下层控件（规则管理页翻页穿透缺陷根源之一）。仅在分页开启时生效。
+    if (paginated_ && page_bar_ && page_bar_->visible) {
         const Rect& pb = page_bar_->bounds();
         if (pb.w > 0.f && x >= pb.x && x < pb.x + pb.w && y >= pb.y && y < pb.y + pb.h)
-            return false;
+            return true;
     }
 
     // 数据区：点击行触发回调；点击复选/单选/表单格切换；双击文本格编辑

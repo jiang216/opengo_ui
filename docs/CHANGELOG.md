@@ -3773,3 +3773,76 @@ exit=0 渲染正常。
 - set_focus_ring(true) 后 focused() 且非 disabled 时恢复外框绘制。
 - 滑块其余行为不变：轨道/填充/圆钮、range 双钮、step/showstep 刻度、
   tips 提示、input 输入框、vertical 布局、disabled 灰化。
+
+## UI-121: ComboBox::set_options 就地重载选项——销毁重建孤儿控件（幽灵下拉）根治 API（2026-08-22）
+
+严重度：中（库能力缺失诱发应用层缺陷模式；audio_text 规则管理页「添加模式映射后凭空出现下拉框」即实例）。
+
+根因归属：ui 库能力缺失。库未提供就地换选项接口，调用方只能 `delete+new` 重建整个
+ComboBox；新控件以构造坐标 (0,0) 出生、`visible` 默认 true，而页面级布局仅给活动
+tab 摆位，凡绕过切页函数的重建即产生「可见但错位/失管」的孤儿控件——叠加派发顺序
+「后添加者优先」，孤儿还会抢吃重叠区点击。audio_text 规则页 rebuildRuleSetCombo()
+漏写 visible 守卫即触发幽灵下拉，孪生函数有守卫的事实证明此类守卫式补丁不可持续。
+
+修复（ui/ui/combobox.*）：新增 `set_options(const std::vector<std::string>&)`：
+先关展开面板 → `panel_->clear_children()` 递归释放旧选项按钮（UI-040 同语义）→
+重建全部选项按钮 → 原选中项在新列表内则保持、越界复位为未选中（显示回退首项）→
+`sync_panel()`。重载是非用户选择事件，**不触发 on_change**。
+
+验证：库 Release 重编安装；layui_test 全量重链（67 页）`--smoke 20` exit=0；
+audio_text 以 set_options 重构 rebuild*Combo 后 regression.ps1 全 PASS（见该仓 CHANGELOG）。
+
+回归清单（必须保证）：
+- set_options 后仍可继续 add_option（追加语义不变）。
+- 重载过程零 on_change 回调；随后 select(i) 正常触发一次回调。
+- 原选中项在新列表范围内显示保持；越界回退首项文本、selected()=-1。
+- 面板展开状态下调 set_options：面板关闭、root 无弹层残留。
+- 反复 set_options + 析构无二次释放/泄漏（clear_children 路径与 ~ComboBox 手动删除路径互斥成立）。
+
+## UI-122: Laypage/Table 分页条区域点击穿透——容器自身 chrome 一律消费（2026-08-22）
+
+严重度：高（点击穿透类缺陷第三例，与 2026-08-20 下拉面板两例同族）。
+
+根因归属：ui 库缺陷。`Laypage::on_mouse_down` 对条目间空隙与 Limit/Skip/Refresh
+区域 return false、`Table::on_mouse_down` 对分页条矩形命中亦 return false 放行——
+分页条作为表格自身 chrome 未消费事件，凡与分页条几何重叠或错位的下层控件都会吃掉
+本应属于翻页条的点击（audio_text 规则管理页正则规则表翻页穿透根源之一）。违反本库
+已确立原则：Button 消费左键按下（防下拉选项穿透）、ScrollBox 消费面板主体点击。
+
+修复：
+- ui/src/laypage.cpp：边界内左键一律消费（return true）。limit/skip/refresh 子控件
+  在 dispatch 阶段先于父节点获得事件，交互不受影响；
+- ui/src/table.cpp：分页条兜底命中改 return true，且仅在
+  `paginated_ && page_bar_->visible` 时生效——未分页表格不在底部留 28px 隐形吞点区。
+
+验证：layui_test 全量重编（67 页）`--smoke 20` exit=0。
+
+回归清单（必须保证）：
+- 分页条首/上一/下一/末/页码按钮点击跳页正常。
+- 分页条空白处点击不再穿透到下层控件（含表格行）。
+- 未开启分页的 Table 底部区域点击行为与旧版一致（无吞点区）。
+- laypage 页 limit 下拉、skip 输入框、refresh 按钮交互全部不变。
+
+## UI-123: Table auto_page_size 扣除分页条高度 + set_paginated 保持页码（2026-08-22）
+
+严重度：中（每页条数按全高估算偏多一行，末行落入分页条下方滚动盲区；窗口缩放
+触发重设时浏览中页码被静默清零跳回首页）。
+
+根因归属：ui 库 API 缺失 + 行为缺陷。①调用方只能按 `(h-表头)/row_h` 自行估算每页
+条数，而 Table 内部 body 实际高度为 `h-表头-28px`，多算一行永远被分页条遮住需滚动；
+②`set_paginated()` 无条件 `page_=0`，窗口尺寸变化经布局重算触发时页码丢失。
+
+修复（ui/ui/table.*）：
+- 新增 `int auto_page_size() const`：按当前 bounds 高度自适应，恒定预留 28px 分页条；
+- `set_paginated` 页码改为 clamp 到新总页数范围；`reload()` 数据重载仍显式归零
+  （layui reload 语义不变）。
+
+验证：layui_test 全量重编 `--smoke 20` exit=0；audio_text 两处估算改调本接口后
+regression.ps1 全 PASS。
+
+回归清单（必须保证）：
+- `auto_page_size()×行高+表头+28 ≤ 表高`（当前页行不再溢出到分页条下方）。
+- set_paginated 调整 page_size 后页码保持（clamp 不越界），不再跳回首页。
+- reload() 后回到第 1 页（原语义保持）。
+- 树形表格 page_count 仍按 tree_visible_ 过滤后计数。
+

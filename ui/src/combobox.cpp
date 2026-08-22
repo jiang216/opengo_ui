@@ -53,6 +53,27 @@ void ComboBox::add_option(const char* text) {
     sync_panel();
 }
 
+void ComboBox::set_options(const std::vector<std::string>& options) {
+    // UI-121：就地重载。先关面板（面板挂 root，选项即将失效），再递归释放旧选项按钮
+    if (panel_->visible) close();
+    panel_->clear_children();
+    option_buttons_.clear();
+    options_ = options;
+    const size_t n = options_.size();
+    for (size_t i = 0; i < n; ++i) {
+        Button* opt = new Button(0, 0, 0, kOptionH, options_[i].c_str());
+        opt->add_class("layui-form-select dd");
+        opt->set_on_click([this, i]() {
+            select((int)i);
+            focus();  // 选中后焦点回到下拉框
+        });
+        panel_->add_child(opt);
+        option_buttons_.push_back(opt);
+    }
+    if (selected_ >= (int)n) selected_ = n > 0 ? 0 : -1;
+    sync_panel();
+}
+
 void ComboBox::select(int index) {
     if (index < 0 || index >= (int)options_.size()) return;
     if (selected_ != index) {

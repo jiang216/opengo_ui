@@ -334,12 +334,18 @@ bool Laypage::on_mouse_down(float x, float y, int button) {
             case Item::Limit:
             case Item::Refresh:
             case Item::Skip:
-                return false;  // 子控件处理
+                // 子控件（limit/skip 输入框等）在 dispatch 阶段先于父节点获得事件；
+                // 走到这里说明子控件未命中/未消费，本区域属于分页条自身 chrome，
+                // 必须消费，防止点击穿透到下层控件（UI-122）
+                return true;
             default:
-                return false;
+                return true;
         }
     }
-    return false;
+    // 条目间空隙 / 前后空白：同属分页条自身区域，一律消费（UI-122，
+    // 与 Button::on_mouse_down、ScrollBox 面板消费同一原则），否则点击会
+    // 穿透到表格行或更下层控件（规则管理页翻页穿透缺陷根源之一）。
+    return true;
 }
 
 namespace {

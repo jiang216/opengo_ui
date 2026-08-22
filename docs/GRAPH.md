@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 128（BUG 120 / DOC 6 / META 2）
-- 边: 318
+- 节点: 131（BUG 123 / DOC 6 / META 2）
+- 边: 321
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -883,6 +883,24 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Slider 聚焦外框默认不显示：任何状态（hover/拖拽/键盘聚焦/禁用）均不绘制 bounds 外框；`set_focus_ring(true)` 后 focused() 且非 disabled 才恢复外框；滑块其余行为（轨道/填充/圆钮/range 双钮/step/showstep/tips/input/vertical/disabled）不变
 
+### BUG:UI-121 · UI-121: ComboBox::set_options 就地重载选项——销毁重建孤儿控件（幽灵下拉）根治 API（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-121-comboboxsetoptions-就地重载选项销毁重建孤儿控件幽灵下拉根治-api2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ComboBox `set_options()`：就地重载选项（先关面板→递归清旧选项按钮→重建→越界钳制 selected_），不销毁控件本体；配合应用层「首次才 new、后续复用实例」消灭销毁重建遗留的孤儿控件（幽灵下拉）；原 add_option 单项追加行为不变
+
+### BUG:UI-122 · UI-122: Laypage/Table 分页条区域点击穿透——容器自身 chrome 一律消费（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-122-laypagetable-分页条区域点击穿透容器自身-chrome-一律消费2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Laypage/Table 分页条自身 chrome（按钮/文本/留白）鼠标按下一律消费，点击不再穿透到下层控件；表格内容区与翻页回调行为不变
+
+### BUG:UI-123 · UI-123: Table auto_page_size 扣除分页条高度 + set_paginated 保持页码（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-123-table-autopagesize-扣除分页条高度--setpaginated-保持页码2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table `auto_page_size()` 按可视高自动计算每页行数（扣除表头+分页条高度）；`set_paginated(true,n)` 总页数缩小时保持当前页（钳制不回跳第 1 页）；应用侧手算 pageSize 公式可整体替换
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1093,6 +1111,9 @@
 | `BUG:UI-118` | BUG | UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-119` | BUG | UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-120` | BUG | UI-120: Slider 聚焦外框改为默认不显示 + set_focus_ring 可选开启（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-121` | BUG | UI-121: ComboBox::set_options 就地重载选项——销毁重建孤儿控件（幽灵下拉）根治 API（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-122` | BUG | UI-122: Laypage/Table 分页条区域点击穿透——容器自身 chrome 一律消费（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-123` | BUG | UI-123: Table auto_page_size 扣除分页条高度 + set_paginated 保持页码（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1300,6 +1321,9 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-117` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-118` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-120` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-121` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-122` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-123` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

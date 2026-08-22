@@ -70,6 +70,9 @@ public:
     int page() const { return page_; }
     int page_count() const;
     int page_size() const { return page_size_; }
+    // 按当前 bounds 高度自适应每页行数（UI-123）：已扣除表头与内部分页条高度
+    // （28px）。调用方此前按 (h-表头)/行高 自行估算，末行被挤进分页条下方盲区。
+    int auto_page_size() const;
     // 当前页可见数据行数（未分页 = 全量行数）
     int visible_row_count() const;
     // 可视行号 → 数据行下标（rows_ 下标；跨分页/树形过滤的稳定行标识）
