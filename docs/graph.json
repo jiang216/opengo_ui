@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T23:36:35+08:00",
+  "generatedAt": "2026-08-23T00:17:56+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-128": {
+      "id": "BUG:UI-128",
+      "type": "BUG",
+      "label": "UI-128: emoji 渲染回退链——缺字 tofu 防护 + Segoe UI Emoji 单色轮廓烘焙（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-128-emoji-渲染回退链缺字-tofu-防护--segoe-ui-emoji-单色轮廓烘焙2026-08-22"
+    },
     "BUG:UI-127": {
       "id": "BUG:UI-127",
       "type": "BUG",
@@ -1667,6 +1674,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-128",
+      "kind": "checklist",
+      "context": "回归清单#emoji 渲染回退链：`load_emoji_font(_auto)` 载入 seguiemj.ttf 单色轮廓源（env `OPENGUI_EMOJI_FONT`）；bake_cjk 显式 FindGlyphIndex>0 回退链查字，两源皆无记 missing_ 防逐帧重试，杜绝 .notdef tofu 入图集；FE0F/ZWJ 零宽处理"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-046",
       "kind": "checklist",
       "context": "回归清单#Font ASCII/图标全量烘培：`stbtt_BakeFontBitmap` 返回值为图集打包底边 y（bottom_y），非烘培字数；`glyphs_`/`icon_glyphs_` 必须按 `kNumChars`/`kIconNum` 全量拷贝字形度量，任意 ASCII（32..126）与图标（U+E600..ECFF 主段、U+1000..100F 辅段）字形在 `draw_text`/`measure_text` 中不得缺失、advance 不得为 0（曾致 \"6/12\" 只渲染 \"/1\"）"
@@ -2897,6 +2910,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-128": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#emoji 渲染回退链：`load_emoji_font(_auto)` 载入 seguiemj.ttf 单色轮廓源（env `OPENGUI_EMOJI_FONT`）；bake_cjk 显式 FindGlyphIndex>0 回退链查字，两源皆无记 missing_ 防逐帧重试，杜绝 .notdef tofu 入图集；FE0F/ZWJ 零宽处理"
+      }
+    ],
     "BUG:UI-127": [
       {
         "from": "DOC:ARCHITECTURE",

@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 135（BUG 127 / DOC 6 / META 2）
-- 边: 325
+- 节点: 136（BUG 128 / DOC 6 / META 2）
+- 边: 326
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -925,6 +925,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#流加载/表格首显防闪烁：`ScrollBox::rearm_bottom()` 分帧（置挂起标记，on_layout 开头消费 check_bottom，每帧至多灌一批、回调重建行当帧布局归位无乱帧，打断同步递归级联单帧暴增）；`Table::prebake_visible_text()` 预热表头+可见行+尾注 CJK 字形（转发 prebake_text 跳过已烘焙码点），消除 UI-125 配额限流方块宽渐进补齐闪烁
 
+### BUG:UI-128 · UI-128: emoji 渲染回退链——缺字 tofu 防护 + Segoe UI Emoji 单色轮廓烘焙（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-128-emoji-渲染回退链缺字-tofu-防护--segoe-ui-emoji-单色轮廓烘焙2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#emoji 渲染回退链：`load_emoji_font(_auto)` 载入 seguiemj.ttf 单色轮廓源（env `OPENGUI_EMOJI_FONT`）；bake_cjk 显式 FindGlyphIndex>0 回退链查字，两源皆无记 missing_ 防逐帧重试，杜绝 .notdef tofu 入图集；FE0F/ZWJ 零宽处理
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1142,6 +1148,7 @@
 | `BUG:UI-125` | BUG | UI-125: CJK 字形逐帧烘焙配额 + prebake_text 预热（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-126` | BUG | UI-126: Table 流加载支持——触底重检 rearm + 尾注 + on_load_more（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-127` | BUG | UI-127: 流加载/表格首显闪烁——触底重检分帧 + prebake_visible_text 字形预热（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-128` | BUG | UI-128: emoji 渲染回退链——缺字 tofu 防护 + Segoe UI Emoji 单色轮廓烘焙（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1356,6 +1363,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-125` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-126` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-127` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-128` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

@@ -302,9 +302,60 @@ bool Font::load_cjk_font_auto() {
     return false;
 }
 
+bool Font::load_emoji_font(const char* path) {
+    std::vector<unsigned char> ttf;
+    FILE* f = fopen(path, "rb");
+    if (!f) return false;
+    fseek(f, 0, SEEK_END);
+    const long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (size > 0) {
+        ttf.resize((size_t)size);
+        if (fread(ttf.data(), 1, (size_t)size, f) != (size_t)size) {
+            fclose(f);
+            return false;
+        }
+    }
+    fclose(f);
+    if (ttf.empty()) return false;
+
+    if (!emoji_info_) emoji_info_ = new stbtt_fontinfo;
+    const int offset = stbtt_GetFontOffsetForIndex(ttf.data(), 0);
+    if (offset < 0 || !stbtt_InitFont(static_cast<stbtt_fontinfo*>(emoji_info_), ttf.data(), offset)) {
+        log_error("emoji font: init failed %s", path ? path : "");
+        emoji_ttf_.clear();
+        emoji_ready_ = false;
+        return false;
+    }
+    emoji_ttf_ = std::move(ttf);
+    emoji_ready_ = true;
+    log_info("emoji font loaded: %s", path ? path : "");
+    return true;
+}
+
+bool Font::load_emoji_font_auto() {
+    const char* custom = getenv("OPENGUI_EMOJI_FONT");
+    if (custom && custom[0]) {
+        if (load_emoji_font(custom)) return true;
+        log_error("emoji font: OPENGUI_EMOJI_FONT '%s' failed", custom);
+    }
+#if defined(_WIN32)
+    static const char* kCandidates[] = {
+        "C:/Windows/Fonts/seguiemj.ttf",
+    };
+    for (const char* p : kCandidates) {
+        if (load_emoji_font(p)) return true;
+    }
+#endif
+    // 静默失败：无 emoji 字形时维持方块字宽近似（macOS/Linux 彩色 emoji 为
+    // 位图格式 stbtt 无法光栅化，不默认探测，避免日志刷屏）
+    return false;
+}
+
 const Font::Glyph* Font::ensure_dynamic(unsigned int cp) const {
     auto it = dyn_.find(cp);
     if (it != dyn_.end()) return &it->second;
+    if (missing_.count(cp)) return nullptr;  // UI-128：确认缺失，防逐帧重试
     if (!cjk_ready_) return nullptr;
     // UI-125：逐帧烘焙配额。首次打开新页面时一帧内可能遇到数十个新 CJK 码点，
     // 逐字 stbtt 光栅化 + glTexSubImage2D 上传会拉长单帧，vsync 下呈可感知闪烁。
@@ -330,13 +381,27 @@ void Font::prebake_text(const char* utf8) {
         if (cp >= kFirstChar && cp < kFirstChar + kNumChars) continue;  // ASCII 已在图集
         if (icon_glyph(cp)) continue;                                   // 图标已烘焙
         if (dyn_.count(cp)) continue;                                   // 已烘焙
+        if (missing_.count(cp)) continue;                               // UI-128：确认缺失
         bake_cjk(cp);
     }
 }
 
 void Font::bake_cjk(unsigned int cp) const {
     if (atlas_full_logged_) return;
+    // UI-128 回退链：先中文字体、再 emoji 字体，均显式 FindGlyphIndex>0 检查。
+    // 此前不检查——字体查无此字时 stbtt 回退 .notdef（中文常为矩形框轮廓）被当
+    // 正常字形烘入图集，emoji 等缺字码点稳定显示为 tofu 方块。两源皆无记入
+    // missing_（确认缺失），后续绘制直接走方块字宽近似不再重试光栅化。
     auto* info = static_cast<stbtt_fontinfo*>(cjk_info_);
+    if (!(info && stbtt_FindGlyphIndex(info, (int)cp) > 0)) {
+        auto* ei = static_cast<stbtt_fontinfo*>(emoji_info_);
+        if (emoji_ready_ && ei && stbtt_FindGlyphIndex(ei, (int)cp) > 0) {
+            info = ei;
+        } else {
+            missing_.insert(cp);
+            return;
+        }
+    }
     // kAtlasScale 过采样：2x 光栅化入图集，度量换算成显示像素
     const float scale = stbtt_ScaleForPixelHeight(info, pixel_height_ * kAtlasScale);
     int w = 0, h = 0, xoff = 0, yoff = 0;
@@ -433,6 +498,8 @@ void Font::draw_text(Renderer& renderer, const char* text, float x, float y,
             cursor += ig->xadvance * scale;
         } else {
             // CJK 懒烘培：命中即按真实字形绘制，缺失退回方块字宽近似
+            // UI-128：变体选择符/零宽连接符不占宽（模型输出 emoji 常带 FE0F 后缀）
+            if (cp == 0xFE0F || cp == 0x200D) continue;
             const Glyph* g = ensure_dynamic(cp);
             if (g && g->x1 > g->x0 && g->y1 > g->y0) {
                 const Rect rect{align(cursor + g->x0 * scale), align(baseline + g->y0 * scale),
@@ -492,6 +559,7 @@ float Font::char_width(unsigned int codepoint) const {
         return glyphs_[codepoint - kFirstChar].xadvance;
     if (const Glyph* ig = icon_glyph(codepoint))
         return ig->xadvance > 0.f ? ig->xadvance : pixel_height_;
+    if (codepoint == 0xFE0F || codepoint == 0x200D) return 0.f;  // UI-128：零宽组合符
     const Glyph* g = ensure_dynamic(codepoint);
     if (g) return g->xadvance;
     return pixel_height_;  // 非图集字符按方块字近似

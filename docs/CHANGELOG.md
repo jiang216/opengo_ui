@@ -3,6 +3,25 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-128: emoji 渲染回退链——缺字 tofu 防护 + Segoe UI Emoji 单色轮廓烘焙（2026-08-22）
+- **类型**：Bug 修复（audio_text 用户报告：ASR 模型输出 emoji（😔 U+1F614 / 🎼 U+1F3BC / 😊 U+1F60A），界面只绘制出矩形方块；正则规则层无法影响显示——rule_engine 规则作用于识别文本→命令匹配链路，与字形渲染互不相干）
+- **根因**：
+  1. 字形源三路均不覆盖增补平面：ASCII 静态图集、iconfont.ttf 仅 layui 私用区（E600..ECFF/1000..100F）、CJK 懒烘培用中文字体（msyh/simhei/simsun/Deng 均无 emoji 字形）；
+  2. `bake_cjk()` 不检查 `stbtt_FindGlyphIndex()==0`——字体查无此字时 stbtt 回退 .notdef 字形，而中文字体 .notdef 即矩形框轮廓，被当正常字形烘入图集缓存 `dyn_` → 每帧稳定画出 tofu 方块；
+  3. 缺失码点不入 `dyn_` → 每次绘制都重试光栅化，白白消耗 UI-125 配额。
+- **修复**：
+  - 新增 `load_emoji_font(path)` / `load_emoji_font_auto()`：`OPENGUI_EMOJI_FONT` 环境变量 → Windows `seguiemj.ttf`；stbtt 烘其 glyf 单色轮廓（COLR 彩层忽略，形状可辨）；macOS/Linux 位图彩色 emoji 不默认探测（静默失败不刷日志）；
+  - `bake_cjk()` 改显式回退链：中文字体 `FindGlyphIndex>0` → emoji 字体 `FindGlyphIndex>0` → 两源皆无记入 `missing_` 确认缺失集（negative cache），杜绝 .notdef tofu 入图集且后续绘制直接走方块字宽近似不再重试；
+  - 变体选择符 U+FE0F / 零宽连接符 U+200D 零宽处理（draw_text 跳过、char_width 返回 0）——emoji 带 FE0F 后缀不再多占一个方块宽。
+- **回归清单**：
+  1. emoji 文本首帧即为正确单色轮廓字形（非矩形方块）；带 FE0F 后缀不产生额外空位。
+  2. 中日韩文本渲染零变化（cjk 字体命中路径不变）；ASCII/图标零变化。
+  3. 无 emoji 字体环境（探测失败）：缺字码点走方块宽近似且每码点仅尝试光栅化一次（missing_ 短路）。
+  4. 图集打包/配额机制不变；atlas full 日志行为不变。
+  5. 下游 audio_text regression.ps1 全 PASS。
+- **验证**：opengl_UI Release 构建+install 通过；Windows seguiemj.ttf 存在性已确认；audio_text 接入 load_emoji_font_auto 后 regression.ps1 全 PASS（174 项）；双仓库 graphgen --check 0 错 0 警。
+- **影响范围**：`gl/include/ui/gl/font.h`、`gl/src/font.cpp`。
+
 ## UI-127: 流加载/表格首显闪烁——触底重检分帧 + prebake_visible_text 字形预热（2026-08-22）
 - **类型**：Bug 修复（audio_text 用户报告：[FLOW-001] 流加载续灌瞬间与规则页四 tab 手动切换瞬间，预览区闪烁；排查确认非深灰背景/白表清屏覆盖问题，为两个机制叠加）
 - **根因**：

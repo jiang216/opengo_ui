@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace ui {
@@ -31,6 +32,17 @@ public:
     // 自动探测 CJK 字体：OPENGUI_CJK_FONT 环境变量（自定义字体）→ 系统候选
     // msyh.ttc / msyh.ttf / simhei.ttf / simsun.ttc / Deng.ttf；命中打日志。
     bool load_cjk_font_auto();
+
+    // 加载 emoji 字体（UI-128）：中文字体缺字码点（增补平面 emoji U+1F300+ 等）
+    // 的回退懒烘培源。stbtt 仅支持轮廓字形——Windows seguiemj.ttf 的 glyf 单色
+    // 轮廓可正常烘焙（COLR 彩色分层忽略，形状可辨）；位图彩色 emoji 字体不可用。
+    bool load_emoji_font(const char* path);
+
+    // 自动探测 emoji 字体：OPENGUI_EMOJI_FONT 环境变量 → Windows seguiemj.ttf。
+    // macOS/Linux 系统彩色 emoji 为位图格式（stbtt 无法光栅化），默认不探测，
+    // 需要时用环境变量指向单色轮廓字体（Symbola / NotoSansSymbols2 等）。
+    // 失败静默返回 false（无 emoji 字形时维持方块字宽近似，不报错刷屏）。
+    bool load_emoji_font_auto();
 
     // 加载图标字体（M17d）：烘培 U+E600..E7FF 私用区 + U+1000..100F（layui 2.13.x
     // close/ok-circle 等非私用区码点）到第二图集（layui iconfont.ttf）
@@ -98,7 +110,14 @@ private:
     std::vector<unsigned char> cjk_ttf_;
     void* cjk_info_ = nullptr;  // stbtt_fontinfo*（stb_truetype 头不进公开头文件）
     bool cjk_ready_ = false;
+    // emoji 回退源（UI-128）：cjk 字体查无此字形时依次尝试
+    std::vector<unsigned char> emoji_ttf_;
+    void* emoji_info_ = nullptr;  // stbtt_fontinfo*
+    bool emoji_ready_ = false;
     mutable std::unordered_map<unsigned int, Glyph> dyn_;
+    // 确认缺失码点（UI-128：回退链两源皆无字形，如 .notdef tofu 防护）——
+    // 记录后 ensure_dynamic 直接短路，避免逐帧重试光栅化消耗配额
+    mutable std::unordered_set<unsigned int> missing_;
     mutable int pack_x_ = 0;
     mutable int pack_y_ = 0;
     mutable int pack_row_h_ = 0;

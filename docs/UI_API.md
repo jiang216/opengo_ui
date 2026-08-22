@@ -352,6 +352,8 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, theme.success);
 | `bool load_from_file(const char* path, float pixel_height = 32.f)` | 从 .ttf 加载并烘培图集；pixel_height 为像素字号 |
 | `bool load_cjk_font(const char* path, int font_index = 0)` | 加载中文字体（懒烘培源）：保留 TTF/TTC 字节，首次遇到图集外码点按需光栅化。 .ttc 集合用 font_index 选取子字体；失败返回 false（ASCII 仍可用）。 |
 | `bool load_cjk_font_auto()` | 自动探测 CJK 字体：OPENGUI_CJK_FONT 环境变量（自定义字体）→ 系统候选 msyh.ttc / msyh.ttf / simhei.ttf / simsun.ttc / Deng.ttf；命中打日志。 |
+| `bool load_emoji_font(const char* path)` | 加载 emoji 字体（[UI-128](CHANGELOG.md#ui-128-emoji-渲染回退链缺字-tofu-防护--seguei-ui-emoji-单色轮廓烘焙2026-08-22)）：中文字体缺字码点（增补平面 emoji 等）的回退懒烘培源；stbtt 烘 glyf 单色轮廓 |
+| `bool load_emoji_font_auto()` | 自动探测 emoji 字体：OPENGUI_EMOJI_FONT → Windows seguiemj.ttf；失败静默（无 emoji 字形时维持方块宽近似） |
 | `bool load_icon_font(const char* path, float pixel_height)` | 加载图标字体（M17d）：烘培 U+E600..ECFF 主段 + U+1000..100F 辅段到第二图集（layui iconfont.ttf 2.13.9） |
 | `void draw_text(Renderer& renderer, const char* text, float x, float y, const Vec4& color, float scale = 1.f, bool bold = false) const` | (x, y) 为文本左上角（像素坐标，y 向下）；UTF-8 输入，私用区码点走图标图集；scale 为相对烘培像素号的缩放倍率（图集 2x 过采样，≤2x 清晰）；bold 仿粗体（字形 x 错位叠加一次，偏移 ≈ 字号/16） |
 | `float measure_text(const char* text, float scale = 1.f) const` | 宽度按 scale 同步缩放 |

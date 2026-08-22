@@ -26,6 +26,7 @@ core   ui_core 静态库（纯 C++：math/log/version，禁止 include GL/媒体
 | 纹理管线：uUv 子矩形采样 + uColor 调制；uv 用 Rect{x,y,w,h} 承载 {u0,v0,u1,v1} | UI-004 |
 | Font：stb_truetype 烘培 ASCII 32..126 图集，单通道覆盖度转 RGBA 白字 | UI-004 |
 | Font CJK 懒烘培：`load_cjk_font(path, index)` 载入中文字体（`.ttc` 兼容），`load_cjk_font_auto()` 探测（env `OPENGUI_CJK_FONT` 自定义 → msyh/simhei/simsun/Deng 系统候选）；非 ASCII/图标码点按需光栅化并经 `Texture::update_sub` 局部上传到 2048x1024 图集 | UI-036 |
+| emoji 渲染回退链：`load_emoji_font(_auto)` 载入 seguiemj.ttf 单色轮廓源（env `OPENGUI_EMOJI_FONT`）；bake_cjk 显式 FindGlyphIndex>0 回退链查字，两源皆无记 missing_ 防逐帧重试，杜绝 .notdef tofu 入图集；FE0F/ZWJ 零宽处理 | [UI-128](CHANGELOG.md#ui-128-emoji-渲染回退链缺字-tofu-防护--seguei-ui-emoji-单色轮廓烘焙2026-08-22) |
 | Font ASCII/图标全量烘培：`stbtt_BakeFontBitmap` 返回值为图集打包底边 y（bottom_y），非烘培字数；`glyphs_`/`icon_glyphs_` 必须按 `kNumChars`/`kIconNum` 全量拷贝字形度量，任意 ASCII（32..126）与图标（U+E600..ECFF 主段、U+1000..100F 辅段）字形在 `draw_text`/`measure_text` 中不得缺失、advance 不得为 0（曾致 "6/12" 只渲染 "/1"） | [UI-046](CHANGELOG.md#ui-046-font-烘培计数误用-stbttbakefontbitmap-返回值ascii图标大量字形缺失2026-08-16) |
 | 文本垂直居中：块高必须用 `font->line_height()`（= ascent − descent；descent 为负值），禁止 `(ascent + descent)` 写法（少算 2×\|descent\|，文本下移约 4px，曾致尺寸按钮文本不居中）；任何 draw_text 的垂直居中公式一律按 em 方框 | [UI-053](CHANGELOG.md#ui-053-按钮文本垂直偏移-4px--圆角按钮描边矩形化2026-08-16) |
 | 文字像素对齐：`Font::draw_text`/`draw_icon` 字形左上角必须 `std::round` 对齐整数像素（`y+ascent_` 与 `xadvance` 累加均为小数，非整数坐标下 GL_LINEAR 双线性采样跨纹素混叠致文字发虚）；cursor 仍按浮点 advance 累加、尺寸/UV/`measure_text` 不变（行内间距与布局宽度不受影响） | [UI-055](CHANGELOG.md#ui-055-文字像素对齐drawtextdrawicon-字形对齐像素网格2026-08-17) |
