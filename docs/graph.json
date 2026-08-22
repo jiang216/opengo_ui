@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-23T01:39:52+08:00",
+  "generatedAt": "2026-08-23T02:01:43+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-131": {
+      "id": "BUG:UI-131",
+      "type": "BUG",
+      "label": "UI-131: draw_cell_form 参数错位修复——单元格开关恒走复选分支绘矩形；表单列表头居中（2026-08-23）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-131-drawcellform-参数错位修复单元格开关恒走复选分支绘矩形表单列表头居中2026-08-23"
+    },
     "BUG:UI-130": {
       "id": "BUG:UI-130",
       "type": "BUG",
@@ -2534,6 +2541,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-131",
+      "kind": "checklist",
+      "context": "回归清单#draw_cell_form 形参与调用点语义一致（w=列宽、col=列号）：行内开关真实走圆角皮肤分支；表单列（开关/复选）表头标题水平居中与单元格控件对齐"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -2936,6 +2949,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-131": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#draw_cell_form 形参与调用点语义一致（w=列宽、col=列号）：行内开关真实走圆角皮肤分支；表单列（开关/复选）表头标题水平居中与单元格控件对齐"
+      }
+    ],
     "BUG:UI-130": [
       {
         "from": "DOC:ARCHITECTURE",

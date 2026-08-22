@@ -234,26 +234,25 @@ private:
         }
     }
 
-    void draw_cell_form(Renderer& r, float x, float cy, float col, int cell_idx) {
-        (void)cell_idx;
+    void draw_cell_form(Renderer& r, float x, float cy, float w, int col) {
         const bool is_switch = owner_->is_cell_switch(col);
         const std::vector<std::string>& cells = owner_->row(index_);
         const bool on = cells.size() > (size_t)col &&
                         (cells[col] == "1" || cells[col] == "true");
         const float h = is_switch ? 24.f : kBox;
-        const float w = is_switch ? 42.f : kBox;
-        const float bx = x + (owner_->col_width(col) - w) * 0.5f;
+        const float bw = is_switch ? 42.f : kBox;
+        const float bx = x + (w - bw) * 0.5f;
         const float by = cy - h * 0.5f;
         if (is_switch) {
             // UI-130：与项目统一圆角开关皮肤（ui::Switch 同源渲染），禁止自绘矩形开关
             static const Theme kCellThemeDefault;
-            draw_switch_skin(r, Rect{bx, by, w, h}, theme_ ? theme_ : &kCellThemeDefault, on,
+            draw_switch_skin(r, Rect{bx, by, bw, h}, theme_ ? theme_ : &kCellThemeDefault, on,
                              true);
         } else {
             if (on) {
-                r.draw_rounded_rect({bx, by, w, h}, 4.f, kAccent);
+                r.draw_rounded_rect({bx, by, bw, h}, 4.f, kAccent);
             } else {
-                r.draw_rounded_rect_outline({bx, by, w, h}, 4.f, 1.f, kCheckBorder);
+                r.draw_rounded_rect_outline({bx, by, bw, h}, 4.f, 1.f, kCheckBorder);
             }
         }
     }
@@ -980,6 +979,13 @@ void Table::on_draw(Renderer& renderer) {
             if (font_)
                 font_->draw_text(renderer, col.title.c_str(), x + cell_pad_x(),
                                  cy - font_->line_height() * 0.5f, Vec4{0.2f, 0.2f, 0.2f, 1.0f});
+        } else if (col.kind == ColKind::CellSwitch || col.kind == ColKind::CellCheckbox) {
+            // UI-131：表单列（开关/复选）表头标题居中，与单元格控件对齐
+            if (font_ && !col.title.empty()) {
+                const float tw = font_->measure_text(col.title.c_str());
+                font_->draw_text(renderer, col.title.c_str(), x + (w - tw) * 0.5f,
+                                 cy - font_->line_height() * 0.5f, Vec4{0.2f, 0.2f, 0.2f, 1.0f});
+            }
         } else if (font_) {
             font_->draw_text(renderer, col.title.c_str(), x + cell_pad_x(),
                              cy - font_->line_height() * 0.5f, Vec4{0.2f, 0.2f, 0.2f, 1.0f});

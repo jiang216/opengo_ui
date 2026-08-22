@@ -3,6 +3,21 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-131: draw_cell_form 参数错位修复——单元格开关恒走复选分支绘矩形；表单列表头居中（2026-08-23）
+- **类型**：Bug 修复（audio_text SPK-005 用户复核：声纹状态列开关「没看到更改，还是绘制的矩形，并且没有对齐状态标签列」）
+- **严重度**：高（UI-130 皮肤改造对用户完全不可见——目标绘制分支从未执行）
+- **根因**：`TableRow::on_draw` 调用 `draw_cell_form(renderer, x, cy, w, c)`，而定义为 `(Renderer& r, float x, float cy, float col, int cell_idx)`——按位置绑定后形参 `col` 收到**列宽值**、真正的列号 `c` 进入 `cell_idx` 又被 `(void)` 丢弃；函数内 `is_cell_switch(90)`（90 为列宽数值）恒 false → 永远走 checkbox 分支绘空心矩形。点击交互走 `Table::on_mouse_up` 独立命中测试（真实列号）故功能正常、仅绘制错——SPK-003 期「只有一个矩形」与 UI-130 后「还是矩形」同根因。
+- **修复**：
+  - `draw_cell_form` 签名改为 `(Renderer& r, float x, float cy, float w, int col)` 与调用点语义一致（w=列宽、col=列号），删除无用 cell_idx，局部盒宽改名 bw 防形参遮蔽；
+  - 表单列（CellSwitch / CellCheckbox）表头标题改为**水平居中**绘制，与单元格控件（居中）对齐。
+- **回归清单**：
+  1. 表格行内开关（set_cell_switch 列）实际渲染为圆角开关皮肤：开=绿底白滑块靠右、关=白底灰边灰滑块靠左，不再出现空心矩形。
+  2. 开关列/复选列表头标题水平居中，与单元格控件水平中线对齐；普通文本列、序号列表头仍左对齐不变。
+  3. 单元格复选框（set_cell_checkbox）：选中=accent 圆角方块、未选=灰描边、居中，不受影响。
+  4. 点击翻转、on_cell_form 回调、排序箭头、复选/单选列、合计行、分页路径零影响。
+- **验证**：Release 构建+install 通过；下游 audio_text 重链后 regression.ps1 全 PASS；双仓库 graphgen --check 0 错 0 警。
+- **影响范围**：`ui/src/table.cpp`（draw_cell_form 签名修正 + 表单列表头居中）。
+
 ## UI-130: 开关皮肤统一——draw_switch_skin 共享函数，表格行内开关与 Switch 同源渲染（2026-08-23）
 - **类型**：Bug 修复 / 控件统一（audio_text SPK-004 用户报告：声纹表状态列行内开关「只有一个矩形，无法明确看到开关状态」，要求项目开关统一为圆角开关）
 - **根因**：`Table::draw_cell_form` 对 cell switch **自绘简化矩形块**（teal 色块+小方点、无滑块行程语义），与 `ui::Switch`（layui-form-switch 克隆：绿底白滑块靠右/白底灰边灰滑块靠左）两套皮肤并存，表格内开关状态难以辨识——属 ui 库缺陷（AGENTS 规则：能力缺陷回归 ui 库修复）。
