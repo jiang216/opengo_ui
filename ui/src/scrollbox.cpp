@@ -69,6 +69,14 @@ void ScrollBox::check_bottom() {
 
 void ScrollBox::on_layout() {
     needs_layout_ = false;
+    // UI-127 分帧触底重检：rearm_bottom 只置挂起标记，此处消费 check_bottom。
+    // 回调（流加载续灌）重建子控件后，本次 on_layout 后续流程即用新 children
+    // 完成排布与 clamp_scroll，无乱帧；每帧至多消费一次 = 每帧至多灌一批，
+    // 消除 rebuild_rows 内同步递归级联造成的单帧工作量暴增。
+    if (pending_rearm_) {
+        pending_rearm_ = false;
+        check_bottom();
+    }
     clamp_scroll();
     // 内容宽度让出右侧滚动条列
     const float content_w =

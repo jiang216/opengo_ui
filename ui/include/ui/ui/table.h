@@ -89,6 +89,10 @@ public:
     void set_end_note(const char* text);
     // 滚动回顶部（过滤条件变化重灌数据后调用）
     void reset_scroll();
+    // 预热表头 + 当前可见行全部单元格 + 尾注的 CJK 字形（UI-127）：一次性烘焙消除
+    // UI-125 逐帧配额限流的方块宽渐进补齐闪烁（流加载续灌瞬间/表格首次显示瞬间）。
+    // prebake_text 不受配额限制且自动跳过已烘焙码点，重复调用开销可忽略。
+    void prebake_visible_text();
 
     // —— 复选列 / 单选列（layui type:'checkbox' / type:'radio'）——
     void add_checkbox_column();  // 表头全选 + 各行复选位

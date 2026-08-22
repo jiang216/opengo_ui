@@ -2225,7 +2225,7 @@ parent->add_child(sb);
 | `void reset_scroll()` | 滚动回顶部（切页/内容重建后复位滚动位置，防止残留旧页滚动偏移） |
 | `void mark_content_dirty()` | 标记子树变化（clear_children/add_child 后调用），抑制滚动条绘制直到下一次 on_layout() |
 | `void set_on_scroll_to_bottom(std::function<void()> cb)` | 滚到内容底部时回调一次（再次离开底部再滚回底部会重新触发）。 传入 nullptr 清除回调（切页清理用，防悬空引用）。 |
-| `void rearm_bottom()` | 内容增长后由宿主调用：解除触底一次性武装并立即重检（[UI-126](CHANGELOG.md#ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22)）——补齐 layui flow.load「DOM 插入后再查一次 reachBottom」语义，防小批次续灌停摆 |
+| `void rearm_bottom()` | 内容增长后由宿主调用：解除触底一次性武装并挂起重检（[UI-126](CHANGELOG.md#ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22)引入；[UI-127](CHANGELOG.md#ui-127-流加载表格首显闪烁触底重检分帧--prebakevisibletext-字形预热2026-08-22) 改分帧）——下一次 on_layout() 开头消费 check_bottom，每帧至多灌一批，防同步递归级联单帧暴增 |
 | `void set_on_scroll(std::function<void()> cb)` | 通用滚动回调：每次 scroll_offset 变化时触发（用于关闭下拉面板等场景）。 |
 | `void set_bottom_margin(float mb)` | 距底部触发距离 margin（镜像 layui flow mb，默认 50）：当 scroll_offset 距内容底部 不足 mb 像素时即触发触底回调，而不必严格滚到底（UI-094）。仅影响 check_bottom， 触发/重新武装语义（bottom_fired_）与 set_on_scroll_to_bottom 一致。 |
 | `void add_pinned(Widget* w, PinCorner corner = PinCorner::BottomRight, float margin_x = 16.f, float margin_y = 16.f)` | —— 视口级锚定子控件（layui fixbar，UI-110）—— 控件照常 add_child（生命周期/命中/绘制顺序不变），但不参与纵向流式排布、不计入内容高度；每次布局钉在可视区 corner 内缩 (margin_x, margin_y) 处，不随 scroll_offset 移动；后加的锚定控件绘制在流式内容之上 |
@@ -2366,9 +2366,10 @@ parent->add_child(tb);
 | `void set_on_sort(std::function<void(int col, bool asc)> cb)` |  |
 | `void set_on_row_click(std::function<void(int row)> cb)` |  |
 | `void set_paginated(bool on, int page_size = 10)` | —— 分页（layui page:true / resetPage）—— 分页时表底显示 Laypage，仅渲染当前页 |
-| `void set_on_load_more(std::function<void()> cb)` | —— 流加载（layui flow 信息流滚动自动加载，[UI-126](CHANGELOG.md#ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22)）—— 仅非分页模式生效：滚动近底部时回调，rebuild 尾部自动重检直至填满一屏或数据耗尽 |
+| `void set_on_load_more(std::function<void()> cb)` | —— 流加载（layui flow 信息流滚动自动加载，[UI-126](CHANGELOG.md#ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22)）—— 仅非分页模式生效：滚动近底部时回调，rebuild 尾部自动挂起重检（[UI-127](CHANGELOG.md#ui-127-流加载表格首显闪烁触底重检分帧--prebakevisibletext-字形预热2026-08-22) 分帧，每帧至多一批）直至填满一屏或数据耗尽 |
 | `void set_end_note(const char* text)` | 流加载尾注（如「没有更多了」）：行尾只读提示行，随内容滚动；不参与行号映射/选中/编辑 |
 | `void reset_scroll()` | 滚动回顶部（过滤条件变化重灌数据后调用） |
+| `void prebake_visible_text()` | 预热表头+可见行+尾注全部 CJK 字形（[UI-127](CHANGELOG.md#ui-127-流加载表格首显闪烁触底重检分帧--prebakevisibletext-字形预热2026-08-22)）：消除 UI-125 配额限流的方块宽渐进补齐闪烁（续灌/首显瞬间）；跳过已烘焙码点可重复调用 |
 | `bool paginated() const` |  |
 | `void set_page(int page)` | 0 基，立即跳页 |
 | `int page() const` |  |

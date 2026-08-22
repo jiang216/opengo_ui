@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 134（BUG 126 / DOC 6 / META 2）
-- 边: 324
+- 节点: 135（BUG 127 / DOC 6 / META 2）
+- 边: 325
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -917,7 +917,13 @@
 
 - 路径: `docs/CHANGELOG.md#ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 触底重检——触底→续灌→重建→重检级联直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化
+
+### BUG:UI-127 · UI-127: 流加载/表格首显闪烁——触底重检分帧 + prebake_visible_text 字形预热（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-127-流加载表格首显闪烁触底重检分帧--prebakevisibletext-字形预热2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#流加载/表格首显防闪烁：`ScrollBox::rearm_bottom()` 分帧（置挂起标记，on_layout 开头消费 check_bottom，每帧至多灌一批、回调重建行当帧布局归位无乱帧，打断同步递归级联单帧暴增）；`Table::prebake_visible_text()` 预热表头+可见行+尾注 CJK 字形（转发 prebake_text 跳过已烘焙码点），消除 UI-125 配额限流方块宽渐进补齐闪烁
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -1135,6 +1141,7 @@
 | `BUG:UI-124` | BUG | UI-124: 表格行单击选中高亮（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-125` | BUG | UI-125: CJK 字形逐帧烘焙配额 + prebake_text 预热（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-126` | BUG | UI-126: Table 流加载支持——触底重检 rearm + 尾注 + on_load_more（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-127` | BUG | UI-127: 流加载/表格首显闪烁——触底重检分帧 + prebake_visible_text 字形预热（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1348,6 +1355,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-124` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-125` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-126` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-127` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

@@ -3,6 +3,24 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-127: 流加载/表格首显闪烁——触底重检分帧 + prebake_visible_text 字形预热（2026-08-22）
+- **类型**：Bug 修复（audio_text 用户报告：[FLOW-001] 流加载续灌瞬间与规则页四 tab 手动切换瞬间，预览区闪烁；排查确认非深灰背景/白表清屏覆盖问题，为两个机制叠加）
+- **根因**：
+  1. **CJK 懒烘焙配额渐进补齐**（UI-125 机制残留）：非活动表格从未 draw → 其文本字形从未烘焙；流加载续灌批次含大量首见码点。首帧超配额字形走方块字宽回退、后续数帧逐字补齐 = 文字浮现/宽度跳动闪烁。UI-125 已提供 `prebake_text` 但下游零调用；
+  2. **触底同步递归级联**：UI-126 `rearm_bottom()` 在 `check_bottom()` 内同步重入 on_load_more→reload→rebuild_rows→rearm 递归，近底部时一帧内连续多批全量重建已加载行（O(k·N)），单帧工作量暴增 vsync 跳帧，加重闪烁观感。
+- **修复**：
+  - `ScrollBox::rearm_bottom()` 改挂起语义：只置 `pending_rearm_`，`on_layout()` 开头消费 `check_bottom()`——主循环 layout 阶段改树安全，回调重建的行控件在本次布局内即归位无乱帧；每帧至多消费一次＝每帧至多灌一批，打断同帧递归级联；
+  - 新增 `Table::prebake_visible_text()`：预热表头 + visible_rows_ 全部单元格 + 尾注的 CJK 字形（转发 `Font::prebake_text`，不受配额限制且自动跳过已烘焙码点）。下游在数据灌入后调用即可消除首显/续灌闪烁。
+- **回归清单**：
+  1. 流加载触底续灌：新批次文字首帧即为正确字形（无方块宽回退、无渐进补齐跳动）；数据量大时每帧至多灌一批。
+  2. 表格首次显示（切页签/页面）：文字完整无闪烁；第二次显示不退化。
+  3. 触底级联收敛语义不变：内容底推出触发区或耗尽断链；首屏不足一屏自动补满（分帧下跨数帧完成）。
+  4. UI-035/UI-094 既有触底语义零变化（mb=0 严格滚到底、滚离重武装路径未动）。
+  5. 分页模式表格零行为变化（prebake 仅读数据、rearm 分帧仅非分页路径受益）。
+  6. 下游 audio_text regression.ps1 全 PASS。
+- **验证**：opengl_UI Release 构建+install 通过；audio_text 四表接入 prebake_visible_text，regression.ps1 全 PASS（174 项）；双仓库 graphgen --check 0 错 0 警。
+- **影响范围**：`ui/include/ui/ui/scrollbox.h`、`ui/src/scrollbox.cpp`、`ui/include/ui/ui/table.h`、`ui/src/table.cpp`。
+
 ## UI-126: Table 流加载支持——触底重检 rearm + 尾注 + on_load_more（2026-08-22）
 - **类型**：功能补全（audio_text 用户要求规则页四表由分页改为 layui flow 信息流滚动加载；ScrollBox 已有 `set_on_scroll_to_bottom`（UI-035/UI-094），但直接用于 Table 存在停摆缺口）
 - **根因**：①`check_bottom()` 仅在 `set_scroll()`（滚动事件时机）调用，且触发一次后需滚离底部才重新武装——续灌批次若未把内容底推出触发区（用户已在底部无法再滚），加载永久停摆，缺 layui flow.load「DOM 插入后再查一次 reachBottom」语义；②Table 未暴露 body_ 触底钩子与续灌配套 API。

@@ -400,6 +400,19 @@ void Table::reset_scroll() {
     if (body_) body_->reset_scroll();
 }
 
+// UI-127：预热表头/可见行/尾注全部文本字形，消除流加载续灌与表格首次显示
+// 瞬间的 UI-125 配额限流渐进补齐闪烁。prebake_text 内部跳过 ASCII（已在图集）、
+// 图标与已烘焙码点，重复调用仅余字符串遍历开销。
+void Table::prebake_visible_text() {
+    if (!font_) return;
+    for (const auto& c : cols_) font_->prebake_text(c.title.c_str());
+    for (int r : visible_rows_) {
+        if (r < 0 || r >= static_cast<int>(rows_.size())) continue;
+        for (const auto& cell : rows_[r]) font_->prebake_text(cell.c_str());
+    }
+    if (!end_note_.empty()) font_->prebake_text(end_note_.c_str());
+}
+
 int Table::auto_page_size() const {
     // UI-123：可用高度须扣除表头与内部分页条（28px）——本接口的约定用途是
     // 为 set_paginated(true, n) 提供条数，分页条必然占位，恒定预留

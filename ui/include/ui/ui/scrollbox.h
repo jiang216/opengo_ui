@@ -37,11 +37,13 @@ public:
     // 传入 nullptr 清除回调（切页清理用，防悬空引用）。
     void set_on_scroll_to_bottom(std::function<void()> cb) { on_bottom_ = std::move(cb); }
 
-    // 内容增长后由宿主调用：解除触底一次性武装并立即重检（UI-126）。场景：流加载
-    // 续灌批次未把内容底推出触发区（用户已在底部无法再滚），不清 bottom_fired_
-    // 将永不再触发——补齐 layui flow.load「DOM 插入后再查一次 reachBottom」语义。
-    // 可能同步重入 on_bottom_ 回调，由调用方保证收敛（每批推进内容高度或耗尽停止 append）。
-    void rearm_bottom() { bottom_fired_ = false; check_bottom(); }
+    // 内容增长后由宿主调用：解除触底一次性武装并安排重检（UI-126 引入，UI-127 改分帧）。
+    // 场景：流加载续灌批次未把内容底推出触发区（用户已在底部无法再滚），不清
+    // bottom_fired_ 将永不再触发——补齐 layui flow.load「DOM 插入后再查一次 reachBottom」
+    // 语义。UI-127 起不再同步重检（同步链会在 rebuild_rows 内递归级联多批、单帧工作量
+    // 暴增），改为置挂起标记、下一次 on_layout() 开头消费 check_bottom——每帧至多灌一批，
+    // 且回调重建的行控件在本次布局内即归位，无乱帧。
+    void rearm_bottom() { pending_rearm_ = true; }
 
     // 通用滚动回调：每次 scroll_offset 变化时触发（用于关闭下拉面板等场景）。
     void set_on_scroll(std::function<void()> cb) { on_scroll_ = std::move(cb); }
@@ -100,6 +102,7 @@ private:
     const Theme* theme_ = nullptr;
     std::function<void()> on_bottom_;
     bool bottom_fired_ = false;
+    bool pending_rearm_ = false;  // UI-127：rearm_bottom 挂起标记，on_layout 开头消费
     float bottom_margin_ = 0.f;  // 距底部触发距离（镜像 layui flow mb；0=严格滚到底）
     std::function<void()> on_scroll_;
 
