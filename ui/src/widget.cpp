@@ -185,7 +185,7 @@ void Widget::release_mouse_capture() {
 
 bool Widget::dispatch_mouse_move(float x, float y) {
     // 模态：事件仅路由给模态子树，模态外一律屏蔽，且清除模态外残留 hover 态
-    if (!parent_ && modal_) {
+    if (!parent_ && modal_ && modal_->visible) {
         clear_hover_outside(modal_);
         return modal_->dispatch_mouse_move(x, y);
     }
@@ -219,7 +219,7 @@ bool Widget::dispatch_mouse_move(float x, float y) {
 
 bool Widget::dispatch_mouse_down(float x, float y, int button) {
     // 模态：事件仅路由给模态子树，模态外一律屏蔽
-    if (!parent_ && modal_) return modal_->dispatch_mouse_down(x, y, button);
+    if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_down(x, y, button);
     prune_popups(x, y);
     // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
     const std::vector<Widget*> kids(children_);
@@ -243,7 +243,7 @@ bool Widget::dispatch_mouse_down(float x, float y, int button) {
 
 bool Widget::dispatch_mouse_up(float x, float y, int button) {
     // 模态：事件仅路由给模态子树，模态外一律屏蔽
-    if (!parent_ && modal_) return modal_->dispatch_mouse_up(x, y, button);
+    if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_up(x, y, button);
     // 捕获者优先：鼠标抬起路由给捕获者并释放捕获
     Widget* cap = root()->capture_;
     if (cap && cap != this) {
@@ -273,7 +273,7 @@ bool Widget::dispatch_mouse_up(float x, float y, int button) {
 
 bool Widget::dispatch_mouse_scroll(float x, float y, float dx, float dy) {
     // 模态：事件仅路由给模态子树，模态外一律屏蔽
-    if (!parent_ && modal_) return modal_->dispatch_mouse_scroll(x, y, dx, dy);
+    if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_scroll(x, y, dx, dy);
     // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
     const std::vector<Widget*> kids3(children_);
     for (auto it = kids3.rbegin(); it != kids3.rend(); ++it) {
@@ -349,13 +349,17 @@ bool Widget::on_char(unsigned int codepoint) {
     return false;
 }
 
+// UI-133：模态拦截仅在 modal 控件可见时生效。所有 dispatch_* 入口统一检查
+// modal_->visible——控件被 destroy()（UI-072 仅隐藏待帧末释放）或手动隐藏后，
+// 若仍持续拦截，宿主主循环未接 advance()/flush_pending_destroys() 时僵尸模态
+// 将永久吞掉全部输入（audio_text CONF-002 全 UI 死锁根因）。隐藏即解除模态。
 void Widget::set_modal(Widget* modal) {
     modal_ = modal;
 }
 
 bool Widget::dispatch_key_down(int key, int mods) {
     // 模态：键盘仅路由给模态子树
-    if (!parent_ && modal_) return modal_->dispatch_key_down(key, mods);
+    if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_key_down(key, mods);
     // 优先让焦点控件消费（如 TextBox 光标移动/删除）；导航键未被消费才做焦点遍历
     Widget* f = focused_descendant();
     if (f) {
@@ -380,7 +384,7 @@ bool Widget::dispatch_key_down(int key, int mods) {
 
 bool Widget::dispatch_key_up(int key, int mods) {
     // 模态：键盘仅路由给模态子树
-    if (!parent_ && modal_) return modal_->dispatch_key_up(key, mods);
+    if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_key_up(key, mods);
     Widget* f = focused_descendant();
     if (f) return f->on_key_up(key, mods);
     return false;
@@ -388,7 +392,7 @@ bool Widget::dispatch_key_up(int key, int mods) {
 
 bool Widget::dispatch_char(unsigned int codepoint) {
     // 模态：键盘仅路由给模态子树
-    if (!parent_ && modal_) return modal_->dispatch_char(codepoint);
+    if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_char(codepoint);
     Widget* f = focused_descendant();
     if (f) return f->on_char(codepoint);
     return false;

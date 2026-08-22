@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-23T02:07:24+08:00",
+  "generatedAt": "2026-08-23T03:04:17+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-133": {
+      "id": "BUG:UI-133",
+      "type": "BUG",
+      "label": "UI-133: 模态拦截可见性防御——modal 控件隐藏后不再吞输入，修复僵尸模态全 UI 死锁（2026-08-23）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-133-模态拦截可见性防御modal-控件隐藏后不再吞输入修复僵尸模态全-ui-死锁2026-08-23"
+    },
     "BUG:UI-132": {
       "id": "BUG:UI-132",
       "type": "BUG",
@@ -2560,6 +2567,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-133",
+      "kind": "checklist",
+      "context": "回归清单#模态拦截可见性防御：7 处 dispatch_* 模态分支统一 `modal_ && modal_->visible`——modal 控件隐藏（destroy 待释放/手动隐藏）即解除输入拦截，杜绝宿主未接 advance 时僵尸模态永久吞输入锁死全 UI；可见模态行为不变"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -2962,6 +2975,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-133": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#模态拦截可见性防御：7 处 dispatch_* 模态分支统一 `modal_ && modal_->visible`——modal 控件隐藏（destroy 待释放/手动隐藏）即解除输入拦截，杜绝宿主未接 advance 时僵尸模态永久吞输入锁死全 UI；可见模态行为不变"
+      }
+    ],
     "BUG:UI-132": [
       {
         "from": "DOC:ARCHITECTURE",

@@ -3,6 +3,19 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-133: 模态拦截可见性防御——modal 控件隐藏后不再吞输入，修复僵尸模态全 UI 死锁（2026-08-23）
+- **类型**：Bug 修复 / 健壮性（audio_text CONF-002：确认弹窗点掉后返回主界面，全部按钮/功能永久失灵）
+- **严重度**：高（宿主未接 advance() 时，一次 destroy 即可永久锁死整个界面输入）
+- **根因**：UI-072 延迟销毁下 `destroy()` 仅置 `visible=false` 入队；而 7 个 dispatch_* 入口的模态分支 `if (!parent_ && modal_)` **不检查 modal_->visible**——模态控件隐藏后仍持续把全部鼠标/键盘事件路由给不可见子树并整体吞掉。宿主主循环若未调用根节点 `advance()`（其帧末才执行 `flush_pending_destroys()`），队列永不冲刷、`modal_` 永久指向僵尸控件 → 输入全锁死。audio_text 主循环正是未接 advance 的集成形态。
+- **修复**：`ui/src/widget.cpp` 全部 7 处模态分支统一改为 `if (!parent_ && modal_ && modal_->visible)`（mouse move/down/up/scroll、key down/up、char）——**模态语义收敛为「可见才模态」**：destroy 待释放、手动隐藏等任何不可见状态自动解除拦截；set_modal 处补注释固化该契约。
+- **回归清单**：
+  1. 可见模态弹窗照常屏蔽外部输入（PanelWindow confirm/layer 用法行为不变）。
+  2. modal 控件 destroy()/visible=false 后当帧起输入恢复直达下层控件，无僵尸拦截。
+  3. flush_pending_destroys 照常清理 modal_/capture_/popups_ 引用（UI-072 语义不变）。
+  4. layui_test layer 页与 audio_text CONF-001 弹窗正常弹出/关闭/重复弹窗防护不变。
+- **验证**：Release 构建+install 通过；下游 audio_text 补接 flush 后重链 regression.ps1 全 PASS（201 项 0 失败）；双仓库 graphgen --check 0 错 0 警。
+- **影响范围**：`ui/src/widget.cpp`（7 处模态分支 + set_modal 注释）。
+
 ## UI-132: Table preferred_height 高度语义修正——默认内容跟随，新增 set_fixed_height/set_max_content_height（2026-08-23）
 - **类型**：Bug 修复 / API 语义（audio_text SPK-005 用户确认 app 端绕过修复有效后，要求按 AGENTS「先归因再修复」规则回归 ui 库根治遗留）
 - **严重度**：高（流式容器内表格高度被首次分配值永久冻结，add_row 后行区全部裁剪不可见）
