@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 131（BUG 123 / DOC 6 / META 2）
-- 边: 321
+- 节点: 132（BUG 124 / DOC 6 / META 2）
+- 边: 322
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -901,6 +901,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table `auto_page_size()` 按可视高自动计算每页行数（扣除表头+分页条高度）；`set_paginated(true,n)` 总页数缩小时保持当前页（钳制不回跳第 1 页）；应用侧手算 pageSize 公式可整体替换
 
+### BUG:UI-124 · UI-124: 表格行单击选中高亮（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-124-表格行单击选中高亮2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 行单击选中高亮：单击数据行记录可见行号（`sel_row_` + 公开 `set_selected_row()`），选中行 #16baaa α0.18 叠加、hover #EFEFEF，与底色可区分（修复三分支同画 #FAFAFA 零反馈）；reload/翻页/排序自动清除；radio 模式语义不变
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1114,6 +1120,7 @@
 | `BUG:UI-121` | BUG | UI-121: ComboBox::set_options 就地重载选项——销毁重建孤儿控件（幽灵下拉）根治 API（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-122` | BUG | UI-122: Laypage/Table 分页条区域点击穿透——容器自身 chrome 一律消费（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-123` | BUG | UI-123: Table auto_page_size 扣除分页条高度 + set_paginated 保持页码（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-124` | BUG | UI-124: 表格行单击选中高亮（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1324,6 +1331,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-121` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-122` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-123` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-124` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

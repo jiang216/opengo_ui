@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T17:11:04+08:00",
+  "generatedAt": "2026-08-22T18:40:51+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-124": {
+      "id": "BUG:UI-124",
+      "type": "BUG",
+      "label": "UI-124: 表格行单击选中高亮（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-124-表格行单击选中高亮2026-08-22"
+    },
     "BUG:UI-001": {
       "id": "BUG:UI-001",
       "type": "BUG",
@@ -2443,6 +2450,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-124",
+      "kind": "checklist",
+      "context": "回归清单#Table 行单击选中高亮：单击数据行记录可见行号（`sel_row_` + 公开 `set_selected_row()`），选中行 #16baaa α0.18 叠加、hover #EFEFEF，与底色可区分（修复三分支同画 #FAFAFA 零反馈）；reload/翻页/排序自动清除；radio 模式语义不变"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -2845,6 +2858,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-124": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table 行单击选中高亮：单击数据行记录可见行号（`sel_row_` + 公开 `set_selected_row()`），选中行 #16baaa α0.18 叠加、hover #EFEFEF，与底色可区分（修复三分支同画 #FAFAFA 零反馈）；reload/翻页/排序自动清除；radio 模式语义不变"
+      }
+    ],
     "BUG:UI-001": [
       {
         "from": "META:CHANGELOG",

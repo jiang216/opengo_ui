@@ -23,10 +23,14 @@ size_t next_cp(const std::string& s, size_t i) {
 }
 
 // layui-table 颜色（layui.css 提取）
-constexpr Vec4 kThBg{0.980f, 0.980f, 0.980f, 1.0f};  // #FAFAFA 表头/奇数行/hover 灰底
+constexpr Vec4 kThBg{0.980f, 0.980f, 0.980f, 1.0f};  // #FAFAFA 表头/奇数行灰底
 constexpr Vec4 kLine{0.933f, 0.933f, 0.933f, 1.0f};  // #eee 分隔线/外框
 constexpr Vec4 kEvenBg{0.980f, 0.980f, 0.980f, 1.0f};  // #FAFAFA 偶数行
 constexpr Vec4 kAccent{0.09f, 0.73f, 0.67f, 1.0f};   // #16baaa 全选/复选选中
+// UI-124：行 hover / 单击选中高亮。此前三分支同画 #FAFAFA，hover 与选中零视觉反馈；
+// hover 用浅灰加深一档，选中用主题色半透明叠加（layui 行悬停 #f8f8f8 + 选中态惯例）
+constexpr Vec4 kHoverBg{0.937f, 0.937f, 0.937f, 1.0f};   // ~#EFEFEF
+constexpr Vec4 kSelBg{0.09f, 0.73f, 0.67f, 0.18f};       // #16baaa α0.18 叠加白底
 constexpr Vec4 kCheckBorder{0.42f, 0.42f, 0.42f, 1.0f};  // 未选中复选框边框
 constexpr float kBox = 18.f;    // 复选/单选框边长
 constexpr float kBoxR = 4.f;    // 复选方框圆角
@@ -45,13 +49,13 @@ public:
     void on_draw(Renderer& renderer) override {
         static const Theme kDefaultTheme;
         const Theme* t = theme_ ? theme_ : &kDefaultTheme;
-        const bool even_row = owner_->even() && (index_ % 2 == 1);
+        (void)t;
         // 所有行都绘制白底，防止父控件深色背景透出
         renderer.draw_quad(bounds_, kEvenBg);
-        if (hovered() || owner_->selected_row() == index_) {
-            renderer.draw_quad(bounds_, kEvenBg);
-        } else if (even_row) {
-            renderer.draw_quad(bounds_, kEvenBg);
+        if (owner_->selected_row() == index_) {
+            renderer.draw_quad(bounds_, kSelBg);
+        } else if (hovered()) {
+            renderer.draw_quad(bounds_, kHoverBg);
         }
         // 行分隔线：Default（网格）/ Line（仅行线）画行底；Row/Nob 不画行线
         if (owner_->has_row_line()) {
@@ -330,6 +334,7 @@ void Table::clear_rows() {
     row_expanded_.clear();
     tree_visible_.clear();
     radio_sel_ = -1;
+    sel_row_ = -1;  // UI-124
     rebuild_rows();
 }
 
@@ -384,6 +389,7 @@ int Table::auto_page_size() const {
 void Table::set_page(int page) {
     const int pc = page_count();
     page_ = std::min(std::max(0, page), std::max(0, pc - 1));
+    sel_row_ = -1;  // UI-124：翻页后原可见行号失效
     if (page_bar_) {
         page_bar_->set_total(pc);
         page_bar_->set_page(page_);
@@ -506,10 +512,9 @@ const std::vector<std::string>& Table::row(int r) const {
 
 int Table::selected_row() const {
     if (radio_mode_) {
-        const int v = checked_radio();
-        return v;
+        return checked_radio();
     }
-    return -1;
+    return sel_row_;  // UI-124：单击选中行（可见行号）
 }
 
 float Table::row_h() const {
@@ -647,6 +652,7 @@ void Table::sort_rows(int col) {
         return c.ascending ? cmp < 0 : cmp > 0;
     });
     sort_col_ = col;
+    sel_row_ = -1;  // UI-124：排序重排后可见行号失效
     rebuild_rows();
     if (on_sort_) on_sort_(col, c.ascending);
 }
@@ -672,6 +678,7 @@ void Table::reload(const std::vector<std::vector<std::string>>& new_rows) {
     row_depth_.assign(rows_.size(), 0);
     row_expanded_.assign(rows_.size(), true);
     radio_sel_ = -1;
+    sel_row_ = -1;  // UI-124：reload 后选中态失效
     page_ = 0;
     rebuild_rows();
     on_layout();
@@ -869,6 +876,7 @@ bool Table::on_mouse_down(float x, float y, int button) {
             return true;
         }
 
+        sel_row_ = row;  // UI-124：单击选中高亮（可见行号）
         if (on_row_click_) on_row_click_(row);
         const auto now = std::chrono::steady_clock::now();
         const double dt = std::chrono::duration<double>(now - last_click_).count();

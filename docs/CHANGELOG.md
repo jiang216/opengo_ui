@@ -3,6 +3,22 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-124: 表格行单击选中高亮（2026-08-22）
+- **类型**：功能补全（audio_text 用户报告：表格选中后无状态反馈，无法看到当前定位到哪一行）
+- **根因**：`TableRow::on_draw` 三个分支（hover / 选中 / 偶数行）全部画同一颜色 #FAFAFA——注释写"hover/选中行高亮 #f8f8f8"但从未使用区分色；且 `Table::selected_row()` 仅 radio 模式返回值、普通模式恒 -1，Table 不跟踪单击选中行，无 `set_selected_row` API。
+- **修复**：
+  - Table 新增 `sel_row_`（可见行号）与公开 `set_selected_row(int)`；`on_mouse_down` 行点击分支记录选中行；`reload()/clear_rows()/set_page()/sort_rows()` 时自动清除（可见行号失效场景）；
+  - `selected_row()` 普通模式返回 `sel_row_`（radio 模式语义不变）；
+  - 渲染区分三态：选中 = #16baaa α0.18 叠加（kSelBg）、hover = #EFEFEF（kHoverBg）、其余白/灰底；删除冗余 even_row 分支。
+- **回归清单**：
+  1. 单击数据行 → 该行青色半透明高亮，移开鼠标后保持；再点其他行切换。
+  2. hover 行浅灰加深，与选中色可区分。
+  3. reload/翻页/排序后选中态清除，无残留错位高亮。
+  4. 复选/单选列表现不变；radio 模式 selected_row() 仍返回单选行。
+  5. 下游 audio_text 规则页四表（数据表/正则/模式映射/快捷键）选中定位可见。
+- **验证**：opengl_UI Release 构建通过并 install；下游 regression.ps1 全 PASS（163 项）+ GUI 冒烟。
+- **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`。
+
 ## UI-001: 初始化项目文档图谱（2026-08-09）
 
 接入 graphgen 文档知识图谱：`--init` 安装引擎、opencode 技能/插件，配置 `prefixes`，

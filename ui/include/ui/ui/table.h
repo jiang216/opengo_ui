@@ -151,6 +151,9 @@ public:
     float col_width(int c) const;
     const std::vector<std::string>& row(int r) const;
     int selected_row() const;
+    // 行选中态（UI-124）：单击数据行高亮定位；参数为可见行号，-1 清除。
+    // 与复选/单选列无关，纯视觉反馈；reload/set_page/排序时自动清除。
+    void set_selected_row(int visible_row) { sel_row_ = visible_row; }
     bool even() const { return even_; }
     bool has_row_line() const { return skin_ == TableSkin::Default || skin_ == TableSkin::Line; }
     bool has_col_line() const { return skin_ == TableSkin::Default || skin_ == TableSkin::Row; }
@@ -194,6 +197,7 @@ private:
     std::vector<int> tree_visible_;  // 树形过滤后的数据行（祖先全展开），分页在其上切片
     std::vector<int> visible_rows_;  // 当前页可见行在 rows_ 中的下标
     int hover_row_ = -1;
+    int sel_row_ = -1;   // 单击选中行（可见行号，UI-124；-1 无）
     int sort_col_ = -1;
     TableSkin skin_ = TableSkin::Default;
     TableSize size_ = TableSize::Normal;
