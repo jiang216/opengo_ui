@@ -594,9 +594,16 @@ void Table::on_layout() {
 }
 
 float Table::preferred_height() const {
-    if (bounds_.h > 0.f) return bounds_.h;
+    // UI-131 高度语义修正：旧实现首行「bounds_.h > 0 即返回」使首次分配值永久冻结——
+    // 流式容器（Card/ScrollBox/VBox…）在空表期分到表头高后，add_row 增长永不反映，
+    // 行区 body_h≈0 全部裁剪（audio_text 声纹编辑面板样本列表被按钮遮挡 SPK-005 根因）。
+    // 改为默认内容跟随（每次调用按当前可见行数重算）；固定高场景显式 set_fixed_height，
+    // 流式容器防溢出用 set_max_content_height 钳制。
+    if (fixed_h_ > 0.f) return fixed_h_;
     const int vis = (int)visible_rows_.size();
-    return header_h() + (float)vis * row_h() + (paginated_ ? 28.f : 0.f);
+    float h = header_h() + (float)vis * row_h() + (paginated_ ? 28.f : 0.f);
+    if (max_content_h_ > 0.f && h > max_content_h_) h = max_content_h_;
+    return h;
 }
 
 void Table::rebuild_rows() {

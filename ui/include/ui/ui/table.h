@@ -181,8 +181,14 @@ public:
     float cell_pad_x() const;
 
     void on_layout() override;
-    // 高度自适应：构造时 h=0 → 表头 + 行数 × 行高（静态表格整表展示）；h>0 → 固定 + 纵向滚动
+    // 高度语义（UI-131）：默认内容跟随——每次调用按表头 + 可见行数×行高 [+ 分页条] 重算，
+    // 不再被首次分配的 bounds_.h 冻结（旧「h>0 即冻结」导致流式容器内行数增长永不反映，
+    // 行区被裁剪成 0，见 audio_text SPK-005）。
+    // set_fixed_height(h>0)：显式锁定高度（固定视口 + 内部纵向滚动的摆放），h<=0 解除回内容跟随；
+    // set_max_content_height(h>0)：内容跟随模式的上限钳制（流式容器防溢出），超出部分由内部滚动区承载。
     float preferred_height() const override;
+    void set_fixed_height(float h) { fixed_h_ = h; }
+    void set_max_content_height(float h) { max_content_h_ = h; }
     bool on_mouse_down(float x, float y, int button) override;
     void on_draw(Renderer& renderer) override;
 
@@ -217,6 +223,9 @@ private:
     std::vector<int> visible_rows_;  // 当前页可见行在 rows_ 中的下标
     int hover_row_ = -1;
     int sel_row_ = -1;   // 单击选中行（可见行号，UI-124；-1 无）
+    // 高度语义（UI-131）：fixed_h_>0 显式锁定 preferred_height；max_content_h_>0 内容跟随上限钳制
+    float fixed_h_ = 0.f;
+    float max_content_h_ = 0.f;
     int sort_col_ = -1;
     TableSkin skin_ = TableSkin::Default;
     TableSize size_ = TableSize::Normal;

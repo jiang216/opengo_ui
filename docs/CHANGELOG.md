@@ -3,6 +3,25 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-132: Table preferred_height 高度语义修正——默认内容跟随，新增 set_fixed_height/set_max_content_height（2026-08-23）
+- **类型**：Bug 修复 / API 语义（audio_text SPK-005 用户确认 app 端绕过修复有效后，要求按 AGENTS「先归因再修复」规则回归 ui 库根治遗留）
+- **严重度**：高（流式容器内表格高度被首次分配值永久冻结，add_row 后行区全部裁剪不可见）
+- **根因**：`Table::preferred_height()` 首行 `if (bounds_.h > 0.f) return bounds_.h;`——流式容器（Card/ScrollBox/VBox…）按子件 preferred 分配高度；空表期（0 行）分到仅表头高后 `bounds_.h > 0` 恒成立，此后 add_row 增长永不反映：行区 body_h = bounds_.h − 表头 ≈ 0，所有数据行被裁剪。`Widget::layout()` 无条件递归不可见子树（TAB-001「bounds 恒最新」设计）使隐藏期布局也持续以冻结值刷新，缺陷必现。
+- **修复**：
+  - `preferred_height()` 改为默认**内容跟随**：每次调用按 `表头 + 可见行数×行高 [+ 分页条]` 重算，删除 bounds_.h 冻结分支；
+  - 新增 `set_fixed_height(h)`（h>0 显式锁定 preferred_height，固定视口+内部滚动场景；<=0 解除回内容跟随）；
+  - 新增 `set_max_content_height(h)`（内容跟随模式的上限钳制，流式容器防溢出；超出部分由表格内部滚动区承载）；
+  - 迁移说明：旧「构造 h>0 + 放流式容器」依赖冻结语义的用法须显式改调 set_fixed_height——排查 apps/layui_test 全部 Table 用法：流式页均 h=0 构造（新旧语义一致）、api_demo 一处 h=120 进 VBox（测试程序展示效果随内容伸缩更正确）；手动 set_bounds 页面父级不读 preferred 零影响。
+- **回归清单**：
+  1. 流式容器内 Table 高度随 add_row/clear_rows 即时伸缩：空表=仅表头、N 行=表头+N×行高[+分页条]，不再冻结。
+  2. set_fixed_height(h>0)：preferred_height 恒返回 h，内部纵向滚动行为与旧 h>0 构造一致。
+  3. set_max_content_height(h>0)：内容高超过 h 时钳制为 h，超出行经表格内部滚动区可达。
+  4. 手动 set_bounds 布局页面（父级不读 preferred）：摆位与绘制零变化。
+  5. 分页模式（visible_rows_ 为当前页切片）：preferred 随每页行数正确变化；auto_page_size（UI-123）行为不变。
+  6. 树形折叠 / 流加载（visible_rows_ 过滤或增长）：preferred 跟随过滤后可见行数，UI-126/UI-127 语义不变。
+- **验证**：ui 库 Release 构建+install 通过；apps+layui_test 编译通过；下游 audio_text 改用新 API 后重链 regression.ps1 全 PASS；双仓库 graphgen --check 0 错 0 警。
+- **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`（preferred_height 语义修正 + 两个新 setter）。
+
 ## UI-131: draw_cell_form 参数错位修复——单元格开关恒走复选分支绘矩形；表单列表头居中（2026-08-23）
 - **类型**：Bug 修复（audio_text SPK-005 用户复核：声纹状态列开关「没看到更改，还是绘制的矩形，并且没有对齐状态标签列」）
 - **严重度**：高（UI-130 皮肤改造对用户完全不可见——目标绘制分支从未执行）

@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-23T02:01:43+08:00",
+  "generatedAt": "2026-08-23T02:07:24+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-132": {
+      "id": "BUG:UI-132",
+      "type": "BUG",
+      "label": "UI-132: Table preferred_height 高度语义修正——默认内容跟随，新增 set_fixed_height/set_max_content_height（2026-08-23）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-132-table-preferredheight-高度语义修正默认内容跟随新增-setfixedheightsetmaxcontentheight2026-08-23"
+    },
     "BUG:UI-131": {
       "id": "BUG:UI-131",
       "type": "BUG",
@@ -2547,6 +2554,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-132",
+      "kind": "checklist",
+      "context": "回归清单#Table preferred_height 高度语义：默认内容跟随（表头+可见行×行高[+分页条] 每次重算，不再被首次分配的 bounds_.h 冻结——流式容器内 add_row 即时伸缩）；`set_fixed_height(h)` 显式锁定（固定视口+内部滚动）、`set_max_content_height(h)` 内容跟随上限钳制（流式容器防溢出）；手动 set_bounds 页面与分页/树形/流加载路径零变化"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -2949,6 +2962,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-132": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table preferred_height 高度语义：默认内容跟随（表头+可见行×行高[+分页条] 每次重算，不再被首次分配的 bounds_.h 冻结——流式容器内 add_row 即时伸缩）；`set_fixed_height(h)` 显式锁定（固定视口+内部滚动）、`set_max_content_height(h)` 内容跟随上限钳制（流式容器防溢出）；手动 set_bounds 页面与分页/树形/流加载路径零变化"
+      }
+    ],
     "BUG:UI-131": [
       {
         "from": "DOC:ARCHITECTURE",

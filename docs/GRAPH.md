@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 139（BUG 131 / DOC 6 / META 2）
-- 边: 329
+- 节点: 140（BUG 132 / DOC 6 / META 2）
+- 边: 330
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -949,6 +949,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#draw_cell_form 形参与调用点语义一致（w=列宽、col=列号）：行内开关真实走圆角皮肤分支；表单列（开关/复选）表头标题水平居中与单元格控件对齐
 
+### BUG:UI-132 · UI-132: Table preferred_height 高度语义修正——默认内容跟随，新增 set_fixed_height/set_max_content_height（2026-08-23）
+
+- 路径: `docs/CHANGELOG.md#ui-132-table-preferredheight-高度语义修正默认内容跟随新增-setfixedheightsetmaxcontentheight2026-08-23`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table preferred_height 高度语义：默认内容跟随（表头+可见行×行高[+分页条] 每次重算，不再被首次分配的 bounds_.h 冻结——流式容器内 add_row 即时伸缩）；`set_fixed_height(h)` 显式锁定（固定视口+内部滚动）、`set_max_content_height(h)` 内容跟随上限钳制（流式容器防溢出）；手动 set_bounds 页面与分页/树形/流加载路径零变化
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1170,6 +1176,7 @@
 | `BUG:UI-129` | BUG | UI-129: Table 单元格表单切换回调——set_on_cell_form 点击翻转通知调用方（2026-08-23） | `docs/CHANGELOG.md` |
 | `BUG:UI-130` | BUG | UI-130: 开关皮肤统一——draw_switch_skin 共享函数，表格行内开关与 Switch 同源渲染（2026-08-23） | `docs/CHANGELOG.md` |
 | `BUG:UI-131` | BUG | UI-131: draw_cell_form 参数错位修复——单元格开关恒走复选分支绘矩形；表单列表头居中（2026-08-23） | `docs/CHANGELOG.md` |
+| `BUG:UI-132` | BUG | UI-132: Table preferred_height 高度语义修正——默认内容跟随，新增 set_fixed_height/set_max_content_height（2026-08-23） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1388,6 +1395,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-129` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-130` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-131` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-132` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
