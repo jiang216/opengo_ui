@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 133（BUG 125 / DOC 6 / META 2）
-- 边: 323
+- 节点: 134（BUG 126 / DOC 6 / META 2）
+- 边: 324
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -913,6 +913,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#CJK 字形逐帧烘焙配额：懒烘培按 16ms 窗口限量（默认 12 字形），超配额本帧回退方块字宽近似、后续帧渐进补齐，消除首次打开新页一帧内数十次光栅化+纹理上传的单帧卡顿/闪烁；`Font::prebake_text()` 不受限强制预热
 
+### BUG:UI-126 · UI-126: Table 流加载支持——触底重检 rearm + 尾注 + on_load_more（2026-08-22）
+
+- 路径: `docs/CHANGELOG.md#ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 触底重检——触底→续灌→重建→重检级联直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1128,6 +1134,7 @@
 | `BUG:UI-123` | BUG | UI-123: Table auto_page_size 扣除分页条高度 + set_paginated 保持页码（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-124` | BUG | UI-124: 表格行单击选中高亮（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-125` | BUG | UI-125: CJK 字形逐帧烘焙配额 + prebake_text 预热（2026-08-22） | `docs/CHANGELOG.md` |
+| `BUG:UI-126` | BUG | UI-126: Table 流加载支持——触底重检 rearm + 尾注 + on_load_more（2026-08-22） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1340,6 +1347,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-123` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-124` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-125` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-126` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

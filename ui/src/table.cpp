@@ -2,6 +2,7 @@
 
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
+#include "ui/ui/label.h"
 #include "ui/ui/laypage.h"
 #include "ui/ui/layui_icons.h"
 #include "ui/ui/scrollbox.h"
@@ -373,8 +374,30 @@ void Table::set_paginated(bool on, int page_size) {
         page_bar_->set_total(page_count());
         page_bar_->set_page(page_);
     }
+    // UI-126：流加载钩子仅非分页模式持有——防御「先挂回调后开分页」顺序，
+    // 切入分页即摘除 body_ 触底回调，避免翻页滚动到底误触续灌
+    if (body_) body_->set_on_scroll_to_bottom((on || !on_load_more_) ? nullptr : on_load_more_);
     rebuild_rows();
     on_layout();
+}
+
+// —— 流加载（UI-126）——
+
+void Table::set_on_load_more(std::function<void()> cb) {
+    on_load_more_ = std::move(cb);
+    // 仅非分页模式生效：分页数据切片由 Laypage 页条控制，无流加载语义
+    if (body_ && !paginated_) body_->set_on_scroll_to_bottom(on_load_more_);
+}
+
+void Table::set_end_note(const char* text) {
+    std::string t = text ? text : "";
+    if (t == end_note_) return;  // 文本未变化不重建（续灌路径每次 reload 后调用）
+    end_note_ = std::move(t);
+    if (body_) rebuild_rows();
+}
+
+void Table::reset_scroll() {
+    if (body_) body_->reset_scroll();
 }
 
 int Table::auto_page_size() const {
@@ -610,6 +633,21 @@ void Table::rebuild_rows() {
         row->set_theme(theme_);
         body_->add_child(row);
     }
+    // UI-126 流加载尾注：只读 Label 排在行后随内容滚动；ScrollBox 流式布局按
+    // preferred_height 排布、宽度强制 content_w。非数据行，不参与行号映射/选中/编辑
+    if (!paginated_ && !end_note_.empty()) {
+        auto* note = new Label(0, 0, bounds_.w, row_h(), end_note_.c_str());
+        note->set_font(font_);
+        note->set_align(1);  // 居中
+        note->set_color(Vec4{0.45f, 0.45f, 0.45f, 1.0f});
+        body_->add_child(note);
+    }
+    // UI-126 触底重检：ScrollBox 触发仅在滚动事件时机（set_scroll），小批次不足以
+    // 把内容底推出触发区且用户已在底部时将停摆；此处补齐 layui flow.load「DOM 插入
+    // 后再查一次」语义。同步回调可再入 add_row→rebuild_rows→rearm 递归，深度以填满
+    // 一屏所需批次数为界（有限收敛）；数据耗尽方停止 append 即断链。
+    // 注意：必须在尾注追加之后调用（先定稿内容再判触底）。
+    if (!paginated_ && on_load_more_ && body_) body_->rearm_bottom();
 }
 
 void Table::truncate_rows() {

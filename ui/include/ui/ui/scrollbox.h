@@ -37,6 +37,12 @@ public:
     // 传入 nullptr 清除回调（切页清理用，防悬空引用）。
     void set_on_scroll_to_bottom(std::function<void()> cb) { on_bottom_ = std::move(cb); }
 
+    // 内容增长后由宿主调用：解除触底一次性武装并立即重检（UI-126）。场景：流加载
+    // 续灌批次未把内容底推出触发区（用户已在底部无法再滚），不清 bottom_fired_
+    // 将永不再触发——补齐 layui flow.load「DOM 插入后再查一次 reachBottom」语义。
+    // 可能同步重入 on_bottom_ 回调，由调用方保证收敛（每批推进内容高度或耗尽停止 append）。
+    void rearm_bottom() { bottom_fired_ = false; check_bottom(); }
+
     // 通用滚动回调：每次 scroll_offset 变化时触发（用于关闭下拉面板等场景）。
     void set_on_scroll(std::function<void()> cb) { on_scroll_ = std::move(cb); }
 

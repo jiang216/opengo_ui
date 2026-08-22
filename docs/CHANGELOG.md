@@ -3,6 +3,25 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-126: Table 流加载支持——触底重检 rearm + 尾注 + on_load_more（2026-08-22）
+- **类型**：功能补全（audio_text 用户要求规则页四表由分页改为 layui flow 信息流滚动加载；ScrollBox 已有 `set_on_scroll_to_bottom`（UI-035/UI-094），但直接用于 Table 存在停摆缺口）
+- **根因**：①`check_bottom()` 仅在 `set_scroll()`（滚动事件时机）调用，且触发一次后需滚离底部才重新武装——续灌批次若未把内容底推出触发区（用户已在底部无法再滚），加载永久停摆，缺 layui flow.load「DOM 插入后再查一次 reachBottom」语义；②Table 未暴露 body_ 触底钩子与续灌配套 API。
+- **实现**：
+  - `ScrollBox::rearm_bottom()`：解除 `bottom_fired_` 武装并立即 `check_bottom()`；
+  - `Table::set_on_load_more(cb)`：转发 body_ 触底回调，仅非分页模式生效；`set_paginated` 内同步挂/摘钩子，防「先挂回调后开分页」误触发；
+  - `Table::rebuild_rows()` 尾部自动 `rearm_bottom()`：触底→cb 续灌→重建→重检级联，直到内容底推出触发区或数据耗尽（回调方停止 append 即断链）；副作用＝首屏不足一屏自动补满（layui flow 正确行为）；同步再入递归深度以填满一屏批次数为界，有限收敛；
+  - `Table::set_end_note(text)`：非分页且非空时在行尾渲染只读提示行 Label（灰字居中跨列、随内容滚动），文本变化才重建；不参与 data_row_of/选中/编辑/命中；
+  - `Table::reset_scroll()`：过滤重灌后回顶。
+- **回归清单**：
+  1. UI-035 语义不变：mb=0 严格滚到底触发、滚离重武装；原路径零改动。
+  2. UI-093/094 流加载页 demo 行为不回退（批次足够大时无感知差异；不足一屏场景反而正确补满）。
+  3. 分页模式表格零行为变化：rebuild 尾部两段均被 `!paginated_` 守卫；切入分页自动摘除触底回调。
+  4. 触底→续灌→重建→重检级联收敛：每批推进内容高度或耗尽停止 append 后不再触发。
+  5. 尾注区域点击不穿透下层控件（on_mouse_down 越界行号兜底 return true）；尾注不参与行号映射/选中/编辑/排序。
+  6. 合计行/树形/单元格表单/操作列路径不受影响。
+- **验证**：opengl_UI Release 构建+install 通过；下游 audio_text FLOW-001 四表转流加载，regression.ps1 全 PASS。
+- **影响范围**：`ui/include/ui/ui/scrollbox.h`、`ui/include/ui/ui/table.h`、`ui/src/table.cpp`。
+
 ## UI-125: CJK 字形逐帧烘焙配额 + prebake_text 预热（2026-08-22）
 - **类型**：性能修复（audio_text 用户报告：页面切换瞬间预览区闪烁；排查确认非渲染逻辑缺陷，为首次打开新页时一帧内数十个新 CJK 码点逐字 stbtt 光栅化 + glTexSubImage2D 上传拉长单帧所致）
 - **根因**：`ensure_dynamic` 无烘焙速率限制——首次绘制含新汉字的页面时，全部字形在同一帧内光栅化并上传图集，vsync 下该帧耗时激增，呈可感知卡顿/闪烁。

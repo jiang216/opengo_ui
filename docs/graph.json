@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-22T18:54:20+08:00",
+  "generatedAt": "2026-08-22T22:24:27+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-126": {
+      "id": "BUG:UI-126",
+      "type": "BUG",
+      "label": "UI-126: Table 流加载支持——触底重检 rearm + 尾注 + on_load_more（2026-08-22）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22"
+    },
     "BUG:UI-125": {
       "id": "BUG:UI-125",
       "type": "BUG",
@@ -2469,6 +2476,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-126",
+      "kind": "checklist",
+      "context": "回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 触底重检——触底→续灌→重建→重检级联直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -2871,6 +2884,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-126": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 触底重检——触底→续灌→重建→重检级联直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化"
+      }
+    ],
     "BUG:UI-125": [
       {
         "from": "DOC:ARCHITECTURE",

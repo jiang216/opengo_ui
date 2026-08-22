@@ -78,6 +78,18 @@ public:
     // 可视行号 → 数据行下标（rows_ 下标；跨分页/树形过滤的稳定行标识）
     int data_row_of(int visible) const;
 
+    // —— 流加载（layui flow 信息流滚动自动加载，UI-126）—— 仅非分页模式生效：
+    // body_ 滚动近底部（mb 临界距离，UI-035/UI-094 语义）时回调；配合 add_row/reload
+    // 续灌数据。rebuild_rows 尾部自动 rearm 重检：追加批次后若内容底仍未推出触发区，
+    // 将继续回调直至填满一屏或数据耗尽（耗尽时回调方停止 append 即可，链自然断）。
+    void set_on_load_more(std::function<void()> cb);
+    // 流加载尾注（如「没有更多了」）：非分页且非空时在最后一行之后渲染只读提示行
+    // （灰字居中跨列，随内容滚动）；不参与 data_row_of/选中/编辑/命中回调。
+    // 文本变化才触发重建，空串清除。
+    void set_end_note(const char* text);
+    // 滚动回顶部（过滤条件变化重灌数据后调用）
+    void reset_scroll();
+
     // —— 复选列 / 单选列（layui type:'checkbox' / type:'radio'）——
     void add_checkbox_column();  // 表头全选 + 各行复选位
     void add_radio_column();     // 表头占位 + 各行单选位
@@ -238,6 +250,10 @@ private:
 
     // 树形层级（treeTable）
     std::function<void(int, bool)> on_expand_;  // 展开/折叠回调（数据行下标, 展开态）
+
+    // 流加载（UI-126）：触底续灌回调 + 尾注文本（仅非分页模式参与）
+    std::function<void()> on_load_more_;
+    std::string end_note_;
 
     ScrollBox* body_ = nullptr;
     Font* font_ = nullptr;
