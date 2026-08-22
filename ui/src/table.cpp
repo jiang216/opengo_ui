@@ -6,6 +6,7 @@
 #include "ui/ui/laypage.h"
 #include "ui/ui/layui_icons.h"
 #include "ui/ui/scrollbox.h"
+#include "ui/ui/switch.h"
 #include "ui/ui/textbox.h"
 #include "ui/ui/theme.h"
 
@@ -244,17 +245,10 @@ private:
         const float bx = x + (owner_->col_width(col) - w) * 0.5f;
         const float by = cy - h * 0.5f;
         if (is_switch) {
-            const float r_ = h * 0.5f;
-            if (on) {
-                r.draw_rounded_rect({bx, by, w, h}, r_, kAccent);
-                r.draw_rounded_rect({bx + w - h - 4.f, by + 4.f, h - 8.f, h - 8.f}, (h - 8.f) * 0.5f,
-                                    {1, 1, 1, 1});
-            } else {
-                r.draw_rounded_rect({bx, by, w, h}, r_, Vec4{1, 1, 1, 1});
-                r.draw_rounded_rect_outline({bx, by, w, h}, r_, 1.f, Vec4{0.82f, 0.82f, 0.82f, 1.f});
-                r.draw_rounded_rect({bx + 4.f, by + 4.f, h - 8.f, h - 8.f}, (h - 8.f) * 0.5f,
-                                    Vec4{0.82f, 0.82f, 0.82f, 1.0f});
-            }
+            // UI-130：与项目统一圆角开关皮肤（ui::Switch 同源渲染），禁止自绘矩形开关
+            static const Theme kCellThemeDefault;
+            draw_switch_skin(r, Rect{bx, by, w, h}, theme_ ? theme_ : &kCellThemeDefault, on,
+                             true);
         } else {
             if (on) {
                 r.draw_rounded_rect({bx, by, w, h}, 4.f, kAccent);

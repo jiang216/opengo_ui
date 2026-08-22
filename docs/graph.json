@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-23T01:22:16+08:00",
+  "generatedAt": "2026-08-23T01:39:52+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-130": {
+      "id": "BUG:UI-130",
+      "type": "BUG",
+      "label": "UI-130: 开关皮肤统一——draw_switch_skin 共享函数，表格行内开关与 Switch 同源渲染（2026-08-23）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-130-开关皮肤统一drawswitchskin-共享函数表格行内开关与-switch-同源渲染2026-08-23"
+    },
     "BUG:UI-129": {
       "id": "BUG:UI-129",
       "type": "BUG",
@@ -2521,6 +2528,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-130",
+      "kind": "checklist",
+      "context": "回归清单#开关皮肤统一：`draw_switch_skin(renderer, rect, theme, checked, enabled, hovered, pressed)` 共享三态绘制（Switch 本体与 Table 单元格开关同源渲染，开=绿底白滑块靠右/关=白底灰边灰滑块靠左）；新增开关一律复用该皮肤，严禁自绘矩形/方块开关"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -2923,6 +2936,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-130": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#开关皮肤统一：`draw_switch_skin(renderer, rect, theme, checked, enabled, hovered, pressed)` 共享三态绘制（Switch 本体与 Table 单元格开关同源渲染，开=绿底白滑块靠右/关=白底灰边灰滑块靠左）；新增开关一律复用该皮肤，严禁自绘矩形/方块开关"
+      }
+    ],
     "BUG:UI-129": [
       {
         "from": "DOC:ARCHITECTURE",

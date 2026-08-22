@@ -3,6 +3,21 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-130: 开关皮肤统一——draw_switch_skin 共享函数，表格行内开关与 Switch 同源渲染（2026-08-23）
+- **类型**：Bug 修复 / 控件统一（audio_text SPK-004 用户报告：声纹表状态列行内开关「只有一个矩形，无法明确看到开关状态」，要求项目开关统一为圆角开关）
+- **根因**：`Table::draw_cell_form` 对 cell switch **自绘简化矩形块**（teal 色块+小方点、无滑块行程语义），与 `ui::Switch`（layui-form-switch 克隆：绿底白滑块靠右/白底灰边灰滑块靠左）两套皮肤并存，表格内开关状态难以辨识——属 ui 库缺陷（AGENTS 规则：能力缺陷回归 ui 库修复）。
+- **修复**：
+  - 新增共享皮肤函数 `ui::draw_switch_skin(renderer, rect, theme, checked, enabled, hovered, pressed)`（switch.h 声明/switch.cpp 实现）：三态绘制逻辑自 `Switch::on_draw` 原样抽取，取色走传入 Theme（空指针回退默认主题）；
+  - `Switch::on_draw` 改为调用该函数（文本/自定义内容/聚焦环仍在本体绘制）；
+  - `Table::draw_cell_form` switch 分支改调该函数——行内开关与页面开关**同源同款渲染**；复选框分支不变。
+- **回归清单**：
+  1. `ui::Switch` 本体渲染零变化（同一皮肤同参数路径；hover/pressed/focus 语义不变）。
+  2. 表格行内开关（set_cell_switch）：开=绿底白滑块靠右、关=白底灰边灰滑块靠左、尺寸 42×24 居中，状态一目了然。
+  3. 单元格复选框（set_cell_checkbox）、复选/单选列、操作列按钮绘制不受影响。
+  4. 下游 audio_text regression.ps1 全 PASS。
+- **验证**：Release 构建+install 通过；下游 audio_text SPK-004 接入后 regression.ps1 全 PASS（193 项 0 失败）；双仓库 graphgen --check 0 错 0 警。
+- **影响范围**：`ui/include/ui/ui/switch.h`、`ui/src/switch.cpp`、`ui/src/table.cpp`。
+
 ## UI-129: Table 单元格表单切换回调——set_on_cell_form 点击翻转通知调用方（2026-08-23）
 - **类型**：功能补全（audio_text SPK-003 声纹管理页「启用/禁用」由操作列按钮改为状态列行内开关，需感知 cell switch 切换事件；此前 `set_cell_switch`/`set_cell_checkbox` 点击仅翻转单元格文本、无任何回调，调用方无法响应）
 - **实现**：

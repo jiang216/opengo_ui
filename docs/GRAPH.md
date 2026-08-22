@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 137（BUG 129 / DOC 6 / META 2）
-- 边: 327
+- 节点: 138（BUG 130 / DOC 6 / META 2）
+- 边: 328
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -937,6 +937,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 单元格表单切换回调：`set_on_cell_form(cb)`（可见行号, 列号, 切换后选中态），点击 Switch/CheckBox 格翻转文本后触发（此前仅翻转不通知）；未注册回调行为不变；复选/单选/操作列/树形/分页/流加载路径零影响
 
+### BUG:UI-130 · UI-130: 开关皮肤统一——draw_switch_skin 共享函数，表格行内开关与 Switch 同源渲染（2026-08-23）
+
+- 路径: `docs/CHANGELOG.md#ui-130-开关皮肤统一drawswitchskin-共享函数表格行内开关与-switch-同源渲染2026-08-23`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#开关皮肤统一：`draw_switch_skin(renderer, rect, theme, checked, enabled, hovered, pressed)` 共享三态绘制（Switch 本体与 Table 单元格开关同源渲染，开=绿底白滑块靠右/关=白底灰边灰滑块靠左）；新增开关一律复用该皮肤，严禁自绘矩形/方块开关
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1156,6 +1162,7 @@
 | `BUG:UI-127` | BUG | UI-127: 流加载/表格首显闪烁——触底重检分帧 + prebake_visible_text 字形预热（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-128` | BUG | UI-128: emoji 渲染回退链——缺字 tofu 防护 + Segoe UI Emoji 单色轮廓烘焙（2026-08-22） | `docs/CHANGELOG.md` |
 | `BUG:UI-129` | BUG | UI-129: Table 单元格表单切换回调——set_on_cell_form 点击翻转通知调用方（2026-08-23） | `docs/CHANGELOG.md` |
+| `BUG:UI-130` | BUG | UI-130: 开关皮肤统一——draw_switch_skin 共享函数，表格行内开关与 Switch 同源渲染（2026-08-23） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1372,6 +1379,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-127` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-128` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-129` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-130` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

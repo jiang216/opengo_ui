@@ -14,6 +14,51 @@ constexpr float kKnobSize = 16.f;
 constexpr float kKnobInset = 4.f;  // 滑块距容器边缘（容器 padding 0 5px + 上 3px）
 }  // namespace
 
+// 统一圆角开关皮肤（UI-130）：Switch 本体与表格行内开关等共用，保证项目开关形态一致。
+// 取色走传入 Theme（空指针回退默认主题）：开态轨道=success、禁用边框/滑块=text_muted，
+// 关态白底灰系与原实现一致
+void draw_switch_skin(Renderer& renderer, const Rect& rect, const Theme* theme, bool checked,
+                      bool enabled, bool hovered, bool pressed) {
+    if (rect.w <= 0.f || rect.h <= 0.f) return;
+    static const Theme kDefaultTheme;
+    const Theme* t = theme ? theme : &kDefaultTheme;
+
+    const float cy = rect.y + rect.h * 0.5f;
+
+    if (!enabled) {
+        // 禁用：灰底灰边 + 灰滑块靠左
+        renderer.draw_rounded_rect(rect, kRadius, Vec4{0.88f, 0.88f, 0.88f, 1.0f});
+        renderer.draw_rounded_rect_outline(rect, kRadius, 1.f, t->text_muted);
+        renderer.draw_rounded_rect(
+            Rect{rect.x + kKnobInset, cy - kKnobSize * 0.5f, kKnobSize, kKnobSize}, kRadius,
+            t->text_muted);
+        return;
+    }
+
+    if (checked) {
+        // 开：绿底（主题 success）+ 白滑块靠右
+        Vec4 track = t->success;
+        if (hovered) track = Vec4{track.r * 0.92f, track.g * 0.92f, track.b * 0.92f, 1.0f};
+        if (pressed) track = Vec4{track.r * 0.85f, track.g * 0.85f, track.b * 0.85f, 1.0f};
+        renderer.draw_rounded_rect(rect, kRadius, track);
+        const float kx = rect.x + rect.w - kKnobSize - kKnobInset;
+        renderer.draw_rounded_rect(Rect{kx, cy - kKnobSize * 0.5f, kKnobSize, kKnobSize}, kRadius,
+                                   Vec4{1, 1, 1, 1});
+    } else {
+        // 关：白底 + #d2d2d2 边框 + 灰滑块靠左
+        Vec4 track{1, 1, 1, 1};
+        if (hovered) track = Vec4{0.97f, 0.97f, 0.97f, 1.0f};
+        renderer.draw_rounded_rect(rect, kRadius, track);
+        Vec4 border_color = Vec4{0.82f, 0.82f, 0.82f, 1.0f};
+        if (hovered) border_color = Vec4{0.70f, 0.70f, 0.70f, 1.0f};
+        renderer.draw_rounded_rect_outline(rect, kRadius, 1.f, border_color);
+        Vec4 knob = Vec4{0.82f, 0.82f, 0.82f, 1.0f};
+        if (hovered) knob = Vec4{0.70f, 0.70f, 0.70f, 1.0f};
+        renderer.draw_rounded_rect(
+            Rect{rect.x + kKnobInset, cy - kKnobSize * 0.5f, kKnobSize, kKnobSize}, kRadius, knob);
+    }
+}
+
 Switch::Switch(float x, float y, float w, float h) : Widget(x, y, w, h) {
     focusable = true;
     add_class("layui-form-switch");
@@ -82,39 +127,10 @@ void Switch::on_draw(Renderer& renderer) {
     const Theme* t = theme_ ? theme_ : &kDefaultTheme;
 
     const float w = bounds_.w;
-    const float h = bounds_.h;
-    const float cy = bounds_.y + h * 0.5f;
+    const float cy = bounds_.y + bounds_.h * 0.5f;
 
-    if (!enabled) {
-        // 禁用：灰底灰边 + 灰滑块靠左
-        renderer.draw_rounded_rect(bounds_, kRadius, Vec4{0.88f, 0.88f, 0.88f, 1.0f});
-        renderer.draw_rounded_rect_outline(bounds_, kRadius, 1.f, t->text_muted);
-        const float kx = bounds_.x + kKnobInset;
-        renderer.draw_rounded_rect(Rect{kx, cy - kKnobSize * 0.5f, kKnobSize, kKnobSize},
-                                   kRadius, t->text_muted);
-    } else if (checked_) {
-        // 开：绿底 #16b777 + 白滑块靠右
-        Vec4 track = t->success;
-        if (hovered_) track = Vec4{track.r * 0.92f, track.g * 0.92f, track.b * 0.92f, 1.0f};
-        if (pressed_) track = Vec4{track.r * 0.85f, track.g * 0.85f, track.b * 0.85f, 1.0f};
-        renderer.draw_rounded_rect(bounds_, kRadius, track);
-        const float kx = bounds_.x + w - kKnobSize - kKnobInset;
-        renderer.draw_rounded_rect(Rect{kx, cy - kKnobSize * 0.5f, kKnobSize, kKnobSize},
-                                   kRadius, Vec4{1, 1, 1, 1});
-    } else {
-        // 关：白底 + #d2d2d2 边框 + 灰滑块靠左
-        Vec4 track = Vec4{1, 1, 1, 1};
-        if (hovered_) track = Vec4{0.97f, 0.97f, 0.97f, 1.0f};
-        renderer.draw_rounded_rect(bounds_, kRadius, track);
-        Vec4 border_color = Vec4{0.82f, 0.82f, 0.82f, 1.0f};
-        if (hovered_) border_color = Vec4{0.70f, 0.70f, 0.70f, 1.0f};
-        renderer.draw_rounded_rect_outline(bounds_, kRadius, 1.f, border_color);
-        Vec4 knob = Vec4{0.82f, 0.82f, 0.82f, 1.0f};
-        if (hovered_) knob = Vec4{0.70f, 0.70f, 0.70f, 1.0f};
-        const float kx = bounds_.x + kKnobInset;
-        renderer.draw_rounded_rect(Rect{kx, cy - kKnobSize * 0.5f, kKnobSize, kKnobSize},
-                                   kRadius, knob);
-    }
+    // UI-130：轨道+滑块绘制统一走共享圆角开关皮肤（与表格行内开关同源）
+    draw_switch_skin(renderer, bounds_, theme_, checked_, enabled, hovered_, pressed_);
 
     // 两态文本 / lay-checkbox 自定义标题：开时显示 on（左段），关时显示 off（右段）
     if (custom_) {
