@@ -119,6 +119,15 @@ public:
     // （参数：可见行号, 列号, 切换后的选中态）；此前仅翻转单元格文本不通知，调用方无法感知
     void set_on_cell_form(std::function<void(int visible_row, int col, bool checked)> cb) { on_cell_form_ = std::move(cb); }
 
+    // —— 单元格文本编辑提交回调（UI-134）——
+    // 双击文本格进入行内编辑，Enter/失焦 commit_edit 写回 rows_ 后触发；
+    // 参数：数据行号（rows_ 下标，跨分页/排序稳定）, 列号, 新文本。
+    // 此前仅写控件私有副本不通知调用方，应用层无法感知编辑结果
+    // （audio_text 模式映射编辑丢失缺陷根源）。
+    void set_on_cell_edited(std::function<void(int data_row, int col, const std::string& text)> cb) { on_cell_edited_ = std::move(cb); }
+    // 列级可编辑开关（UI-134）：false 则该列双击不进入行内编辑（默认 true 可编辑）
+    void set_cell_editable(int col, bool editable);
+
     // —— 合计行（layui totalRow，totalRow.html / parseData.html）——
     void set_total_row(bool on) { total_row_ = on; }
     bool total_row() const { return total_row_; }
@@ -200,6 +209,7 @@ private:
         float width = 0.f;
         bool sortable = false;
         bool ascending = true;
+        bool editable = true;  // UI-134：false 则双击不进入行内编辑
         ColKind kind = ColKind::Data;
     };
 
@@ -260,6 +270,9 @@ private:
 
     // 单元格表单切换（UI-129）
     std::function<void(int, int, bool)> on_cell_form_;
+
+    // 单元格文本编辑提交（UI-134）
+    std::function<void(int, int, const std::string&)> on_cell_edited_;
 
     // 操作列（行内按钮）
     int button_col_ = -1;

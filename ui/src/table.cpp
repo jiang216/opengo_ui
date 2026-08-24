@@ -267,7 +267,7 @@ Table::Table(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 void Table::add_column(const char* title, float width, bool sortable) {
-    cols_.push_back({title ? title : "", width, sortable, true, ColKind::Data});
+    cols_.push_back({title ? title : "", width, sortable, true, true, ColKind::Data});
 }
 
 void Table::add_row(const std::vector<std::string>& cells) {
@@ -444,7 +444,7 @@ int Table::data_row_of(int visible) const {
 
 void Table::add_checkbox_column() {
     // 前置插入复选列
-    cols_.insert(cols_.begin(), {"", 46.f, false, true, ColKind::Checkbox});
+    cols_.insert(cols_.begin(), {"", 46.f, false, true, true, ColKind::Checkbox});
     selection_col_ = 0;
     radio_mode_ = false;
     // 已有数据行补齐复选位
@@ -453,7 +453,7 @@ void Table::add_checkbox_column() {
 }
 
 void Table::add_radio_column() {
-    cols_.insert(cols_.begin(), {"", 46.f, false, true, ColKind::Radio});
+    cols_.insert(cols_.begin(), {"", 46.f, false, true, true, ColKind::Radio});
     selection_col_ = 0;
     radio_mode_ = true;
     row_checked_.resize(rows_.size(), false);
@@ -461,7 +461,7 @@ void Table::add_radio_column() {
 }
 
 void Table::add_numbers_column() {
-    cols_.insert(cols_.begin(), {"", 50.f, false, true, ColKind::Numbers});
+    cols_.insert(cols_.begin(), {"", 50.f, false, true, true, ColKind::Numbers});
     rebuild_rows();
 }
 
@@ -504,7 +504,7 @@ void Table::set_cell_checkbox(int col) {
 void Table::add_button_column(const char* title, float width,
                               const std::vector<std::string>& labels,
                               const std::vector<std::string>& events) {
-    cols_.push_back({title ? title : "", width, false, true, ColKind::Button});
+    cols_.push_back({title ? title : "", width, false, true, true, ColKind::Button});
     button_col_ = (int)cols_.size() - 1;
     btn_labels_ = labels;
     btn_events_ = (events.size() == labels.size()) ? events : std::vector<std::string>(labels.size());
@@ -738,6 +738,7 @@ void Table::reload(const std::vector<std::vector<std::string>>& new_rows) {
 
 void Table::begin_edit(int row, int col, float click_x) {
     if (row < 0 || row >= (int)visible_rows_.size() || col < 0 || col >= (int)cols_.size()) return;
+    if (!cols_[col].editable) return;  // UI-134：不可编辑列双击无编辑框
     commit_edit();
 
     // 定位单元格：表头高之下 + 列偏移（可视行内的位置）
@@ -782,11 +783,19 @@ void Table::begin_edit(int row, int col, float click_x) {
     edit_box_->focus();
 }
 
+void Table::set_cell_editable(int col, bool editable) {
+    if (col < 0 || col >= (int)cols_.size()) return;
+    cols_[col].editable = editable;
+}
+
 void Table::commit_edit() {
     if (!edit_box_) return;
-    if (edit_data_row_ >= 0 && edit_data_row_ < (int)rows_.size() && edit_col_ >= 0 &&
-        edit_col_ < (int)rows_[edit_data_row_].size()) {
-        rows_[edit_data_row_][edit_col_] = edit_box_->text();
+    int data = edit_data_row_;
+    int col = edit_col_;
+    std::string text;
+    if (data >= 0 && data < (int)rows_.size() && col >= 0 && col < (int)rows_[data].size()) {
+        rows_[data][col] = edit_box_->text();
+        text = edit_box_->text();
     }
     remove_child(edit_box_);
     delete edit_box_;
@@ -795,6 +804,8 @@ void Table::commit_edit() {
     edit_col_ = -1;
     edit_data_row_ = -1;
     rebuild_rows();
+    // UI-134：写回 rows_ 后通知调用方（rebuild 完成再触发，回调内 reload 安全）
+    if (on_cell_edited_) on_cell_edited_(data, col, text);
 }
 
 int Table::col_hit(float x) const {
