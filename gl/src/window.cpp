@@ -19,6 +19,8 @@ Window::Window(int width, int height, const char* title)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif
@@ -349,6 +351,72 @@ void Window::get_video_modes(GLFWmonitor* monitor, int& count, void*& modes) {
 
 void Window::get_video_mode(GLFWmonitor* monitor, void*& mode) {
     mode = monitor ? (void*)glfwGetVideoMode(monitor) : nullptr;
+}
+
+// ---- 拖拽（无边框窗口）----
+
+void Window::start_drag(float mouse_x, float mouse_y) {
+    if (!window_) return;
+    int wx, wy;
+    glfwGetWindowPos(window_, &wx, &wy);
+    dragging_ = true;
+    drag_off_x_ = mouse_x;
+    drag_off_y_ = mouse_y;
+}
+
+void Window::update_drag(float mouse_x, float mouse_y) {
+    if (!window_ || !dragging_) return;
+    int wx, wy;
+    glfwGetWindowPos(window_, &wx, &wy);
+    float dx = mouse_x - drag_off_x_;
+    float dy = mouse_y - drag_off_y_;
+    glfwSetWindowPos(window_, (int)(wx + dx), (int)(wy + dy));
+    drag_off_x_ = mouse_x;
+    drag_off_y_ = mouse_y;
+}
+
+void Window::end_drag() { dragging_ = false; }
+
+// ---- 光标形状 ----
+
+void Window::set_cursor_arrow() {
+    if (window_) {
+        GLFWcursor* c = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+        glfwSetCursor(window_, c);
+        glfwDestroyCursor(c);
+    }
+}
+
+void Window::set_cursor_hand() {
+    if (window_) {
+        GLFWcursor* c = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+        glfwSetCursor(window_, c);
+        glfwDestroyCursor(c);
+    }
+}
+
+void Window::set_cursor_resize_ns() {
+    if (window_) {
+        GLFWcursor* c = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+        glfwSetCursor(window_, c);
+        glfwDestroyCursor(c);
+    }
+}
+
+void Window::set_cursor_resize_ew() {
+    if (window_) {
+        GLFWcursor* c = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+        glfwSetCursor(window_, c);
+        glfwDestroyCursor(c);
+    }
+}
+
+void Window::set_cursor_ibeam() {
+    if (window_) {
+        GLFWcursor* c = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+        glfwSetCursor(window_, c);
+        glfwDestroyCursor(c);
+    }
 }
 
 }  // namespace ui

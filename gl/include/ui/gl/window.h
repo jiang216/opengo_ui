@@ -60,6 +60,19 @@ public:
     void set_auto_iconify(bool value);
     void set_floating(bool value);
 
+    // ---- 拖拽（无边框窗口）----
+    void start_drag(float mouse_x, float mouse_y);
+    void update_drag(float mouse_x, float mouse_y);
+    void end_drag();
+    bool is_dragging() const { return dragging_; }
+
+    // ---- 光标形状 ----
+    void set_cursor_arrow();
+    void set_cursor_hand();
+    void set_cursor_resize_ns();
+    void set_cursor_resize_ew();
+    void set_cursor_ibeam();
+
     // ---- 剪贴板 ----
     void set_clipboard_string(const char* string);
     const char* get_clipboard_string() const;
@@ -127,6 +140,9 @@ private:
     int key_mods_[512] = {0};
     unsigned int char_queue_[64] = {0};
     int char_count_ = 0;
+    bool dragging_ = false;
+    float drag_off_x_ = 0.f;
+    float drag_off_y_ = 0.f;
 };
 
 }  // namespace ui
