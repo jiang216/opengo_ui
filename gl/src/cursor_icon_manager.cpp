@@ -169,57 +169,31 @@ void CursorIconManager::rotate_and_cache(float angle_degrees, int index) {
     float cos_a = std::cos(angle);
     float sin_a = std::sin(angle);
 
-    float src_cx = kBaseSize / 2.0f;
-    float src_cy = kBaseSize / 2.0f;
-    float dst_cx = kCursorSize / 2.0f;
-    float dst_cy = kCursorSize / 2.0f;
+    const float scale = (float)kBaseSize / (float)kCursorSize;  // 48/16 = 3.0
+    const float src_cx = kBaseSize / 2.0f;
+    const float src_cy = kBaseSize / 2.0f;
+    const float dst_cx = kCursorSize / 2.0f;
+    const float dst_cy = kCursorSize / 2.0f;
 
-    // 对于 0°/90°/180°/270°，从 48x48 中心裁剪 32x32
-    // 对于 45°/135°，旋转后裁剪中心 32x32
     uint8_t pixels[kCursorSize * kCursorSize * 4];
     std::memset(pixels, 0, sizeof(pixels));
 
-    if (angle_degrees == 0.f) {
-        // 0°：直接从中心裁剪
-        int offset = (kBaseSize - kCursorSize) / 2;
-        for (int y = 0; y < kCursorSize; ++y) {
-            for (int x = 0; x < kCursorSize; ++x) {
-                const uint8_t* src = base_ + ((y + offset) * kBaseSize + (x + offset)) * 4;
+    // 统一：对每个目标像素，逆旋转 + 缩放回 48×48 源空间采样
+    for (int y = 0; y < kCursorSize; ++y) {
+        for (int x = 0; x < kCursorSize; ++x) {
+            float dx = (x - dst_cx + 0.5f);
+            float dy = (y - dst_cy + 0.5f);
+            // 逆旋转
+            float rx = cos_a * dx + sin_a * dy;
+            float ry = -sin_a * dx + cos_a * dy;
+            // 缩放到源空间
+            int sx = (int)std::round(rx * scale + src_cx);
+            int sy = (int)std::round(ry * scale + src_cy);
+
+            if (sx >= 0 && sx < kBaseSize && sy >= 0 && sy < kBaseSize) {
+                const uint8_t* src = base_ + (sy * kBaseSize + sx) * 4;
                 uint8_t* dst = pixels + (y * kCursorSize + x) * 4;
                 dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; dst[3] = src[3];
-            }
-        }
-    } else if (angle_degrees == 90.f) {
-        // 90°：从 48x48 中心裁剪 32x32，然后旋转
-        int offset = (kBaseSize - kCursorSize) / 2;
-        for (int y = 0; y < kCursorSize; ++y) {
-            for (int x = 0; x < kCursorSize; ++x) {
-                // 90° 旋转：(x,y) -> (kCursorSize-1-y, x)
-                int rx = kCursorSize - 1 - y;
-                int ry = x;
-                const uint8_t* src = base_ + ((ry + offset) * kBaseSize + (rx + offset)) * 4;
-                uint8_t* dst = pixels + (y * kCursorSize + x) * 4;
-                dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; dst[3] = src[3];
-            }
-        }
-    } else {
-        // 45°/135°：旋转 48x48，然后裁剪中心 32x32
-        for (int y = 0; y < kCursorSize; ++y) {
-            for (int x = 0; x < kCursorSize; ++x) {
-                float dx = x - dst_cx;
-                float dy = y - dst_cy;
-                // 逆旋转找到源坐标
-                float src_x = cos_a * dx + sin_a * dy + src_cx;
-                float src_y = -sin_a * dx + cos_a * dy + src_cy;
-
-                int sx = (int)std::round(src_x);
-                int sy = (int)std::round(src_y);
-
-                if (sx >= 0 && sx < kBaseSize && sy >= 0 && sy < kBaseSize) {
-                    const uint8_t* src = base_ + (sy * kBaseSize + sx) * 4;
-                    uint8_t* dst = pixels + (y * kCursorSize + x) * 4;
-                    dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; dst[3] = src[3];
-                }
             }
         }
     }
