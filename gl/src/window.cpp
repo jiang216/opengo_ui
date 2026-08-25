@@ -185,4 +185,170 @@ void Window::char_cb(GLFWwindow* w, unsigned int codepoint) {
     if (self->char_count_ < 64) self->char_queue_[self->char_count_++] = codepoint;
 }
 
+// ---- 窗口管理 ----
+
+void Window::set_title(const char* title) {
+    if (window_) glfwSetWindowTitle(window_, title);
+}
+
+void Window::set_icon(int count, const GLFWimage* images) {
+    if (window_) glfwSetWindowIcon(window_, count, images);
+}
+
+void Window::set_position(int xpos, int ypos) {
+    if (window_) glfwSetWindowPos(window_, xpos, ypos);
+}
+
+void Window::get_position(int& xpos, int& ypos) const {
+    if (window_) glfwGetWindowPos(window_, &xpos, &ypos);
+    else { xpos = 0; ypos = 0; }
+}
+
+void Window::set_size(int width, int height) {
+    if (window_) glfwSetWindowSize(window_, width, height);
+}
+
+void Window::get_size(int& width, int& height) const {
+    if (window_) glfwGetWindowSize(window_, &width, &height);
+    else { width = 0; height = 0; }
+}
+
+void Window::set_size_limits(int minw, int minh, int maxw, int maxh) {
+    if (window_) glfwSetWindowSizeLimits(window_, minw, minh, maxw, maxh);
+}
+
+void Window::set_aspect_ratio(int numer, int denom) {
+    if (window_) glfwSetWindowAspectRatio(window_, numer, denom);
+}
+
+void Window::get_framebuffer_size(int& width, int& height) const {
+    if (window_) glfwGetFramebufferSize(window_, &width, &height);
+    else { width = 0; height = 0; }
+}
+
+void Window::get_frame_size(int& left, int& top, int& right, int& bottom) const {
+    if (window_) glfwGetWindowFrameSize(window_, &left, &top, &right, &bottom);
+    else { left = 0; top = 0; right = 0; bottom = 0; }
+}
+
+float Window::get_content_scale() const {
+    if (!window_) return 1.f;
+    float xscale = 1.f, yscale = 1.f;
+    glfwGetWindowContentScale(window_, &xscale, &yscale);
+    return xscale;
+}
+
+float Window::get_opacity() const {
+    return window_ ? glfwGetWindowOpacity(window_) : 1.f;
+}
+
+void Window::set_opacity(float opacity) {
+    if (window_) glfwSetWindowOpacity(window_, opacity);
+}
+
+void Window::iconify() { if (window_) glfwIconifyWindow(window_); }
+void Window::restore() { if (window_) glfwRestoreWindow(window_); }
+void Window::maximize() { if (window_) glfwMaximizeWindow(window_); }
+void Window::show() { if (window_) glfwShowWindow(window_); }
+void Window::hide() { if (window_) glfwHideWindow(window_); }
+void Window::focus() { if (window_) glfwFocusWindow(window_); }
+void Window::request_attention() { if (window_) glfwRequestWindowAttention(window_); }
+
+bool Window::is_visible() const {
+    return window_ && glfwGetWindowAttrib(window_, GLFW_VISIBLE);
+}
+
+bool Window::is_iconified() const {
+    return window_ && glfwGetWindowAttrib(window_, GLFW_ICONIFIED);
+}
+
+bool Window::is_maximized() const {
+    return window_ && glfwGetWindowAttrib(window_, GLFW_MAXIMIZED);
+}
+
+bool Window::is_focused() const {
+    return window_ && glfwGetWindowAttrib(window_, GLFW_FOCUSED);
+}
+
+bool Window::is_resizable() const {
+    return window_ && glfwGetWindowAttrib(window_, GLFW_RESIZABLE);
+}
+
+bool Window::is_decorated() const {
+    return window_ && glfwGetWindowAttrib(window_, GLFW_DECORATED);
+}
+
+void Window::set_should_close(bool value) {
+    if (window_) glfwSetWindowShouldClose(window_, value ? GLFW_TRUE : GLFW_FALSE);
+}
+
+void Window::set_resizable(bool value) {
+    if (window_) glfwSetWindowAttrib(window_, GLFW_RESIZABLE, value ? GLFW_TRUE : GLFW_FALSE);
+}
+
+void Window::set_decorated(bool value) {
+    if (window_) glfwSetWindowAttrib(window_, GLFW_DECORATED, value ? GLFW_TRUE : GLFW_FALSE);
+}
+
+void Window::set_auto_iconify(bool value) {
+    if (window_) glfwSetWindowAttrib(window_, GLFW_AUTO_ICONIFY, value ? GLFW_TRUE : GLFW_FALSE);
+}
+
+void Window::set_floating(bool value) {
+    if (window_) glfwSetWindowAttrib(window_, GLFW_FLOATING, value ? GLFW_TRUE : GLFW_FALSE);
+}
+
+// ---- 剪贴板 ----
+
+void Window::set_clipboard_string(const char* string) {
+    if (window_) glfwSetClipboardString(window_, string);
+}
+
+const char* Window::get_clipboard_string() const {
+    return window_ ? glfwGetClipboardString(window_) : nullptr;
+}
+
+// ---- 时间 ----
+
+double Window::get_time() { return glfwGetTime(); }
+void Window::set_time(double time) { glfwSetTime(time); }
+
+// ---- 显示器 ----
+
+GLFWmonitor* Window::get_primary_monitor() { return glfwGetPrimaryMonitor(); }
+
+GLFWmonitor** Window::get_monitors(int& count) { return glfwGetMonitors(&count); }
+
+void Window::get_monitor_position(GLFWmonitor* monitor, int& xpos, int& ypos) {
+    if (monitor) glfwGetMonitorPos(monitor, &xpos, &ypos);
+    else { xpos = 0; ypos = 0; }
+}
+
+void Window::get_monitor_workarea(GLFWmonitor* monitor, int& xpos, int& ypos, int& width, int& height) {
+    if (monitor) glfwGetMonitorWorkarea(monitor, &xpos, &ypos, &width, &height);
+    else { xpos = 0; ypos = 0; width = 0; height = 0; }
+}
+
+void Window::get_monitor_content_scale(GLFWmonitor* monitor, float& xscale, float& yscale) {
+    if (monitor) glfwGetMonitorContentScale(monitor, &xscale, &yscale);
+    else { xscale = 1.f; yscale = 1.f; }
+}
+
+const char* Window::get_monitor_name(GLFWmonitor* monitor) {
+    return monitor ? glfwGetMonitorName(monitor) : nullptr;
+}
+
+void Window::get_video_modes(GLFWmonitor* monitor, int& count, void*& modes) {
+    if (monitor) {
+        modes = (void*)glfwGetVideoModes(monitor, &count);
+    } else {
+        count = 0;
+        modes = nullptr;
+    }
+}
+
+void Window::get_video_mode(GLFWmonitor* monitor, void*& mode) {
+    mode = monitor ? (void*)glfwGetVideoMode(monitor) : nullptr;
+}
+
 }  // namespace ui

@@ -1,6 +1,8 @@
 #pragma once
 
 struct GLFWwindow;
+struct GLFWmonitor;
+struct GLFWimage;
 
 namespace ui {
 
@@ -24,6 +26,57 @@ public:
 
     // 边沿触发：本轮 poll 内发生过窗口尺寸变化（读一次后清除）
     bool resized();
+
+    // ---- 窗口管理 ----
+    void set_title(const char* title);
+    void set_icon(int count, const GLFWimage* images);
+    void set_position(int xpos, int ypos);
+    void get_position(int& xpos, int& ypos) const;
+    void set_size(int width, int height);
+    void get_size(int& width, int& height) const;
+    void set_size_limits(int minw, int minh, int maxw, int maxh);
+    void set_aspect_ratio(int numer, int denom);
+    void get_framebuffer_size(int& width, int& height) const;
+    void get_frame_size(int& left, int& top, int& right, int& bottom) const;
+    float get_content_scale() const;
+    float get_opacity() const;
+    void set_opacity(float opacity);
+    void iconify();
+    void restore();
+    void maximize();
+    void show();
+    void hide();
+    void focus();
+    void request_attention();
+    bool is_visible() const;
+    bool is_iconified() const;
+    bool is_maximized() const;
+    bool is_focused() const;
+    bool is_resizable() const;
+    bool is_decorated() const;
+    void set_should_close(bool value);
+    void set_resizable(bool value);
+    void set_decorated(bool value);
+    void set_auto_iconify(bool value);
+    void set_floating(bool value);
+
+    // ---- 剪贴板 ----
+    void set_clipboard_string(const char* string);
+    const char* get_clipboard_string() const;
+
+    // ---- 时间 ----
+    static double get_time();
+    static void set_time(double time);
+
+    // ---- 显示器 ----
+    static GLFWmonitor* get_primary_monitor();
+    static GLFWmonitor** get_monitors(int& count);
+    static void get_monitor_position(GLFWmonitor* monitor, int& xpos, int& ypos);
+    static void get_monitor_workarea(GLFWmonitor* monitor, int& xpos, int& ypos, int& width, int& height);
+    static void get_monitor_content_scale(GLFWmonitor* monitor, float& xscale, float& yscale);
+    static const char* get_monitor_name(GLFWmonitor* monitor);
+    static void get_video_modes(GLFWmonitor* monitor, int& count, void*& modes);
+    static void get_video_mode(GLFWmonitor* monitor, void*& mode);
 
     // ---- 输入（像素坐标，y 向下，(0,0)=左上角）----
     float mouse_x() const { return mouse_x_; }
