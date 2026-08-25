@@ -141,8 +141,10 @@ private:
     unsigned int char_queue_[64] = {0};
     int char_count_ = 0;
     bool dragging_ = false;
-    float drag_off_x_ = 0.f;
+    float drag_off_x_ = 0.f;   // 非 Windows 回退用
     float drag_off_y_ = 0.f;
+    int drag_screen_x_ = 0;    // Win32 绝对屏幕坐标（防振荡）
+    int drag_screen_y_ = 0;
     int start_wx_ = 0;
     int start_wy_ = 0;
 };

@@ -3,6 +3,9 @@
 #include "ui/core/log.h"
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 namespace ui {
 
@@ -354,20 +357,36 @@ void Window::get_video_mode(GLFWmonitor* monitor, void*& mode) {
 }
 
 // ---- 拖拽（无边框窗口）----
+// 使用 Win32 GetCursorPos（绝对屏幕坐标）计算增量，
+// 避免 GLFW cursor_pos_cb（窗口相对坐标）在 glfwSetWindowPos 后因原点偏移
+// 导致回调值与 glfwGetCursorPos 不一致，产生 6px 振荡（见 [DRAG] 调试日志）。
 
-void Window::start_drag(float mouse_x, float mouse_y) {
+void Window::start_drag(float /*mouse_x*/, float /*mouse_y*/) {
     if (!window_) return;
     glfwGetWindowPos(window_, &start_wx_, &start_wy_);
+#if defined(_WIN32)
+    POINT pt;
+    GetCursorPos(&pt);
+    drag_screen_x_ = pt.x;
+    drag_screen_y_ = pt.y;
+#endif
     dragging_ = true;
-    drag_off_x_ = mouse_x;
-    drag_off_y_ = mouse_y;
 }
 
-void Window::update_drag(float mouse_x, float mouse_y) {
+void Window::update_drag(float /*mouse_x*/, float /*mouse_y*/) {
     if (!window_ || !dragging_) return;
+#if defined(_WIN32)
+    POINT pt;
+    GetCursorPos(&pt);
+    int dx = pt.x - drag_screen_x_;
+    int dy = pt.y - drag_screen_y_;
+    glfwSetWindowPos(window_, start_wx_ + dx, start_wy_ + dy);
+#else
+    // 非 Windows 平台回退到 GLFW 坐标（可能有抖动）
     float dx = mouse_x - drag_off_x_;
     float dy = mouse_y - drag_off_y_;
     glfwSetWindowPos(window_, start_wx_ + (int)dx, start_wy_ + (int)dy);
+#endif
 }
 
 void Window::end_drag() { dragging_ = false; }
