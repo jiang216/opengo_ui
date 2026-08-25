@@ -433,4 +433,28 @@ void Window::set_cursor_ibeam() {
     }
 }
 
+void Window::set_cursor_resize_nwse() {
+#ifdef _WIN32
+    if (window_) {
+        HCURSOR c = LoadCursor(NULL, IDC_SIZENWSE);
+        SetCursor(c);
+        glfwSetCursor(window_, (GLFWcursor*)c);
+    }
+#else
+    set_cursor_arrow();
+#endif
+}
+
+void Window::set_cursor_resize_nesw() {
+#ifdef _WIN32
+    if (window_) {
+        HCURSOR c = LoadCursor(NULL, IDC_SIZENESW);
+        SetCursor(c);
+        glfwSetCursor(window_, (GLFWcursor*)c);
+    }
+#else
+    set_cursor_arrow();
+#endif
+}
+
 }  // namespace ui

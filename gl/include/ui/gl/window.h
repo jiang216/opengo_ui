@@ -71,6 +71,8 @@ public:
     void set_cursor_hand();
     void set_cursor_resize_ns();
     void set_cursor_resize_ew();
+    void set_cursor_resize_nwse();  // 左上↔右下对角线
+    void set_cursor_resize_nesw();  // 右上↔左下对角线
     void set_cursor_ibeam();
 
     // ---- 剪贴板 ----
