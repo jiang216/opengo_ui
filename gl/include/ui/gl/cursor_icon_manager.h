@@ -46,7 +46,7 @@ private:
                    uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
     static constexpr int kBaseSize = 48;   // 基础光标尺寸
-    static constexpr int kCursorSize = 32; // 最终光标尺寸
+    static constexpr int kCursorSize = 16;  // 最终光标尺寸
 
     uint8_t base_[kBaseSize * kBaseSize * 4] = {};  // 基础像素数据（RGBA）
     GLFWcursor* cursors_[4] = {nullptr};            // 4 个方向的缓存光标
