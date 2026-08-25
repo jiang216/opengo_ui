@@ -394,7 +394,12 @@ void Window::end_drag() { dragging_ = false; }
 // ---- 光标形状 ----
 
 namespace {
-CursorIconManager g_cursor_manager;
+CursorIconManager* g_cursor_manager = nullptr;
+
+CursorIconManager& get_cursor_manager() {
+    if (!g_cursor_manager) g_cursor_manager = new CursorIconManager();
+    return *g_cursor_manager;
+}
 }
 
 void Window::set_cursor(CursorType type) {
@@ -407,22 +412,22 @@ void Window::set_cursor(CursorType type) {
         case CursorType::IBeam:
             set_cursor_ibeam(); break;
         case CursorType::ResizeEW: {
-            GLFWcursor* c = g_cursor_manager.get_cursor(0);  // 0° = EW
+            GLFWcursor* c = get_cursor_manager().get_cursor(0);  // 0° = EW
             if (c) glfwSetCursor(window_, c);
             break;
         }
         case CursorType::ResizeNS: {
-            GLFWcursor* c = g_cursor_manager.get_cursor(1);  // 90° = NS
+            GLFWcursor* c = get_cursor_manager().get_cursor(1);  // 90° = NS
             if (c) glfwSetCursor(window_, c);
             break;
         }
         case CursorType::ResizeNWSE: {
-            GLFWcursor* c = g_cursor_manager.get_cursor(2);  // 45° = NWSE
+            GLFWcursor* c = get_cursor_manager().get_cursor(2);  // 45° = NWSE
             if (c) glfwSetCursor(window_, c);
             break;
         }
         case CursorType::ResizeNESW: {
-            GLFWcursor* c = g_cursor_manager.get_cursor(3);  // 135° = NESW
+            GLFWcursor* c = get_cursor_manager().get_cursor(3);  // 135° = NESW
             if (c) glfwSetCursor(window_, c);
             break;
         }
