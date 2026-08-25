@@ -357,8 +357,7 @@ void Window::get_video_mode(GLFWmonitor* monitor, void*& mode) {
 
 void Window::start_drag(float mouse_x, float mouse_y) {
     if (!window_) return;
-    int wx, wy;
-    glfwGetWindowPos(window_, &wx, &wy);
+    glfwGetWindowPos(window_, &start_wx_, &start_wy_);
     dragging_ = true;
     drag_off_x_ = mouse_x;
     drag_off_y_ = mouse_y;
@@ -366,13 +365,9 @@ void Window::start_drag(float mouse_x, float mouse_y) {
 
 void Window::update_drag(float mouse_x, float mouse_y) {
     if (!window_ || !dragging_) return;
-    int wx, wy;
-    glfwGetWindowPos(window_, &wx, &wy);
     float dx = mouse_x - drag_off_x_;
     float dy = mouse_y - drag_off_y_;
-    glfwSetWindowPos(window_, (int)(wx + dx), (int)(wy + dy));
-    drag_off_x_ = mouse_x;
-    drag_off_y_ = mouse_y;
+    glfwSetWindowPos(window_, start_wx_ + (int)dx, start_wy_ + (int)dy);
 }
 
 void Window::end_drag() { dragging_ = false; }

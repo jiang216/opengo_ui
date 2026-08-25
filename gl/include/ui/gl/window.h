@@ -143,6 +143,8 @@ private:
     bool dragging_ = false;
     float drag_off_x_ = 0.f;
     float drag_off_y_ = 0.f;
+    int start_wx_ = 0;
+    int start_wy_ = 0;
 };
 
 }  // namespace ui

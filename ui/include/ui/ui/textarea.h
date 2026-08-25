@@ -33,6 +33,8 @@ public:
     void set_text(const char* text);
     const std::string& text() const { return text_; }
     void set_caret(size_t pos) { caret_ = (pos <= text_.size()) ? pos : text_.size(); }
+    // 滚动到底部（日志自动跟踪最新内容）
+    void scroll_to_end();
     // 文本变化（含程序 set_text）时回调
     void set_on_change(std::function<void(const char*)> cb) { on_change_ = std::move(cb); }
 

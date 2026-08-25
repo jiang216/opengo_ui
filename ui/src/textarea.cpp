@@ -192,6 +192,15 @@ void TextArea::set_text(const char* text) {
     if (on_change_) on_change_(text_.c_str());
 }
 
+void TextArea::scroll_to_end() {
+    if (!font_) return;
+    float line_h = 0.f;
+    auto lines = wrap_lines(text_, font_, avail_width(), &line_h);
+    const float content_h = (float)lines.size() * line_h + 2.f * kPad;
+    const float vis = bounds_.h;
+    scroll_ = std::max(0.f, content_h - vis);
+}
+
 void TextArea::erase_cp(bool backspace) {
     if (has_selection_ && sel_start_ != sel_end_) {
         erase_selection();
