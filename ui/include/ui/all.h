@@ -50,6 +50,7 @@
 #include "ui/ui/hbox.h"
 #include "ui/ui/hline.h"
 #include "ui/ui/icon.h"
+#include "ui/ui/iconlabel.h"
 #include "ui/ui/image.h"
 #include "ui/ui/label.h"
 #include "ui/ui/laydate.h"

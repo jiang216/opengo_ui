@@ -50,6 +50,7 @@ add_library(ui_ui STATIC
     src/hline.cpp
     src/circle.cpp
     src/countdown_text.cpp
+    src/iconlabel.cpp
     src/image.cpp
     src/laytpl.cpp
     src/ime.cpp
