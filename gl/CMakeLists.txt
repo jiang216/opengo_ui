@@ -7,6 +7,7 @@ add_library(ui_gl STATIC
     src/renderer.cpp
     src/texture.cpp
     src/font.cpp
+    src/cursor_icon_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/glad/src/gl.c
 )
 

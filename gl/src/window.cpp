@@ -393,6 +393,42 @@ void Window::end_drag() { dragging_ = false; }
 
 // ---- 光标形状 ----
 
+namespace {
+CursorIconManager g_cursor_manager;
+}
+
+void Window::set_cursor(CursorType type) {
+    if (!window_) return;
+    switch (type) {
+        case CursorType::Arrow:
+            set_cursor_arrow(); break;
+        case CursorType::Hand:
+            set_cursor_hand(); break;
+        case CursorType::IBeam:
+            set_cursor_ibeam(); break;
+        case CursorType::ResizeEW: {
+            GLFWcursor* c = g_cursor_manager.get_cursor(0);  // 0° = EW
+            if (c) glfwSetCursor(window_, c);
+            break;
+        }
+        case CursorType::ResizeNS: {
+            GLFWcursor* c = g_cursor_manager.get_cursor(1);  // 90° = NS
+            if (c) glfwSetCursor(window_, c);
+            break;
+        }
+        case CursorType::ResizeNWSE: {
+            GLFWcursor* c = g_cursor_manager.get_cursor(2);  // 45° = NWSE
+            if (c) glfwSetCursor(window_, c);
+            break;
+        }
+        case CursorType::ResizeNESW: {
+            GLFWcursor* c = g_cursor_manager.get_cursor(3);  // 135° = NESW
+            if (c) glfwSetCursor(window_, c);
+            break;
+        }
+    }
+}
+
 void Window::set_cursor_arrow() {
     if (window_) {
         GLFWcursor* c = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
@@ -430,66 +466,6 @@ void Window::set_cursor_ibeam() {
         GLFWcursor* c = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
         glfwSetCursor(window_, c);
         glfwDestroyCursor(c);
-    }
-}
-
-void Window::set_cursor_resize_nwse() {
-    if (window_) {
-        static unsigned char nwse[16*16*4];
-        static bool init = false;
-        static GLFWcursor* cached = nullptr;
-        if (!init) {
-            memset(nwse, 0, sizeof(nwse));
-            auto set = [&](int x, int y) {
-                if (x >= 0 && x < 16 && y >= 0 && y < 16) {
-                    unsigned char* p = nwse + (y * 16 + x) * 4;
-                    p[0] = 0; p[1] = 0; p[2] = 0; p[3] = 255;
-                }
-            };
-            for (int i = 0; i <= 11; i++) {
-                set(i, i); set(i + 1, i); set(i, i + 1);
-            }
-            for (int i = 0; i <= 4; i++) { set(12, 10 + i); set(10 + i, 12); }
-            for (int dy = 0; dy <= 4; dy++)
-                for (int dx = 0; dx <= 4 - dy; dx++)
-                    set(11 - dx, 11 - dy);
-            init = true;
-        }
-        if (!cached) {
-            GLFWimage img = {16, 16, nwse};
-            cached = glfwCreateCursor(&img, 7, 7);
-        }
-        if (cached) glfwSetCursor(window_, cached);
-    }
-}
-
-void Window::set_cursor_resize_nesw() {
-    if (window_) {
-        static unsigned char nesw[16*16*4];
-        static bool init = false;
-        static GLFWcursor* cached = nullptr;
-        if (!init) {
-            memset(nesw, 0, sizeof(nesw));
-            auto set = [&](int x, int y) {
-                if (x >= 0 && x < 16 && y >= 0 && y < 16) {
-                    unsigned char* p = nesw + (y * 16 + x) * 4;
-                    p[0] = 0; p[1] = 0; p[2] = 0; p[3] = 255;
-                }
-            };
-            for (int i = 0; i <= 11; i++) {
-                set(15 - i, i); set(15 - i - 1, i); set(15 - i, i + 1);
-            }
-            for (int i = 0; i <= 4; i++) { set(3, 10 + i); set(10 + i, 12); }
-            for (int dy = 0; dy <= 4; dy++)
-                for (int dx = 0; dx <= 4 - dy; dx++)
-                    set(4 + dx, 11 - dy);
-            init = true;
-        }
-        if (!cached) {
-            GLFWimage img = {16, 16, nesw};
-            cached = glfwCreateCursor(&img, 8, 7);
-        }
-        if (cached) glfwSetCursor(window_, cached);
     }
 }
 

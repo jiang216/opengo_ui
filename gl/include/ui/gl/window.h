@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ui/gl/cursor_icon_manager.h"
+
 struct GLFWwindow;
 struct GLFWmonitor;
 struct GLFWimage;
@@ -67,12 +69,11 @@ public:
     bool is_dragging() const { return dragging_; }
 
     // ---- 光标形状 ----
+    void set_cursor(CursorType type);  // 统一光标接口
     void set_cursor_arrow();
     void set_cursor_hand();
     void set_cursor_resize_ns();
     void set_cursor_resize_ew();
-    void set_cursor_resize_nwse();  // 左上↔右下对角线
-    void set_cursor_resize_nesw();  // 右上↔左下对角线
     void set_cursor_ibeam();
 
     // ---- 剪贴板 ----
