@@ -5,9 +5,10 @@
 
 ## 统计
 
-- 节点: 146（BUG 138 / DOC 6 / META 2）
+- 节点: 147（BUG 139 / DOC 6 / META 2）
 - 边: 336
-- lint: 0 错误 / 0 警告
+- lint: 0 错误 / 1 警告
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-139
 
 ## 反链索引
 
@@ -991,6 +992,11 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#文本编辑写统一自报标脏（金芯扩展）：帧级门控下 `TextBox` / `TextArea` 的每次编辑 / 光标移动 / 选区变更 / 滚动都必须显式 `mark_dirty()` 自报（输入/删除/方向键/Home/End/Ctrl+A/C/V/X、拖选、滚轮滚动、滚动条拖拽、`scroll_to_end`），根治「输入需滚动/移鼠标才显示、光标选区不随键更新、滚动需额外一拍刷新」
 
+### BUG:UI-139 · UI-139: 帧级门控下 Menu 左侧导航 hover 高亮不跟随——on_mouse_move 更新 hover_ 却漏标脏（2026-08-27）
+
+- 路径: `docs/CHANGELOG.md#ui-139-帧级门控下-menu-左侧导航-hover-高亮不跟随onmousemove-更新-hover-却漏标脏2026-08-27`
+- 反链: 无
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1219,6 +1225,7 @@
 | `BUG:UI-136` | BUG | UI-136: 帧级门控下 CJK 惰性烘焙自动续帧——待烘焙队列 + bake-epoch 全树重排（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-137` | BUG | UI-137: 帧级门控下控件状态写统一自报标脏——开关/下拉/滑块事件内直改漏标点（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-138` | BUG | UI-138: 帧级门控下 TextBox/TextArea 编辑与光标/选区/滚动路径漏标脏（2026-08-27） | `docs/CHANGELOG.md` |
+| `BUG:UI-139` | BUG | UI-139: 帧级门控下 Menu 左侧导航 hover 高亮不跟随——on_mouse_move 更新 hover_ 却漏标脏（2026-08-27） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |

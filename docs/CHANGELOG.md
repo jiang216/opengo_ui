@@ -3,6 +3,19 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-139: 帧级门控下 Menu 左侧导航 hover 高亮不跟随——on_mouse_move 更新 hover_ 却漏标脏（2026-08-27）
+- **类型**：Bug 修复 / 交互正确性（audio_text：左侧垂直导航菜单——半透明 hover 高亮框只有首个命中项定位准确，继续在菜单项间移动不跟随过去，需额外交互一次才刷新到新位置）
+- **严重度**：中（UI-135「所有状态变更必须显式 mark_dirty」规则下，`Menu::on_mouse_move` 直接更新 `hover_` / `active_hover_`（决定哪一行画高亮）却全程不标脏，帧级门控检不到 → 高亮视觉停在首个命中行，直到下一次脏帧才补画，被感知为「跟随框移不动 / 只对了一次」）
+- **根因**：`Menu::on_mouse_move`（menu.cpp）重排 `hover_` / `active_hover_` 指向并据此绘制高亮（`on_draw` 里 `if(hover_==&it)` 画 quad），但方法本身不调 `mark_dirty()`；基类 `Widget::dispatch_mouse_move` 只在**控件 hover 边界翻转**（`was_hovered` 变化）时标脏（widget.cpp `if(!was_hovered) mark_dirty()`），对**控件内部 hover 目标在菜单项间移动**这一场景完全不标脏 → 高亮静止。
+- **修复**（ui 库级，宿主零改动）：`menu.cpp` `on_mouse_move` 开头记录 `hover_` / `active_hover_` 旧值，末尾及每条返回路径前比对；若 hover 目标变化则 `mark_dirty()`，驱动帧级门控在「跟随框移到新菜单项」的帧即时重绘。
+- **回归清单**：
+  1. 左侧导航：鼠标在多项之间来回移动，半透明高亮框**即时跟随**到当前项，不需额外点击 / 切页。
+  2. 子面板（Parent 项 sub-panel）内 hover / 移出子面板：高亮与子面板跟随 / 关闭即时反映。
+  3. 移出整个菜单：高亮清除即时显示。
+  4. UI-135 语义不变：菜单上无鼠标移动 / hover 目标未变时依旧停帧省 CPU（标脏仅在 hover 目标实际变化时发生）。
+- **验证**：opengl_UI Release 构建 + install 同步（ui_ui.lib）→ audio_text 重链 voice_assistant.exe 成功；opengl_UI + audio_text 双库 graphgen --check 0 错 0 警。
+- **影响范围**：`ui/src/menu.cpp` + install lib 同步（ui_ui.lib）。
+
 ## UI-138: 帧级门控下 TextBox/TextArea 编辑与光标/选区/滚动路径漏标脏（2026-08-27）
 - **类型**：Bug 修复 / 交互正确性（audio_text：设置页监听端口等输入框、关于页只读 TextArea——输入/光标移动/拖选/滚轮滚动需额外交互一次才刷新）
 - **严重度**：中（UI-135「所有状态变更必须显式 mark_dirty」规则下，文本框/多行框大量事件路径直接改 `text_`/`caret_`/`sel_`/`scroll_` 却漏标脏，帧级门控检不到 → 输入、光标移动、选区、滚动视觉停旧态，直到下一次脏帧才补画，被感知为「输入延迟/失效」「需滚动一下才显示」）

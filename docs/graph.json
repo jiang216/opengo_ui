@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-27T21:37:04+08:00",
+  "generatedAt": "2026-08-27T21:59:57+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-139": {
+      "id": "BUG:UI-139",
+      "type": "BUG",
+      "label": "UI-139: 帧级门控下 Menu 左侧导航 hover 高亮不跟随——on_mouse_move 更新 hover_ 却漏标脏（2026-08-27）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-139-帧级门控下-menu-左侧导航-hover-高亮不跟随onmousemove-更新-hover-却漏标脏2026-08-27"
+    },
     "BUG:UI-138": {
       "id": "BUG:UI-138",
       "type": "BUG",
@@ -3040,6 +3047,7 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-139": [],
     "BUG:UI-138": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -5012,6 +5020,8 @@
   },
   "lint": {
     "errors": [],
-    "warnings": []
+    "warnings": [
+      "孤儿条目（无任何文档引用）: BUG:UI-139"
+    ]
   }
 }

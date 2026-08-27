@@ -452,6 +452,14 @@ bool Menu::on_mouse_move(float x, float y) {
 
     const float lx = x - bounds_.x;
 
+    // 帧级门控（UI-135 / IDLE-002）：hover 目标切换（跟随框在高亮行间移动）必须显式标脏，
+    // 否则 root is_dirty() 不翻 → 渲染被跳过 → 高亮停留在首个命中行，直至其他事件触发重绘。
+    Item* const prev_hover = hover_;
+    Item* const prev_active = active_hover_;
+    auto notify_hover_changed = [&]() {
+        if (hover_ != prev_hover || active_hover_ != prev_active) mark_dirty();
+    };
+
     hover_ = nullptr;
 
     // Check if hovering over a sub-panel item
@@ -478,6 +486,7 @@ bool Menu::on_mouse_move(float x, float y) {
                     }
                 }
             }
+            notify_hover_changed();
             return false;
         }
     }
@@ -492,6 +501,7 @@ bool Menu::on_mouse_move(float x, float y) {
                     active_hover_ = nullptr;
                     sub_panel_rect_ = {};
                 }
+                notify_hover_changed();
                 return false;
             }
         }
@@ -509,6 +519,7 @@ bool Menu::on_mouse_move(float x, float y) {
     } else {
         active_hover_ = nullptr;
     }
+    notify_hover_changed();
     return false;
 }
 
