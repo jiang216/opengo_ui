@@ -19,15 +19,15 @@ public:
     ScrollBox(float x, float y, float w, float h);
 
     // 子控件之间的间距（像素）
-    void set_spacing(float spacing) { spacing_ = spacing; }
+    void set_spacing(float spacing) {  spacing_ = spacing; mark_dirty(); }
     // 内部边距（像素）
-    void set_padding(float padding) { padding_ = padding; }
+    void set_padding(float padding) {  padding_ = padding; mark_dirty(); }
     float padding() const { return padding_; }
     // 滚动步长（每滚一格滚轮）
-    void set_scroll_step(float step) { scroll_step_ = step; }
+    void set_scroll_step(float step) {  scroll_step_ = step; mark_dirty(); }
     float scroll_offset() const { return scroll_offset_; }
     // 滚动到指定偏移（自动 clamp 到 [0, scroll_max]；脚本化截图/程序化定位用）
-    void set_scroll_offset(float offset) { set_scroll(offset); }
+    void set_scroll_offset(float offset) {  set_scroll(offset); mark_dirty(); }
     // 滚动回顶部（切页/内容重建后复位滚动位置，防止残留旧页滚动偏移）
     void reset_scroll();
     // 标记子树变化（clear_children/add_child 后调用），抑制滚动条绘制直到下一次 on_layout()
@@ -51,7 +51,7 @@ public:
     // 距底部触发距离 margin（镜像 layui flow mb，默认 50）：当 scroll_offset 距内容底部
     // 不足 mb 像素时即触发触底回调，而不必严格滚到底（UI-094）。仅影响 check_bottom，
     // 触发/重新武装语义（bottom_fired_）与 set_on_scroll_to_bottom 一致。
-    void set_bottom_margin(float mb) { bottom_margin_ = mb; }
+    void set_bottom_margin(float mb) {  bottom_margin_ = mb; mark_dirty(); }
 
     // —— 视口级锚定子控件（layui fixbar，UI-110）——
     // 控件照常 add_child（生命周期/命中/绘制顺序不变），但不参与纵向流式排布、
@@ -73,7 +73,7 @@ public:
     bool on_mouse_move(float x, float y) override;
     bool on_mouse_up(float x, float y, int button) override;
 
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
 private:
     // 内容高度（所有子控件 + 间距 + 边距）；溢出量 scroll_max = 内容 - 可视高度

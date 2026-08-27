@@ -20,7 +20,8 @@ constexpr float kMidGap = 40.f;   // 中间按钮区宽度（每侧各让出）
 Transfer::Transfer(float x, float y, float w, float h) : Widget(x, y, w, h) {}
 
 void Transfer::add_item(const char* name, bool disabled) {
-    left_.items.push_back(name ? name : "");
+    mark_dirty();
+        left_.items.push_back(name ? name : "");
     left_.disabled.push_back(disabled);
     left_.sel.push_back(false);
 }
@@ -32,12 +33,14 @@ void Transfer::add_right_item(const char* name, bool disabled) {
 }
 
 void Transfer::clear() {
-    left_ = Side{};
+    mark_dirty();
+        left_ = Side{};
     right_ = Side{};
 }
 
 void Transfer::set_show_search(bool on) {
-    show_search_ = on;
+    mark_dirty();
+        show_search_ = on;
     if (on) {
         if (!search_l_) {
             search_l_ = new TextBox(0, 0, 0, 0);

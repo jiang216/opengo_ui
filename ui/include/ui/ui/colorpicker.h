@@ -24,19 +24,19 @@ class ColorPicker : public Widget {
 public:
     ColorPicker(float x, float y, float w, float h);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     // 默认色：任意颜色转为内部 RGBA + HSV
     void set_color(const Vec4& c);
     const Vec4& color() const { return color_; }
 
     // —— layui colorpicker 选项 ——
-    void set_format(ColorFormat fmt) { format_ = fmt; }   // hex / rgb（alpha 时自动 rgba）
-    void set_alpha(bool on) { alpha_ = on; }              // 开启透明度滑块
-    void set_predefine(bool on) { predefine_ = on; }      // 开启预定义颜色
+    void set_format(ColorFormat fmt) {  format_ = fmt; mark_dirty(); }   // hex / rgb（alpha 时自动 rgba）
+    void set_alpha(bool on) {  alpha_ = on; mark_dirty(); }              // 开启透明度滑块
+    void set_predefine(bool on) {  predefine_ = on; mark_dirty(); }      // 开启预定义颜色
     void set_colors(const std::vector<Vec4>& cols);       // 自定义预定义色（需 predefine:true）
-    void set_size(ColorPickerSize s) { size_ = s; }       // 颜色框尺寸 lg / sm / xs
-    void set_clearable(bool on) { clearable_ = on; }      // 清除按钮（默认 true）
+    void set_size(ColorPickerSize s) {  size_ = s; mark_dirty(); }       // 颜色框尺寸 lg / sm / xs
+    void set_clearable(bool on) {  clearable_ = on; mark_dirty(); }      // 清除按钮（默认 true）
 
     // —— 回调 ——
     void set_on_change(std::function<void(const Vec4&)> cb) { on_change_ = std::move(cb); }  // 取色中

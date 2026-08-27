@@ -17,8 +17,8 @@ class Upload : public Widget {
 public:
     Upload(float x, float y, float w, float h);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     // 添加一个模拟文件（文件名 + 大小字节），开始上传
     void add_file(const char* name, int size_bytes);
     void advance(float dt);

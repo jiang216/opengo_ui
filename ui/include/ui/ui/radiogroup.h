@@ -23,10 +23,10 @@ public:
     void select(int index);  // 选中并触发 on_change
     void set_on_change(std::function<void(int)> cb) { on_change_ = std::move(cb); }
 
-    void set_option_height(float h) { option_h_ = h; }
-    void set_spacing(float s) { spacing_ = s; }
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_option_height(float h) {  option_h_ = h; mark_dirty(); }
+    void set_spacing(float s) {  spacing_ = s; mark_dirty(); }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     // 禁用/启用单个选项（layui 单选框禁用）
     void set_option_enabled(int index, bool en);

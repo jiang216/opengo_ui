@@ -15,8 +15,8 @@ class Circle : public Widget {
 public:
     Circle(float size, const char* text);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_color(const Vec4& c) { color_ = c; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_color(const Vec4& c) {  color_ = c; mark_dirty(); }
 
     void on_draw(Renderer& renderer) override;
 

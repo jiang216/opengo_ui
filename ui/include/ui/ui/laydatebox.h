@@ -22,8 +22,8 @@ public:
     LaydateBox(float x, float y, float w, float h);
     ~LaydateBox() override;
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     // ---- 配置透传（等价 laydate.render 参数） ----
     void set_type(const char* t);          // year / month / date(默认) / time / datetime
@@ -44,11 +44,11 @@ public:
     // ---- 输入框 ----
     void set_text(const char* t);
     const std::string& text() const { return text_; }
-    void set_placeholder(const char* p) { placeholder_ = p ? p : ""; }
-    void set_readonly(bool v) { readonly_ = v; }
+    void set_placeholder(const char* p) {  placeholder_ = p ? p : ""; mark_dirty(); }
+    void set_readonly(bool v) {  readonly_ = v; mark_dirty(); }
     void set_value(const char* v);                // 初始赋值（内部面板 set_value）
-    void set_date(int y, int m, int d) { panel_->set_date(y, m, d); }
-    void set_time(int h, int mi, int s) { panel_->set_time(h, mi, s); }
+    void set_date(int y, int m, int d) {  panel_->set_date(y, m, d); mark_dirty(); }
+    void set_time(int h, int mi, int s) {  panel_->set_time(h, mi, s); mark_dirty(); }
     void set_on_done(std::function<void(const char*, int, int, int, int, int, int)> cb);
     void set_on_change(std::function<void(const char*)> cb);   // 值写回输入框后回调（值为字符串）
     void set_on_ready(std::function<void()> cb) { on_ready_ = std::move(cb); }

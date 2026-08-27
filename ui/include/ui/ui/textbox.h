@@ -18,16 +18,16 @@ class TextBox : public Widget {
 public:
     TextBox(float x, float y, float w, float h);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     void set_text(const char* text);
     const std::string& text() const { return text_; }
 
     // 空文本时绘制灰色占位提示（不影响输入内容）
-    void set_placeholder(const char* text) { placeholder_ = text ? text : ""; }
+    void set_placeholder(const char* text) {  placeholder_ = text ? text : ""; mark_dirty(); }
     // 密码模式：显示 '*' 掩码，光标宽度按掩码计算
-    void set_password(bool on) { password_ = on; }
+    void set_password(bool on) {  password_ = on; mark_dirty(); }
 
     // 文本变化（含程序 set_text）时回调
     void set_on_change(std::function<void(const char*)> cb) { on_change_ = std::move(cb); }
@@ -48,7 +48,7 @@ public:
     void clear_selection() { sel_anchor_ = caret_; }
 
     // ---- 文件拖放 ----
-    void set_drop_enabled(bool v) { drop_enabled_ = v; }
+    void set_drop_enabled(bool v) {  drop_enabled_ = v; mark_dirty(); }
     bool drop_enabled() const { return drop_enabled_; }
     // 自定义拖放处理：覆盖默认路径插入行为
     void set_on_drop(std::function<void(const std::vector<std::string>&)> cb) { on_drop_cb_ = std::move(cb); }

@@ -41,7 +41,8 @@ void Menu::add_divider() {
 }
 
 void Menu::add_group(const char* title, bool allow_spread) {
-    // Group header is at current_level_; increment for items inside
+    mark_dirty();
+        // Group header is at current_level_; increment for items inside
     const int group_level = current_level_;
     items_.push_back({title ? title : "", "", nullptr, Item::Group, group_level,
                       false, true, allow_spread, false, false, {}, 0.f, 0.f, -1, true});
@@ -61,7 +62,8 @@ void Menu::end_group() {
 }
 
 void Menu::clear() {
-    items_.clear();
+    mark_dirty();
+        items_.clear();
     current_level_ = 0;
     hover_ = nullptr;
     active_hover_ = nullptr;
@@ -69,11 +71,13 @@ void Menu::clear() {
 }
 
 void Menu::set_checked() {
-    if (!items_.empty()) items_.back().checked = true;
+    mark_dirty();
+        if (!items_.empty()) items_.back().checked = true;
 }
 
 void Menu::set_selected(int group_index, int item_index) {
-    // Clear all checked
+    mark_dirty();
+        // Clear all checked
     for (auto& it : items_) it.checked = false;
     // Find group_index-th Group item, then item_index-th Plain inside it
     int gi = 0;
@@ -96,24 +100,30 @@ void Menu::set_selected(int group_index, int item_index) {
 }
 
 void Menu::set_badge(const char* text) {
-    if (items_.empty()) return;
+    mark_dirty();
+        if (items_.empty()) return;
     items_.back().has_badge = true;
     items_.back().badge_text = text ? text : "";
 }
 
 void Menu::set_dot_badge() {
-    if (!items_.empty()) items_.back().has_dot = true;
+    mark_dirty();
+        if (!items_.empty()) items_.back().has_dot = true;
 }
 
-void Menu::set_large(bool large) { large_ = large; }
+void Menu::set_large(bool large) { mark_dirty();
+        large_ = large; }
 
-void Menu::set_font(Font* f) { font_ = f; }
+void Menu::set_font(Font* f) { mark_dirty();
+        font_ = f; }
 
-void Menu::set_theme(const Theme* t) { theme_ = t; }
+void Menu::set_theme(const Theme* t) { mark_dirty();
+        theme_ = t; }
 
 void Menu::set_style_overrides(const Vec4& bg, const Vec4& border, const Vec4& hover,
                                const Vec4& text) {
-    style_ov_ = true;
+    mark_dirty();
+        style_ov_ = true;
     ov_bg_ = bg;
     ov_border_ = border;
     ov_hover_ = hover;

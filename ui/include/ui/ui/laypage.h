@@ -35,23 +35,22 @@ public:
 
     // ---- 布局 ----
     // 布局项顺序（不含 first/last；它们固定在首尾外侧）。默认 [Prev, Page, Next]
-    void set_layout(std::vector<Item> layout) {
+    void set_layout(std::vector<Item> layout) { 
         layout_ = std::move(layout);
-        explicit_layout_ = true;
-    }
+        explicit_layout_ = true; mark_dirty(); }
     // 以字符串数组设置布局项（"count"/"prev"/"page"/"next"/"limit"/"refresh"/"skip"）
     void set_layout_str(const std::vector<std::string>& items);
 
     // ---- 首页/尾页 ----
-    void set_show_first(bool on) { show_first_ = on; }
-    void set_show_last(bool on) { show_last_ = on; }
-    void set_first_text(const char* t) { first_text_ = t ? t : ""; }
-    void set_last_text(const char* t) { last_text_ = t ? t : ""; }
-    void set_prev_text(const char* t) { prev_text_ = t ? t : ""; }
-    void set_next_text(const char* t) { next_text_ = t ? t : ""; }
+    void set_show_first(bool on) {  show_first_ = on; mark_dirty(); }
+    void set_show_last(bool on) {  show_last_ = on; mark_dirty(); }
+    void set_first_text(const char* t) {  first_text_ = t ? t : ""; mark_dirty(); }
+    void set_last_text(const char* t) {  last_text_ = t ? t : ""; mark_dirty(); }
+    void set_prev_text(const char* t) {  prev_text_ = t ? t : ""; mark_dirty(); }
+    void set_next_text(const char* t) {  next_text_ = t ? t : ""; mark_dirty(); }
 
     // ---- 主题 ----
-    void set_theme_color(const Vec4& c) { theme_color_ = c; }
+    void set_theme_color(const Vec4& c) {  theme_color_ = c; mark_dirty(); }
 
     // ---- 每页条数选择项（limit 下拉）----
     void set_limits(std::vector<int> limits);

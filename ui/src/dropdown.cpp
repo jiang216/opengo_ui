@@ -39,13 +39,15 @@ Dropdown::~Dropdown() {
 }
 
 void Dropdown::set_font(Font* font) {
-    font_ = font;
+    mark_dirty();
+        font_ = font;
     trigger_->set_font(font);
     if (menu_) menu_->set_font(font);
 }
 
 void Dropdown::set_theme(const Theme* theme) {
-    theme_ = theme;
+    mark_dirty();
+        theme_ = theme;
     trigger_->set_theme(theme);
     if (menu_) menu_->set_theme(theme);
 }
@@ -56,11 +58,13 @@ void Dropdown::add_item(const char* title, std::function<void()> cb) {
 }
 
 void Dropdown::add_separator() {
-    if (menu_) menu_->add_divider();
+    mark_dirty();
+        if (menu_) menu_->add_divider();
 }
 
 void Dropdown::add_group(const char* title, bool allow_spread) {
-    if (menu_) menu_->add_group(title, allow_spread);
+    mark_dirty();
+        if (menu_) menu_->add_group(title, allow_spread);
 }
 
 void Dropdown::add_parent(const char* title) {
@@ -73,7 +77,8 @@ void Dropdown::end_group() {
 
 // ---- 触发器 / 外观 ----
 void Dropdown::set_trigger_style(DropdownStyle s) {
-    style_ = s;
+    mark_dirty();
+        style_ = s;
     if (style_ == DropdownStyle::PrimaryButton) {
         if (!trigger_->has_class("layui-btn-primary")) trigger_->add_class("layui-btn-primary");
     } else {
@@ -82,21 +87,26 @@ void Dropdown::set_trigger_style(DropdownStyle s) {
     trigger_->visible = (style_ == DropdownStyle::Button || style_ == DropdownStyle::PrimaryButton);
 }
 
-void Dropdown::set_trigger_event(DropdownTrigger t) { event_ = t; }
+void Dropdown::set_trigger_event(DropdownTrigger t) { mark_dirty();
+        event_ = t; }
 
-void Dropdown::set_align(DropdownAlign a) { align_ = a; }
+void Dropdown::set_align(DropdownAlign a) { mark_dirty();
+        align_ = a; }
 
-void Dropdown::set_menu_width(float w) { menu_w_ = w; }
+void Dropdown::set_menu_width(float w) { mark_dirty();
+        menu_w_ = w; }
 
 void Dropdown::set_region(const char* placeholder) {
-    region_txt_ = placeholder ? placeholder : "";
+    mark_dirty();
+        region_txt_ = placeholder ? placeholder : "";
     set_trigger_style(DropdownStyle::Text);
     set_trigger_event(DropdownTrigger::ContextMenu);
     trigger_->visible = false;
 }
 
 void Dropdown::set_custom_content(Widget* content) {
-    if (custom_ == content) return;
+    mark_dirty();
+        if (custom_ == content) return;
     if (custom_ && custom_->parent()) custom_->parent()->remove_child(custom_);
     delete custom_;
     custom_ = content;
@@ -104,7 +114,8 @@ void Dropdown::set_custom_content(Widget* content) {
 }
 
 void Dropdown::set_popup_style(const Vec4& bg, const Vec4& hover, const Vec4& text) {
-    popup_bg_ = bg;
+    mark_dirty();
+        popup_bg_ = bg;
     popup_hover_ = hover;
     popup_text_ = text;
     style_custom_ = true;
@@ -113,11 +124,13 @@ void Dropdown::set_popup_style(const Vec4& bg, const Vec4& hover, const Vec4& te
 
 // ---- 显隐 ----
 void Dropdown::show() {
-    open();
+    mark_dirty();
+        open();
 }
 
 void Dropdown::hide() {
-    Widget* box = custom_ ? static_cast<Widget*>(custom_) : menu_;
+    mark_dirty();
+        Widget* box = custom_ ? static_cast<Widget*>(custom_) : menu_;
     if (box) box->visible = false;
     close_popups();
     hover_open_ = false;
@@ -125,7 +138,8 @@ void Dropdown::hide() {
 }
 
 void Dropdown::show_at(float sx, float sy) {
-    show_at_ = true;
+    mark_dirty();
+        show_at_ = true;
     at_x_ = sx;
     at_y_ = sy;
     open();

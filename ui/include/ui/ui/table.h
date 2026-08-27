@@ -47,15 +47,15 @@ public:
     void add_row(const std::vector<std::string>& cells);
     void clear_rows();
 
-    void set_skin(TableSkin skin) { skin_ = skin; }
-    void set_size(TableSize size) { size_ = size; }
-    void set_even(bool even) { even_ = even; }
-    void set_cell_min_width(float w) { cell_min_width_ = w; }
+    void set_skin(TableSkin skin) { skin_ = skin; mark_dirty(); }
+    void set_size(TableSize size) { size_ = size; mark_dirty(); }
+    void set_even(bool even) { even_ = even; mark_dirty(); }
+    void set_cell_min_width(float w) { cell_min_width_ = w; mark_dirty(); }
     // 指定哪些列启用自动截断：文字超出列宽时以 "..." 截断
-    void set_truncate_cols(const std::vector<int>& cols) { truncate_cols_.assign(cols.begin(), cols.end()); }
+    void set_truncate_cols(const std::vector<int>& cols) { truncate_cols_.assign(cols.begin(), cols.end()); mark_dirty(); }
     bool is_truncate_col(int col) const { return std::find(truncate_cols_.begin(), truncate_cols_.end(), col) != truncate_cols_.end(); }
     // 指定哪些列用 measure_text 精确截断（渲染时逐行测量，替代纯字符估算）
-    void set_measure_text_cols(const std::vector<int>& cols) { measure_text_cols_.assign(cols.begin(), cols.end()); }
+    void set_measure_text_cols(const std::vector<int>& cols) { measure_text_cols_.assign(cols.begin(), cols.end()); mark_dirty(); }
     bool is_measure_text_col(int col) const { return std::find(measure_text_cols_.begin(), measure_text_cols_.end(), col) != measure_text_cols_.end(); }
 
     void set_font(Font* font);
@@ -129,15 +129,15 @@ public:
     void set_cell_editable(int col, bool editable);
 
     // —— 合计行（layui totalRow，totalRow.html / parseData.html）——
-    void set_total_row(bool on) { total_row_ = on; }
+    void set_total_row(bool on) { total_row_ = on; mark_dirty(); }
     bool total_row() const { return total_row_; }
-    void set_total_row_text(const char* s) { total_row_text_ = s ? s : "合计"; }
+    void set_total_row_text(const char* s) { total_row_text_ = s ? s : "合计"; mark_dirty(); }
     // 标记某列为合计列（表尾对当前页该列数值求和）；total-row-text 仅放首合计列
-    void set_total_col(int col) { total_col_ = col; }
+    void set_total_col(int col) { total_col_ = col; mark_dirty(); }
     int total_col() const { return total_col_; }
 
     // —— 列点击事件（layui 单元格事件 cellEvent.html，如签名列 event:'setSign'）——
-    void set_cell_event_col(int col) { cell_event_col_ = col; }
+    void set_cell_event_col(int col) { cell_event_col_ = col; mark_dirty(); }
     int cell_event_col() const { return cell_event_col_; }
     void set_on_cell_event(std::function<void(int visible_row, int col)> cb) { on_cell_event_ = std::move(cb); }
 
@@ -181,7 +181,7 @@ public:
     int selected_row() const;
     // 行选中态（UI-124）：单击数据行高亮定位；参数为可见行号，-1 清除。
     // 与复选/单选列无关，纯视觉反馈；reload/set_page/排序时自动清除。
-    void set_selected_row(int visible_row) { sel_row_ = visible_row; }
+    void set_selected_row(int visible_row) { sel_row_ = visible_row; mark_dirty(); }
     bool even() const { return even_; }
     bool has_row_line() const { return skin_ == TableSkin::Default || skin_ == TableSkin::Line; }
     bool has_col_line() const { return skin_ == TableSkin::Default || skin_ == TableSkin::Row; }
@@ -196,8 +196,8 @@ public:
     // set_fixed_height(h>0)：显式锁定高度（固定视口 + 内部纵向滚动的摆放），h<=0 解除回内容跟随；
     // set_max_content_height(h>0)：内容跟随模式的上限钳制（流式容器防溢出），超出部分由内部滚动区承载。
     float preferred_height() const override;
-    void set_fixed_height(float h) { fixed_h_ = h; }
-    void set_max_content_height(float h) { max_content_h_ = h; }
+    void set_fixed_height(float h) { fixed_h_ = h; mark_dirty(); }
+    void set_max_content_height(float h) { max_content_h_ = h; mark_dirty(); }
     bool on_mouse_down(float x, float y, int button) override;
     void on_draw(Renderer& renderer) override;
 

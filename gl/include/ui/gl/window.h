@@ -14,11 +14,17 @@ namespace ui {
 // GLFW 窗口 + GL 3.3 Core 上下文封装（M0 骨架 + M1 鼠标追踪）
 class Window {
 public:
+    // GLFW 全局初始化/终止（整个进程只需调一次）；
+    // 多窗口架构下 ~Window() 不再调 glfwTerminate()，由应用层在退出时调 terminate_glfw()
+    static void init_glfw();
+    static void terminate_glfw();
+
     Window(int width, int height, const char* title);
     ~Window();
 
     bool should_close() const;
     void poll_events();
+    void wait_events_timeout(double timeout);
     void swap_buffers();
     void set_vsync(int interval);
 

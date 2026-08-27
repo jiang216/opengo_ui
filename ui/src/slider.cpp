@@ -28,23 +28,27 @@ Slider::Slider(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 void Slider::set_range(float min_value, float max_value) {
-    min_ = min_value;
+    mark_dirty();
+        min_ = min_value;
     max_ = max_value;
     value_ = std::min(std::max(value_, min_), max_);
     value2_ = std::min(std::max(value2_, min_), max_);
 }
 
 void Slider::set_value_silent(float v) {
-    value_ = std::min(std::max(v, min_), max_);
+    mark_dirty();
+        value_ = std::min(std::max(v, min_), max_);
 }
 
 void Slider::set_value(float v) {
-    set_value_silent(v);
+    mark_dirty();
+        set_value_silent(v);
     emit();
 }
 
 void Slider::set_range_value(float start, float end) {
-    value_ = std::min(std::max(start, min_), max_);
+    mark_dirty();
+        value_ = std::min(std::max(start, min_), max_);
     value2_ = std::min(std::max(end, min_), max_);
     if (value_ > value2_) std::swap(value_, value2_);
     emit();

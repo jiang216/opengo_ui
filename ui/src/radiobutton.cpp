@@ -16,7 +16,8 @@ RadioButton::RadioButton(float x, float y, float w, float h, const char* text)
 }
 
 void RadioButton::set_checked(bool checked) {
-    checked_ = checked;
+    mark_dirty();
+        checked_ = checked;
 }
 
 bool RadioButton::on_mouse_down(float x, float y, int button) {

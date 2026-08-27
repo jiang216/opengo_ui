@@ -63,7 +63,8 @@ TextBox::TextBox(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 void TextBox::set_text(const char* text) {
-    text_ = text ? text : "";
+    mark_dirty();
+        text_ = text ? text : "";
     if (caret_ > text_.size()) caret_ = text_.size();
     if (sel_anchor_ > text_.size()) sel_anchor_ = text_.size();
     if (on_change_) on_change_(text_.c_str());
@@ -261,7 +262,8 @@ bool TextBox::on_char(unsigned int codepoint) {
 }
 
 void TextBox::set_caret_pos(size_t pos) {
-    caret_ = std::min(pos, text_.size());
+    mark_dirty();
+        caret_ = std::min(pos, text_.size());
     sel_anchor_ = caret_;
 }
 
@@ -288,7 +290,8 @@ bool TextBox::on_mouse_up(float x, float y, int button) {
 }
 
 void TextBox::insert_text(const std::string& s) {
-    if (s.empty()) return;
+    mark_dirty();
+        if (s.empty()) return;
     erase_selection();
     text_.insert(caret_, s);
     caret_ += s.size();

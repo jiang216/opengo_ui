@@ -11,7 +11,8 @@ Card::Card(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 void Card::set_header(const char* text) {
-    header_ = text ? text : "";
+    mark_dirty();
+        header_ = text ? text : "";
 }
 
 // 布局：header（约 40px）之下是 body，子控件纵向排布（padding 15，spacing 可调）

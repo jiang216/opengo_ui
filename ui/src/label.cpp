@@ -40,19 +40,21 @@ Label::Label(float x, float y, float w, float h, const char* text)
     : Widget(x, y, w, h), text_(text ? text : "") {}
 
 void Label::set_text(const char* text) {
-    text_ = text ? text : "";
-    dirty_ = true;
+    mark_dirty();
+        text_ = text ? text : "";
+    mark_dirty();
 }
 
 void Label::set_wrap(bool wrap) {
-    wrap_ = wrap;
-    dirty_ = true;
+    mark_dirty();
+        wrap_ = wrap;
+    mark_dirty();
 }
 
 float Label::preferred_height() const {
     if (!font_) return bounds_.h;
     if (!wrap_) return font_->line_height() * text_scale_;
-    if (dirty_) const_cast<Label*>(this)->recompute_lines();  // 宽度依赖当前 bounds_.w
+    if (is_dirty()) const_cast<Label*>(this)->recompute_lines();  // 宽度依赖当前 bounds_.w
     return std::max(1, (int)lines_.size()) * font_->line_height() * text_scale_;
 }
 
@@ -94,7 +96,7 @@ void Label::recompute_lines() {
 
 void Label::on_draw(Renderer& renderer) {
     if (!font_ || text_.empty()) return;
-    if (dirty_) recompute_lines();
+    if (is_dirty()) recompute_lines();
     static const Theme kDefaultTheme;
     const Theme* t = theme_ ? theme_ : &kDefaultTheme;
     const Vec4 color = color_set_ ? color_ : t->text;

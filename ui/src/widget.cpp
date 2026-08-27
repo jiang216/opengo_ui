@@ -16,12 +16,34 @@ Widget::~Widget() {
 }
 
 void Widget::set_bounds(float x, float y, float w, float h) {
+    if (bounds_.x == x && bounds_.y == y && bounds_.w == w && bounds_.h == h) return;
     bounds_ = {x, y, w, h};
+    mark_dirty();
 }
 
 void Widget::set_enabled(bool en) {
+    if (enabled == en) return;
     enabled = en;
-    if (!en) blur();  // 禁用时立即释放焦点
+    if (!en) blur();
+    mark_dirty();
+}
+
+void Widget::mark_dirty() {
+    dirty_ = true;
+    Widget* p = parent_;
+    while (p) {
+        if (p->dirty_children_) break;
+        p->dirty_children_ = true;
+        p = p->parent_;
+    }
+}
+
+void Widget::clear_dirty() {
+    dirty_ = false;
+    dirty_children_ = false;
+    for (Widget* c : children_) {
+        if (c->dirty_ || c->dirty_children_) c->clear_dirty();
+    }
 }
 
 void Widget::add_class(const char* cls) {
@@ -102,7 +124,8 @@ void Widget::destroy() {
     for (Widget* w : g_pending_destroy) {
         if (w == this) return;  // 幂等：已在待销毁队列，忽略重复调用
     }
-    visible = false;  // 立即不可见：dispatch/advance/draw 随即跳过，帧内不再命中
+    visible = false;
+    mark_dirty();
     g_pending_destroy.push_back(this);
 }
 
@@ -313,8 +336,11 @@ bool Widget::dispatch_drop(float x, float y, const std::vector<std::string>& pat
 void Widget::on_layout() {}
 
 void Widget::layout() {
+    if (!dirty_ && !dirty_children_) return;
     on_layout();
-    for (Widget* child : children_) child->layout();
+    for (Widget* child : children_) {
+        if (child->visible) child->layout();
+    }
 }
 
 Widget* Widget::root() {
@@ -377,6 +403,7 @@ bool Widget::on_char(unsigned int codepoint) {
 // 将永久吞掉全部输入（audio_text CONF-002 全 UI 死锁根因）。隐藏即解除模态。
 void Widget::set_modal(Widget* modal) {
     modal_ = modal;
+    mark_dirty();
 }
 
 bool Widget::dispatch_key_down(int key, int mods) {
@@ -503,16 +530,17 @@ void Widget::advance(float dt) {
 
 void Widget::draw(Renderer& renderer) {
     if (!visible) return;
+    if (!dirty_ && !dirty_children_) return;
     on_draw(renderer);
     for (Widget* child : children_) {
         if (child->visible) child->draw(renderer);
     }
-    // 弹出面板最后绘制，置于控件树最上层（仅根节点）
     if (!parent_ && !popups_.empty()) {
         for (const Popup& p : popups_) {
             if (p.popup->visible) p.popup->draw(renderer);
         }
     }
+    dirty_ = false;
 }
 
 void Widget::open_popup(Widget* owner, Widget* popup) {
@@ -523,6 +551,7 @@ void Widget::open_popup(Widget* owner, Widget* popup) {
     }
     r->popups_.push_back({owner, popup});
     popup->visible = true;
+    mark_dirty();
 }
 
 void Widget::close_popups() {
@@ -534,6 +563,7 @@ void Widget::close_popups() {
         if (p.popup->parent()) p.popup->parent()->remove_child(p.popup);
     }
     r->popups_.clear();
+    mark_dirty();
 }
 
 bool Widget::has_open_popups() {

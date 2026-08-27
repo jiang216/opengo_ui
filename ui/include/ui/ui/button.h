@@ -20,17 +20,17 @@ class Button : public Widget {
 public:
     Button(float x, float y, float w, float h, const char* text);
 
-    void set_text(const char* text) { text_ = text ? text : ""; }
+    void set_text(const char* text) {  text_ = text ? text : ""; mark_dirty(); }
     const std::string& text() const { return text_; }
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     // layui 图标按钮：图标类名（如 "left"，即 layui-icon-left 去前缀）
     void set_icon(const char* icon_name);
     // 图标放文本右侧（镜像「按钮 <i class="layui-icon-down">」文字在前语义）；
     // 默认 false = 图标居左（既有行为不变）
-    void set_icon_right(bool on) { icon_right_ = on; }
+    void set_icon_right(bool on) {  icon_right_ = on; mark_dirty(); }
     bool icon_right() const { return icon_right_; }
 
     // 按钮内嵌徽章（layui-badge 红底白字，内嵌在文本右缘，如 `<button>查看消息<span layui-badge>1</span>`）
@@ -38,7 +38,7 @@ public:
     void set_badge(const char* text);
     void set_dot_badge();
     // 按钮组角色（ButtonGroup 自动维护）：0=普通，1=首，2=中间，3=尾
-    void set_group_role(int role) { group_role_ = role; }
+    void set_group_role(int role) {  group_role_ = role; mark_dirty(); }
     int group_role() const { return group_role_; }
 
     // 松开瞬间若仍在按钮内触发一次

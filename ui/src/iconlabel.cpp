@@ -14,13 +14,15 @@ IconLabel::IconLabel(float x, float y, float w, float h, const char* text)
 }
 
 void IconLabel::set_icon(const char* icon_name) {
-    clear_image();
+    mark_dirty();
+        clear_image();
     icon_cp_ = icon_name && *icon_name ? layui_icon::from_class(icon_name) : 0;
-    dirty_ = true;
+    mark_dirty();
 }
 
 void IconLabel::set_image(const char* path) {
-    if (!path || !*path) { clear_image(); return; }
+    mark_dirty();
+        if (!path || !*path) { clear_image(); return; }
     icon_cp_ = 0;  // 图片优先于 layui 图标
     delete image_tex_;
     image_tex_ = new Texture;
@@ -31,14 +33,15 @@ void IconLabel::set_image(const char* path) {
     } else {
         image_loaded_ = true;
     }
-    dirty_ = true;
+    mark_dirty();
 }
 
 void IconLabel::clear_image() {
-    delete image_tex_;
+    mark_dirty();
+        delete image_tex_;
     image_tex_ = nullptr;
     image_loaded_ = false;
-    dirty_ = true;
+    mark_dirty();
 }
 
 bool IconLabel::on_mouse_down(float x, float y, int button) {

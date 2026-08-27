@@ -201,7 +201,8 @@ float TextArea::content_height(float line_h) const {
 // ---- Text API ----
 
 void TextArea::set_text(const char* text) {
-    text_ = text ? text : "";
+    mark_dirty();
+        text_ = text ? text : "";
     if (caret_ > text_.size()) caret_ = text_.size();
     sel_start_ = sel_end_ = sel_anchor_ = caret_;
     has_selection_ = false;
@@ -389,7 +390,8 @@ bool TextArea::on_mouse_scroll(float x, float y, float dx, float dy) {
 }
 
 void TextArea::insert_text(const std::string& s) {
-    if (s.empty()) return;
+    mark_dirty();
+        if (s.empty()) return;
     replace_selection(s);
     if (on_change_) on_change_(text_.c_str());
 }

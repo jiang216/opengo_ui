@@ -19,15 +19,15 @@ public:
 
     Code(float x, float y, float w, float h);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     // 标题条左侧文本（lay-title；空则不画）
-    void set_title(const char* title) { title_ = title ? title : ""; }
+    void set_title(const char* title) {  title_ = title ? title : ""; mark_dirty(); }
     // 标题条右侧语言标签（lay-lang）
-    void set_lang(const char* lang) { lang_ = lang ? lang : ""; }
-    void set_skin(Skin skin) { skin_ = skin; }
+    void set_lang(const char* lang) {  lang_ = lang ? lang : ""; mark_dirty(); }
+    void set_skin(Skin skin) {  skin_ = skin; mark_dirty(); }
     // 固定最大高度（lay-height）：内容超高时内部滚动；0 表示自适应内容高度
-    void set_max_height(float h) { max_height_ = h; }
+    void set_max_height(float h) {  max_height_ = h; mark_dirty(); }
     // 多行代码（\n 分隔）
     void set_code(const char* code);
     void clear() { lines_.clear(); }

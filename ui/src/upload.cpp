@@ -11,7 +11,8 @@ namespace ui {
 Upload::Upload(float x, float y, float w, float h) : Widget(x, y, w, h) {}
 
 void Upload::add_file(const char* name, int size_bytes) {
-    files_.push_back({name ? name : "", size_bytes, 0.f, false});
+    mark_dirty();
+        files_.push_back({name ? name : "", size_bytes, 0.f, false});
 }
 
 void Upload::advance(float dt) {

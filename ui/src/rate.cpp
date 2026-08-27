@@ -41,7 +41,8 @@ Rate::Rate(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 void Rate::set_value(float v) {
-    const float maxv = (float)length_;
+    mark_dirty();
+        const float maxv = (float)length_;
     v = v < 0.f ? 0.f : (v > maxv ? maxv : v);
     if (half_) {
         v = std::round(v * 2.f) / 2.f;  // 吸附 0.5 步

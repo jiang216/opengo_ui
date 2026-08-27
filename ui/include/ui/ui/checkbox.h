@@ -27,22 +27,22 @@ public:
     CheckBox(float x, float y, float w, float h, const char* text);
     ~CheckBox() override;
 
-    void set_text(const char* text) { text_ = text ? text : ""; }
+    void set_text(const char* text) {  text_ = text ? text : ""; mark_dirty(); }
     void set_checked(bool checked);
     bool checked() const { return checked_; }
     void toggle();
 
     // 半选态（layui indeterminate）：只可动态设置，方框绿框白底 + 中间横线
-    void set_indeterminate(bool ind) { indeterminate_ = ind; }
+    void set_indeterminate(bool ind) {  indeterminate_ = ind; mark_dirty(); }
     bool indeterminate() const { return indeterminate_; }
 
-    void set_skin(Skin skin) { skin_ = skin; }
+    void set_skin(Skin skin) {  skin_ = skin; mark_dirty(); }
     Skin skin() const { return skin_; }
 
     // 选中态变化（点击/键盘触发）
     void set_on_change(std::function<void(bool)> cb) { on_change_ = std::move(cb); }
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     // lay-checkbox 绑定：设置紧随复选框的自定义内容控件（layui <div lay-checkbox>）。
     // 内容控件拥有权归 CheckBox（析构/clear_children 时释放）；点击内容区域同样切换选中态。

@@ -13,7 +13,8 @@ Timeline::Timeline(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 void Timeline::add_item(const char* title, const char* content) {
-    Item it;
+    mark_dirty();
+        Item it;
     it.title = title ? title : "";
     if (content && *content) it.lines.push_back({LineKind::Text, content, 0});
     items_.push_back(std::move(it));
@@ -28,11 +29,13 @@ void Timeline::add_item_rich(const char* title, bool title_large, std::vector<Co
 }
 
 void Timeline::set_axis_icon(uint32_t codepoint) {
-    if (!items_.empty()) items_.back().axis_icon = codepoint;
+    mark_dirty();
+        if (!items_.empty()) items_.back().axis_icon = codepoint;
 }
 
 void Timeline::set_axis_rotate(float degrees_per_sec) {
-    if (!items_.empty()) items_.back().axis_rotate_dps = degrees_per_sec;
+    mark_dirty();
+        if (!items_.empty()) items_.back().axis_rotate_dps = degrees_per_sec;
 }
 
 float Timeline::preferred_height() const {

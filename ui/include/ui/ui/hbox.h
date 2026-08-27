@@ -18,12 +18,12 @@ class HBox : public Widget {
 public:
     HBox(float x, float y, float w, float h);
 
-    void set_spacing(float spacing) { spacing_ = spacing; }
-    void set_padding(float padding) { padding_ = padding; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
-    void set_valign(Valign valign) { valign_ = valign; }
+    void set_spacing(float spacing) {  spacing_ = spacing; mark_dirty(); }
+    void set_padding(float padding) {  padding_ = padding; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
+    void set_valign(Valign valign) {  valign_ = valign; mark_dirty(); }
     // 覆盖背景填充色（默认 theme->button_normal，如 layui-bg-gray 灰底 #fafafa）；传 a<0 不覆盖
-    void set_fill(const Vec4& color) { fill_ = color; fill_.a = -1.f; }
+    void set_fill(const Vec4& color) {  fill_ = color; fill_.a = -1.f; mark_dirty(); }
 
     void on_layout() override;
     void on_draw(Renderer& renderer) override;

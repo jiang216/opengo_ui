@@ -43,7 +43,7 @@ public:
     void set_on_change(std::function<void(int)> cb) { on_change_ = std::move(cb); }
 
     // lay-allowclose：true 时每页标题右缘显示删除 ×，点击删除该页
-    void set_allow_close(bool allow) { allow_close_ = allow; }
+    void set_allow_close(bool allow) {  allow_close_ = allow; mark_dirty(); }
     bool allow_close() const { return allow_close_; }
 
     void set_font(Font* font);

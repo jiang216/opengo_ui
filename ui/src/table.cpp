@@ -267,11 +267,13 @@ Table::Table(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 void Table::add_column(const char* title, float width, bool sortable) {
-    cols_.push_back({title ? title : "", width, sortable, true, true, ColKind::Data});
+    mark_dirty();
+        cols_.push_back({title ? title : "", width, sortable, true, true, ColKind::Data});
 }
 
 void Table::add_row(const std::vector<std::string>& cells) {
-    rows_.push_back(cells);
+    mark_dirty();
+        rows_.push_back(cells);
     row_checked_.push_back(false);
     row_depth_.push_back(0);
     row_expanded_.push_back(true);
@@ -279,7 +281,8 @@ void Table::add_row(const std::vector<std::string>& cells) {
 }
 
 void Table::add_tree_row(int depth, const std::vector<std::string>& cells) {
-    rows_.push_back(cells);
+    mark_dirty();
+        rows_.push_back(cells);
     row_checked_.push_back(false);
     row_depth_.push_back(std::max(0, depth));
     row_expanded_.push_back(true);
@@ -306,7 +309,8 @@ bool Table::row_expanded(int data_row) const {
 }
 
 void Table::set_row_expanded(int data_row, bool on) {
-    if (data_row < 0 || data_row >= (int)row_expanded_.size()) return;
+    mark_dirty();
+        if (data_row < 0 || data_row >= (int)row_expanded_.size()) return;
     row_expanded_[data_row] = on;
     rebuild_rows();
     on_layout();
@@ -322,7 +326,8 @@ void Table::toggle_row(int visible_row) {
 }
 
 void Table::clear_rows() {
-    rows_.clear();
+    mark_dirty();
+        rows_.clear();
     row_checked_.clear();
     row_depth_.clear();
     row_expanded_.clear();
@@ -333,7 +338,8 @@ void Table::clear_rows() {
 }
 
 void Table::set_font(Font* font) {
-    font_ = font;
+    mark_dirty();
+        font_ = font;
     for (Widget* child : body_->children()) {
         if (auto* row = dynamic_cast<TableRow*>(child)) row->set_font(font);
     }
@@ -341,7 +347,8 @@ void Table::set_font(Font* font) {
 }
 
 void Table::set_theme(const Theme* theme) {
-    theme_ = theme;
+    mark_dirty();
+        theme_ = theme;
     body_->set_theme(theme);
     for (Widget* child : body_->children()) {
         if (auto* row = dynamic_cast<TableRow*>(child)) row->set_theme(theme);
@@ -350,7 +357,8 @@ void Table::set_theme(const Theme* theme) {
 }
 
 void Table::set_paginated(bool on, int page_size) {
-    if (on && !page_bar_) {
+    mark_dirty();
+        if (on && !page_bar_) {
         page_bar_ = new Laypage(0, 0, bounds_.w, 28.f);
         page_bar_->set_font(font_);
         page_bar_->set_theme(theme_);
@@ -383,21 +391,24 @@ void Table::set_on_load_more(std::function<void()> cb) {
 }
 
 void Table::set_end_note(const char* text) {
-    std::string t = text ? text : "";
+    mark_dirty();
+        std::string t = text ? text : "";
     if (t == end_note_) return;  // 文本未变化不重建（续灌路径每次 reload 后调用）
     end_note_ = std::move(t);
     if (body_) rebuild_rows();
 }
 
 void Table::reset_scroll() {
-    if (body_) body_->reset_scroll();
+    mark_dirty();
+        if (body_) body_->reset_scroll();
 }
 
 // UI-127：预热表头/可见行/尾注全部文本字形，消除流加载续灌与表格首次显示
 // 瞬间的 UI-125 配额限流渐进补齐闪烁。prebake_text 内部跳过 ASCII（已在图集）、
 // 图标与已烘焙码点，重复调用仅余字符串遍历开销。
 void Table::prebake_visible_text() {
-    if (!font_) return;
+    mark_dirty();
+        if (!font_) return;
     for (const auto& c : cols_) font_->prebake_text(c.title.c_str());
     for (int r : visible_rows_) {
         if (r < 0 || r >= static_cast<int>(rows_.size())) continue;
@@ -416,7 +427,8 @@ int Table::auto_page_size() const {
 }
 
 void Table::set_page(int page) {
-    const int pc = page_count();
+    mark_dirty();
+        const int pc = page_count();
     page_ = std::min(std::max(0, page), std::max(0, pc - 1));
     sel_row_ = -1;  // UI-124：翻页后原可见行号失效
     if (page_bar_) {
@@ -443,7 +455,8 @@ int Table::data_row_of(int visible) const {
 }
 
 void Table::add_checkbox_column() {
-    // 前置插入复选列
+    mark_dirty();
+        // 前置插入复选列
     cols_.insert(cols_.begin(), {"", 46.f, false, true, true, ColKind::Checkbox});
     selection_col_ = 0;
     radio_mode_ = false;
@@ -453,7 +466,8 @@ void Table::add_checkbox_column() {
 }
 
 void Table::add_radio_column() {
-    cols_.insert(cols_.begin(), {"", 46.f, false, true, true, ColKind::Radio});
+    mark_dirty();
+        cols_.insert(cols_.begin(), {"", 46.f, false, true, true, ColKind::Radio});
     selection_col_ = 0;
     radio_mode_ = true;
     row_checked_.resize(rows_.size(), false);
@@ -461,7 +475,8 @@ void Table::add_radio_column() {
 }
 
 void Table::add_numbers_column() {
-    cols_.insert(cols_.begin(), {"", 50.f, false, true, true, ColKind::Numbers});
+    mark_dirty();
+        cols_.insert(cols_.begin(), {"", 50.f, false, true, true, ColKind::Numbers});
     rebuild_rows();
 }
 
@@ -494,11 +509,13 @@ int Table::first_checked() const {
 }
 
 void Table::set_cell_switch(int col) {
-    if (col >= 0 && col < (int)cols_.size()) cols_[col].kind = ColKind::CellSwitch;
+    mark_dirty();
+        if (col >= 0 && col < (int)cols_.size()) cols_[col].kind = ColKind::CellSwitch;
 }
 
 void Table::set_cell_checkbox(int col) {
-    if (col >= 0 && col < (int)cols_.size()) cols_[col].kind = ColKind::CellCheckbox;
+    mark_dirty();
+        if (col >= 0 && col < (int)cols_.size()) cols_[col].kind = ColKind::CellCheckbox;
 }
 
 void Table::add_button_column(const char* title, float width,
@@ -709,7 +726,8 @@ void Table::sort_rows(int col) {
 }
 
 void Table::set_init_sort(int col, bool asc) {
-    if (is_tree()) return;  // 树形模式禁排序
+    mark_dirty();
+        if (is_tree()) return;  // 树形模式禁排序
     if (col < 0 || col >= (int)cols_.size()) return;
     cols_[col].ascending = asc;
     std::stable_sort(rows_.begin(), rows_.end(), [col, asc](const std::vector<std::string>& a,
@@ -724,7 +742,8 @@ void Table::set_init_sort(int col, bool asc) {
 }
 
 void Table::reload(const std::vector<std::vector<std::string>>& new_rows) {
-    rows_ = new_rows;
+    mark_dirty();
+        rows_ = new_rows;
     row_checked_.resize(rows_.size(), false);
     row_depth_.assign(rows_.size(), 0);
     row_expanded_.assign(rows_.size(), true);
@@ -784,7 +803,8 @@ void Table::begin_edit(int row, int col, float click_x) {
 }
 
 void Table::set_cell_editable(int col, bool editable) {
-    if (col < 0 || col >= (int)cols_.size()) return;
+    mark_dirty();
+        if (col < 0 || col >= (int)cols_.size()) return;
     cols_[col].editable = editable;
 }
 

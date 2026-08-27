@@ -12,7 +12,8 @@ RadioGroup::RadioGroup(float x, float y, float w, float h) : Widget(x, y, w, h) 
 RadioGroup::~RadioGroup() = default;
 
 void RadioGroup::add_option(const char* text) {
-    const size_t index = options_.size();
+    mark_dirty();
+        const size_t index = options_.size();
     RadioButton* rb = new RadioButton(0, 0, 0, option_h_, text);
     rb->set_font(font_);
     rb->set_theme(theme_);
@@ -22,7 +23,8 @@ void RadioGroup::add_option(const char* text) {
 }
 
 void RadioGroup::select(int index) {
-    if (index < 0 || index >= (int)options_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)options_.size()) return;
     if (selected_ == index) return;
     selected_ = index;
     for (size_t i = 0; i < options_.size(); ++i) options_[i]->set_checked((int)i == selected_);
@@ -30,7 +32,8 @@ void RadioGroup::select(int index) {
 }
 
 void RadioGroup::set_option_enabled(int index, bool en) {
-    if (index < 0 || index >= (int)options_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)options_.size()) return;
     options_[(size_t)index]->set_enabled(en);
 }
 

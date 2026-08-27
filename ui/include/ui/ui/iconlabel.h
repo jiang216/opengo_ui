@@ -19,28 +19,28 @@ public:
     IconLabel(float x, float y, float w, float h, const char* text = "");
 
     // ---- 文本 ----
-    void set_text(const char* text) { text_ = text ? text : ""; dirty_ = true; }
+    void set_text(const char* text) {  text_ = text ? text : ""; mark_dirty(); mark_dirty(); }
     const std::string& text() const { return text_; }
 
     // ---- layui 图标 ----
     void set_icon(const char* icon_name);
-    void clear_icon() { icon_cp_ = 0; dirty_ = true; }
+    void clear_icon() { icon_cp_ = 0; mark_dirty(); }
 
     // ---- 本地图片（png/jpg/bmp/webp）----
     void set_image(const char* path);
     void clear_image();
 
     // ---- 布局参数 ----
-    void set_icon_size(float s) { icon_size_ = s; dirty_ = true; }
-    void set_gap(float g) { gap_ = g; dirty_ = true; }
+    void set_icon_size(float s) {  icon_size_ = s; mark_dirty(); mark_dirty(); }
+    void set_gap(float g) {  gap_ = g; mark_dirty(); mark_dirty(); }
     // 0=左对齐（默认） 1=水平居中 2=右对齐（文本相对整个控件）
-    void set_align(int a) { align_ = a; }
+    void set_align(int a) {  align_ = a; mark_dirty(); }
 
     // ---- 外观 ----
-    void set_font(Font* f) { font_ = f; }
-    void set_theme(const Theme* t) { theme_ = t; }
-    void set_text_color(const Vec4& c) { text_color_ = c; has_text_color_ = true; }
-    void set_icon_color(const Vec4& c) { icon_color_ = c; has_icon_color_ = true; }
+    void set_font(Font* f) {  font_ = f; mark_dirty(); }
+    void set_theme(const Theme* t) {  theme_ = t; mark_dirty(); }
+    void set_text_color(const Vec4& c) {  text_color_ = c; has_text_color_ = true; mark_dirty(); }
+    void set_icon_color(const Vec4& c) {  icon_color_ = c; has_icon_color_ = true; mark_dirty(); }
 
     // ---- 交互（可选）----
     void set_on_click(std::function<void()> cb) { on_click_ = std::move(cb); }
@@ -69,7 +69,6 @@ private:
     bool has_icon_color_ = false;
 
     std::function<void()> on_click_;
-    bool dirty_ = true;
 };
 
 }  // namespace ui

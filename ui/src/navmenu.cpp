@@ -19,11 +19,13 @@ NavMenu::NavMenu(float x, float y, float w, float h) : Widget(x, y, w, h), menu_
 }
 
 void NavMenu::add_group(const char* title) {
-    groups_.push_back({title ? title : "", {}, false, 0.f, 0.f, 0.f});
+    mark_dirty();
+        groups_.push_back({title ? title : "", {}, false, 0.f, 0.f, 0.f});
 }
 
 void NavMenu::clear_groups() {
-    groups_.clear();
+    mark_dirty();
+        groups_.clear();
     active_ = -1;
     sel_group_ = -1;
     sel_item_ = -1;
@@ -38,23 +40,28 @@ void NavMenu::add_item(const char* title, std::function<void()> cb) {
 }
 
 void NavMenu::add_separator() {
-    if (groups_.empty()) add_group("menu");
+    mark_dirty();
+        if (groups_.empty()) add_group("menu");
     Group& g = groups_.back();
     g.items.push_back({"", {}, 0.f, 0.f, true});
 }
 
-void NavMenu::set_font(Font* font) { font_ = font; }
+void NavMenu::set_font(Font* font) { mark_dirty();
+        font_ = font; }
 
-void NavMenu::set_theme(const Theme* theme) { theme_ = theme; }
+void NavMenu::set_theme(const Theme* theme) { mark_dirty();
+        theme_ = theme; }
 
 void NavMenu::set_active(int group) {
-    if (group < 0 || group >= (int)groups_.size()) return;
+    mark_dirty();
+        if (group < 0 || group >= (int)groups_.size()) return;
     active_ = group;
     for (int i = 0; i < (int)groups_.size(); ++i) groups_[i].expanded = (i == group);
 }
 
 void NavMenu::set_selected(int group, int item) {
-    if (group < 0 || group >= (int)groups_.size()) return;
+    mark_dirty();
+        if (group < 0 || group >= (int)groups_.size()) return;
     if (item < 0 || item >= (int)groups_[group].items.size()) return;
     sel_group_ = group;
     sel_item_ = item;
@@ -62,7 +69,8 @@ void NavMenu::set_selected(int group, int item) {
 }
 
 void NavMenu::expand_all() {
-    for (Group& g : groups_) g.expanded = true;
+    mark_dirty();
+        for (Group& g : groups_) g.expanded = true;
 }
 
 void NavMenu::on_layout() {

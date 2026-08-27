@@ -38,7 +38,8 @@ Tabs::~Tabs() {
 }
 
 int Tabs::add_tab(const char* title, const char* content) {
-    Tab tb;
+    mark_dirty();
+        Tab tb;
     tb.title = title ? title : "";
     tb.content = content ? content : "";
     tabs_.push_back(std::move(tb));
@@ -47,26 +48,30 @@ int Tabs::add_tab(const char* title, const char* content) {
 }
 
 void Tabs::set_content(int index, const char* content) {
-    if (index < 0 || index >= (int)tabs_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)tabs_.size()) return;
     tabs_[index].content = content ? content : "";
     if (index == active_) apply_active();
 }
 
 void Tabs::set_badge(const char* text) {
-    if (tabs_.empty()) return;
+    mark_dirty();
+        if (tabs_.empty()) return;
     tabs_.back().has_badge = true;
     tabs_.back().badge_text = text ? text : "";
     layout_titles();
 }
 
 void Tabs::set_dot_badge() {
-    if (tabs_.empty()) return;
+    mark_dirty();
+        if (tabs_.empty()) return;
     tabs_.back().has_dot = true;
     layout_titles();
 }
 
 void Tabs::remove_tab(int index) {
-    if (index < 0 || index >= (int)tabs_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)tabs_.size()) return;
     tabs_.erase(tabs_.begin() + index);
     if (tabs_.empty()) {
         active_ = 0;
@@ -80,7 +85,8 @@ void Tabs::remove_tab(int index) {
 }
 
 void Tabs::set_active(int index) {
-    if (index < 0 || index >= (int)tabs_.size() || index == active_) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)tabs_.size() || index == active_) return;
     active_ = index;
     apply_active();
     if (on_change_) on_change_(active_);
@@ -103,13 +109,15 @@ bool Tabs::hit_close(float x, float y) const {
 }
 
 void Tabs::set_font(Font* font) {
-    font_ = font;
+    mark_dirty();
+        font_ = font;
     if (content_label_) content_label_->set_font(font);
     for (Button* b : overflow_buttons()) b->set_font(font);
 }
 
 void Tabs::set_theme(const Theme* theme) {
-    theme_ = theme;
+    mark_dirty();
+        theme_ = theme;
     content_label_->set_theme(theme);
     if (overflow_panel_) overflow_panel_->set_theme(theme);
 }

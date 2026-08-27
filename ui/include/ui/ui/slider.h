@@ -17,7 +17,7 @@ class Slider : public Widget {
 public:
     Slider(float x, float y, float w, float h);
 
-    void set_font(Font* font) { font_ = font; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
     void set_range(float min_value, float max_value);
     // —— 单值（默认模式）——
     void set_value(float v);            // 改值并触发回调
@@ -29,19 +29,19 @@ public:
     bool dragging() const { return dragging_; }
 
     // —— layui slider 选项 ——
-    void set_range_enabled(bool on) { range_ = on; }   // 范围拖拽（双环）
-    void set_step(float step) { step_ = step > 0.f ? step : 1.f; }
-    void set_showstep(bool on) { showstep_ = on; }     // 间断点
-    void set_tips(bool on) { tips_ = on; }             // 提示文本
+    void set_range_enabled(bool on) {  range_ = on; mark_dirty(); }   // 范围拖拽（双环）
+    void set_step(float step) {  step_ = step > 0.f ? step : 1.f; mark_dirty(); }
+    void set_showstep(bool on) {  showstep_ = on; mark_dirty(); }     // 间断点
+    void set_tips(bool on) {  tips_ = on; mark_dirty(); }             // 提示文本
     void set_tips_callback(std::function<std::string(float)> fn) { tips_fn_ = std::move(fn); } // setTips
-    void set_input(bool on) { input_ = on; }           // 输入框（range 时无效）
-    void set_disabled(bool on) { disabled_ = on; }     // 禁用拖拽
-    void set_theme_color(const Vec4& c) { theme_color_ = c; has_theme_color_ = true; } // 主题色
-    void set_vertical(bool on) { vertical_ = on; }     // type:vertical
-    void set_track_height(float h) { track_len_ = h > 0.f ? h : 200.f; } // vertical 高度
-    void set_focus_ring(bool on) { focus_ring_ = on; } // 聚焦外框反馈（默认不显示）
+    void set_input(bool on) {  input_ = on; mark_dirty(); }           // 输入框（range 时无效）
+    void set_disabled(bool on) {  disabled_ = on; mark_dirty(); }     // 禁用拖拽
+    void set_theme_color(const Vec4& c) {  theme_color_ = c; has_theme_color_ = true; mark_dirty(); } // 主题色
+    void set_vertical(bool on) {  vertical_ = on; mark_dirty(); }     // type:vertical
+    void set_track_height(float h) {  track_len_ = h > 0.f ? h : 200.f; mark_dirty(); } // vertical 高度
+    void set_focus_ring(bool on) {  focus_ring_ = on; mark_dirty(); } // 聚焦外框反馈（默认不显示）
 
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     // 值变化回调（普通模式返回单值）
     void set_on_change(std::function<void(float)> cb) { on_change_ = std::move(cb); }
     // 范围模式回调整（start, end）

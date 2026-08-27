@@ -21,10 +21,10 @@ class Transfer : public Widget {
 public:
     Transfer(float x, float y, float w, float h);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
-    void set_left_label(const char* s) { left_label_ = s ? s : ""; }
-    void set_right_label(const char* s) { right_label_ = s ? s : ""; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
+    void set_left_label(const char* s) {  left_label_ = s ? s : ""; mark_dirty(); }
+    void set_right_label(const char* s) {  right_label_ = s ? s : ""; mark_dirty(); }
 
     // 加入左侧列表项；disabled 项不可选中/搬移（layui data.disabled）
     void add_item(const char* name, bool disabled = false);

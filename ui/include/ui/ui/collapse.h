@@ -23,7 +23,7 @@ public:
     void set_active(int index);       // 点按展开/收起该项
     int active() const;               // 手风琴：当前展开项；非手风琴：最后操作项
     bool is_open(int index) const;    // 该项当前是否展开
-    void set_accordion(bool on) { accordion_ = on; }  // 手风琴（默认 true）
+    void set_accordion(bool on) {  accordion_ = on; mark_dirty(); }  // 手风琴（默认 true）
     bool accordion() const { return accordion_; }
     int open_count() const;           // 当前展开项数
     void set_on_change(std::function<void(int)> cb) { on_change_ = std::move(cb); }

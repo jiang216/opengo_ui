@@ -14,12 +14,14 @@ CountdownText::CountdownText(float x, float y, float w, float h)
 }
 
 void CountdownText::set_total(float seconds) {
-    total_ = seconds;
+    mark_dirty();
+        total_ = seconds;
     restart();
 }
 
 void CountdownText::restart() {
-    start_ = std::chrono::steady_clock::now();
+    mark_dirty();
+        start_ = std::chrono::steady_clock::now();
     done_ = false;
 }
 

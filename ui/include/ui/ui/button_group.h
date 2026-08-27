@@ -16,7 +16,7 @@ public:
     ButtonGroup(float x, float y, float w, float h);
 
     void add_button(Button* b);
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     void on_layout() override;
 

@@ -18,12 +18,14 @@ Collapse::Collapse(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 void Collapse::add_item(const char* title) {
-    items_.push_back({title ? title : "", children_.size(), 0.f, 0.f});
+    mark_dirty();
+        items_.push_back({title ? title : "", children_.size(), 0.f, 0.f});
     open_.push_back(false);
 }
 
 void Collapse::set_active(int index) {
-    if (index < 0 || index >= (int)items_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)items_.size()) return;
     active_ = index;
     if (accordion_) {
         // 手风琴：点开已展开项则收起，否则只开该项
@@ -63,9 +65,11 @@ int Collapse::open_count() const {
     return n;
 }
 
-void Collapse::set_font(Font* font) { font_ = font; }
+void Collapse::set_font(Font* font) { mark_dirty();
+        font_ = font; }
 
-void Collapse::set_theme(const Theme* theme) { theme_ = theme; }
+void Collapse::set_theme(const Theme* theme) { mark_dirty();
+        theme_ = theme; }
 
 void Collapse::layout_items() {
     float y = bounds_.y;

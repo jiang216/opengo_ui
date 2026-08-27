@@ -41,8 +41,8 @@ public:
     // 最后 add_item 条目的轴点图标绕中心旋转（角度/秒，>0 开启；用于 loading 循环动画）
     void set_axis_rotate(float degrees_per_sec);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     // 内容高度 = 条目数 × (标题行 + 内容行数 × 行高 + 20px padding)
     float preferred_height() const override;

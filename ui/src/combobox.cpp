@@ -39,7 +39,8 @@ ComboBox::~ComboBox() {
 }
 
 void ComboBox::add_option(const char* text) {
-    const size_t index = options_.size();
+    mark_dirty();
+        const size_t index = options_.size();
     options_.emplace_back(text ? text : "");
     Button* opt = new Button(0, 0, 0, kOptionH, text ? text : "");
     opt->add_class("layui-form-select dd");
@@ -54,7 +55,8 @@ void ComboBox::add_option(const char* text) {
 }
 
 void ComboBox::set_options(const std::vector<std::string>& options) {
-    // UI-121：就地重载。先关面板（面板挂 root，选项即将失效），再递归释放旧选项按钮
+    mark_dirty();
+        // UI-121：就地重载。先关面板（面板挂 root，选项即将失效），再递归释放旧选项按钮
     if (panel_->visible) close();
     panel_->clear_children();
     option_buttons_.clear();
@@ -75,7 +77,8 @@ void ComboBox::set_options(const std::vector<std::string>& options) {
 }
 
 void ComboBox::select(int index) {
-    if (index < 0 || index >= (int)options_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)options_.size()) return;
     if (selected_ != index) {
         selected_ = index;
         if (on_change_) on_change_(selected_);
@@ -95,7 +98,8 @@ void ComboBox::open() {
 }
 
 void ComboBox::close() {
-    panel_->visible = false;
+    mark_dirty();
+        panel_->visible = false;
     close_popups();
 }
 

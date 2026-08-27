@@ -78,12 +78,14 @@ ColorPicker::ColorPicker(float x, float y, float w, float h) : Widget(x, y, w, h
 }
 
 void ColorPicker::set_color(const Vec4& c) {
-    color_ = c;
+    mark_dirty();
+        color_ = c;
     rgba_to_hsv(c, hue_, sat_, val_);
 }
 
 void ColorPicker::set_colors(const std::vector<Vec4>& cols) {
-    if (cols.empty()) return;
+    mark_dirty();
+        if (cols.empty()) return;
     palette_ = cols;
 }
 

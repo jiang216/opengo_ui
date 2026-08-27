@@ -31,26 +31,42 @@ LaydateBox::~LaydateBox() {
 }
 
 void LaydateBox::set_type(const char* t) {
-    type_ = t ? t : "date";
+    mark_dirty();
+        type_ = t ? t : "date";
     panel_->set_type(t);
 }
-void LaydateBox::set_range(bool v) { panel_->set_range(v); }
-void LaydateBox::set_range_separator(const char* s) { panel_->set_range_separator(s); }
-void LaydateBox::set_format(const char* f) { panel_->set_format(f); }
-void LaydateBox::set_min(const char* v) { panel_->set_min(v); }
-void LaydateBox::set_max(const char* v) { panel_->set_max(v); }
-void LaydateBox::set_min_offset(int days) { panel_->set_min_offset(days); }
-void LaydateBox::set_max_offset(int days) { panel_->set_max_offset(days); }
-void LaydateBox::set_calendar(bool v) { panel_->set_calendar(v); }
-void LaydateBox::set_marks(const std::vector<Laydate::Mark>& m) { panel_->set_marks(m); }
-void LaydateBox::set_theme_style(const char* t) { panel_->set_theme_style(t); }
-void LaydateBox::set_show_bottom(bool v) { panel_->set_show_bottom(v); }
-void LaydateBox::set_btns(const std::vector<std::string>& b) { panel_->set_btns(b); }
-void LaydateBox::set_lang(const char* l) { panel_->set_lang(l); }
+void LaydateBox::set_range(bool v) { mark_dirty();
+        panel_->set_range(v); }
+void LaydateBox::set_range_separator(const char* s) { mark_dirty();
+        panel_->set_range_separator(s); }
+void LaydateBox::set_format(const char* f) { mark_dirty();
+        panel_->set_format(f); }
+void LaydateBox::set_min(const char* v) { mark_dirty();
+        panel_->set_min(v); }
+void LaydateBox::set_max(const char* v) { mark_dirty();
+        panel_->set_max(v); }
+void LaydateBox::set_min_offset(int days) { mark_dirty();
+        panel_->set_min_offset(days); }
+void LaydateBox::set_max_offset(int days) { mark_dirty();
+        panel_->set_max_offset(days); }
+void LaydateBox::set_calendar(bool v) { mark_dirty();
+        panel_->set_calendar(v); }
+void LaydateBox::set_marks(const std::vector<Laydate::Mark>& m) { mark_dirty();
+        panel_->set_marks(m); }
+void LaydateBox::set_theme_style(const char* t) { mark_dirty();
+        panel_->set_theme_style(t); }
+void LaydateBox::set_show_bottom(bool v) { mark_dirty();
+        panel_->set_show_bottom(v); }
+void LaydateBox::set_btns(const std::vector<std::string>& b) { mark_dirty();
+        panel_->set_btns(b); }
+void LaydateBox::set_lang(const char* l) { mark_dirty();
+        panel_->set_lang(l); }
 
-void LaydateBox::set_text(const char* t) { text_ = t ? t : ""; }
+void LaydateBox::set_text(const char* t) { mark_dirty();
+        text_ = t ? t : ""; }
 void LaydateBox::set_value(const char* v) {
-    panel_->set_value(v);
+    mark_dirty();
+        panel_->set_value(v);
     text_ = panel_->value();
 }
 void LaydateBox::set_on_done(std::function<void(const char*, int, int, int, int, int, int)> cb) {
@@ -95,7 +111,8 @@ void LaydateBox::open() {
 }
 
 void LaydateBox::close() {
-    panel_->visible = false;
+    mark_dirty();
+        panel_->visible = false;
     close_popups();
     open_ = false;
 }

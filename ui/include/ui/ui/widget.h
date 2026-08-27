@@ -28,6 +28,11 @@ public:
     bool enabled = true;
     virtual void set_enabled(bool en);
 
+    // ---- 脏标记机制：空闲时跳过无变子树绘制，降低 CPU/GPU 占用 ----
+    bool is_dirty() const { return dirty_ || dirty_children_; }
+    void mark_dirty();
+    void clear_dirty();
+
     // ---- CSS 类名机制（M17a）：layui 语法入口，供样式层查询 ----
     // 支持空格分隔的多个类名（如 "layui-btn layui-btn-danger"）
     void add_class(const char* cls);
@@ -158,6 +163,8 @@ protected:
 
     Rect bounds_;
     Widget* parent_ = nullptr;
+    bool dirty_ = true;
+    bool dirty_children_ = true;
     std::vector<Widget*> children_;
     bool hovered_ = false;
     bool pressed_ = false;

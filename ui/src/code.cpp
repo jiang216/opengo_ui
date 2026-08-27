@@ -18,7 +18,8 @@ constexpr float kChildGap = 8.f;
 Code::Code(float x, float y, float w, float h) : Widget(x, y, w, h) {}
 
 void Code::set_code(const char* code) {
-    lines_.clear();
+    mark_dirty();
+        lines_.clear();
     if (!code) return;
     std::string line;
     for (const char* p = code; *p; ++p) {

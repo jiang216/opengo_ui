@@ -42,7 +42,8 @@ Laypage::Laypage(float x, float y, float w, float h) : Widget(x, y, w, h) {
 Laypage::~Laypage() {}
 
 void Laypage::set_total(int total) {
-    count_ = 0;  // 直接设页数，不再用 count 重算
+    mark_dirty();
+        count_ = 0;  // 直接设页数，不再用 count 重算
     total_ = std::max(0, total);
     if (page_ > std::max(0, total_ - 1)) page_ = std::max(0, total_ - 1);
     if (skip_box_) {
@@ -53,7 +54,8 @@ void Laypage::set_total(int total) {
 }
 
 void Laypage::set_page(int page) {
-    page_ = total_ > 0 ? std::min(std::max(0, page), total_ - 1) : std::max(0, page);
+    mark_dirty();
+        page_ = total_ > 0 ? std::min(std::max(0, page), total_ - 1) : std::max(0, page);
     if (skip_box_) {
         char buf[16];
         std::snprintf(buf, sizeof(buf), "%d", page_ + 1);
@@ -62,17 +64,20 @@ void Laypage::set_page(int page) {
 }
 
 void Laypage::set_count(int count) {
-    count_ = std::max(0, count);
+    mark_dirty();
+        count_ = std::max(0, count);
     recompute_total();
 }
 
 void Laypage::set_limit(int limit) {
-    limit_ = std::max(1, limit);
+    mark_dirty();
+        limit_ = std::max(1, limit);
     recompute_total();
 }
 
 void Laypage::set_limits(std::vector<int> limits) {
-    limits_ = std::move(limits);
+    mark_dirty();
+        limits_ = std::move(limits);
     if (!limits_.empty() && std::find(limits_.begin(), limits_.end(), limit_) == limits_.end())
         limit_ = limits_[0];
     recompute_total();
@@ -90,7 +95,8 @@ void Laypage::recompute_total() {
 }
 
 void Laypage::set_layout_str(const std::vector<std::string>& items) {
-    explicit_layout_ = true;
+    mark_dirty();
+        explicit_layout_ = true;
     layout_.clear();
     for (const std::string& s : items) {
         if (s == "count") layout_.push_back(Item::Count);
@@ -107,12 +113,14 @@ void Laypage::set_layout_str(const std::vector<std::string>& items) {
 }
 
 void Laypage::set_font(Font* font) {
-    font_ = font;
+    mark_dirty();
+        font_ = font;
     sync_children();
 }
 
 void Laypage::set_theme(const Theme* theme) {
-    theme_ = theme;
+    mark_dirty();
+        theme_ = theme;
     sync_children();
 }
 

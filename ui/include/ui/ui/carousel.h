@@ -37,29 +37,28 @@ public:
     int current() const { return current_; }
     void set_index(int idx);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     void set_on_change(std::function<void(int)> cb) { on_change_ = std::move(cb); }
 
     // layui 配置项
-    void set_anim(CarouselAnim anim) { anim_ = anim; }
+    void set_anim(CarouselAnim anim) {  anim_ = anim; mark_dirty(); }
     CarouselAnim anim() const { return anim_; }
-    void set_arrow(CarouselArrow arrow) { arrow_ = arrow; }
+    void set_arrow(CarouselArrow arrow) {  arrow_ = arrow; mark_dirty(); }
     CarouselArrow arrow() const { return arrow_; }
-    void set_indicator(CarouselIndicator ind) { indicator_ = ind; }
+    void set_indicator(CarouselIndicator ind) {  indicator_ = ind; mark_dirty(); }
     CarouselIndicator indicator() const { return indicator_; }
-    void set_autoplay(bool on) { autoplay_ = on; }
+    void set_autoplay(bool on) {  autoplay_ = on; mark_dirty(); }
     bool autoplay() const { return autoplay_; }
     // interval：毫秒（layui interval，默认 3000）
-    void set_interval(float ms) { interval_ = ms > 0.f ? ms : 3000.f; }
+    void set_interval(float ms) {  interval_ = ms > 0.f ? ms : 3000.f; mark_dirty(); }
     float interval() const { return interval_; }  // 毫秒
-    void set_size(float w, float h) { set_bounds(bounds_.x, bounds_.y, w, h); }
+    void set_size(float w, float h) {  set_bounds(bounds_.x, bounds_.y, w, h); mark_dirty(); }
 
     // 旧 API 兼容（UI-089 前）：秒为单位开关自动轮播
-    void set_auto_play(bool on, float seconds = 3.f) {
+    void set_auto_play(bool on, float seconds = 3.f) { 
         autoplay_ = on;
-        if (seconds > 0.f) interval_ = seconds * 1000.f;
-    }
+        if (seconds > 0.f) interval_ = seconds * 1000.f; mark_dirty(); }
 
     void next();
     void prev();

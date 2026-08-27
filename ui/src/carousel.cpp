@@ -87,7 +87,8 @@ bool Carousel::add_image_slide(const char* path) {
     return true;
 }
 void Carousel::clear() {
-    for (auto& s : slides_) delete s.image;
+    mark_dirty();
+        for (auto& s : slides_) delete s.image;
     slides_.clear();
     current_ = 0;
     trans_t_ = -1.f;
@@ -102,7 +103,8 @@ void Carousel::set_current_now(int idx) {
 }
 
 void Carousel::set_index(int idx) {
-    if (slides_.empty()) return;
+    mark_dirty();
+        if (slides_.empty()) return;
     start_transition(current_, idx);
 }
 

@@ -26,18 +26,21 @@ CheckBox::~CheckBox() {
 }
 
 void CheckBox::set_checked(bool checked) {
-    if (checked_ == checked) return;
+    mark_dirty();
+        if (checked_ == checked) return;
     checked_ = checked;
     if (checked_) indeterminate_ = false;  // 选中后清除半选（layui 行为）
     if (on_change_) on_change_(checked_);
 }
 
 void CheckBox::toggle() {
-    set_checked(!checked_);
+    mark_dirty();
+        set_checked(!checked_);
 }
 
 void CheckBox::set_custom_content(Widget* content) {
-    if (custom_ == content) return;
+    mark_dirty();
+        if (custom_ == content) return;
     if (custom_) {
         if (custom_->parent()) custom_->parent()->remove_child(custom_);
         delete custom_;

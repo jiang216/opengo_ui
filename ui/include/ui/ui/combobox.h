@@ -30,8 +30,8 @@ public:
     int selected() const { return selected_; }
     void set_on_change(std::function<void(int)> cb) { on_change_ = std::move(cb); }
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     void on_layout() override;
     bool on_mouse_down(float x, float y, int button) override;

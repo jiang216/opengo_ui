@@ -40,8 +40,8 @@ public:
     // 禁用滑块跟随（lay-bar="disabled"）
     void set_bar_disabled(bool disabled);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     float preferred_height() const override;
     void on_layout() override;

@@ -19,26 +19,26 @@ class PanelWindow : public Widget {
 public:
     PanelWindow(float x, float y, float w, float h, const char* title);
 
-    void set_title(const char* title) { title_ = title ? title : ""; }
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_title(const char* title) {  title_ = title ? title : ""; mark_dirty(); }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     // 关闭按钮回调（通常由使用者隐藏/销毁窗口）
     void set_on_close(std::function<void()> cb) { on_close_ = std::move(cb); }
 
     // ---- UI-069 ----
     // 是否显示标题栏（layer title:false）
-    void set_title_visible(bool v) { title_visible_ = v; }
+    void set_title_visible(bool v) {  title_visible_ = v; mark_dirty(); }
     // 是否显示关闭按钮（layer closeBtn:false）
-    void set_close_visible(bool v) { close_visible_ = v; }
+    void set_close_visible(bool v) {  close_visible_ = v; mark_dirty(); }
     // 最大化/还原按钮（layer maxmin:true），标题栏右侧追加 ─ / □
-    void set_maxmin(bool v) { maxmin_ = v; }
+    void set_maxmin(bool v) {  maxmin_ = v; mark_dirty(); }
     // 底部遮罩 alpha（layer shade:0..1），0 表示无遮罩；遮罩覆盖整个视口绘制在窗口之后
-    void set_shade(float alpha) { shade_ = alpha; }
+    void set_shade(float alpha) {  shade_ = alpha; mark_dirty(); }
     // 底部按钮条：labels 按钮文本，align 0=左 1=中 2=右；点击回调（回调参数为按钮下标）
     void set_footer_buttons(const std::vector<std::string>& labels, int align,
                             std::function<void(int)> cb);
     // 自动关闭秒数（layer msg time），<=0 不自动关闭；需应用层每帧 root->advance(dt)
-    void set_auto_close(float seconds) { auto_close_ = seconds; }
+    void set_auto_close(float seconds) {  auto_close_ = seconds; mark_dirty(); }
     // 客户区高度中按钮条预留（footer_h），供子控件布局时避让
     float footer_height() const { return footer_buttons_.empty() ? 0.f : footer_h_; }
 

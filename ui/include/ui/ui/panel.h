@@ -11,9 +11,9 @@ class Panel : public Widget {
 public:
     Panel(float x, float y, float w, float h);
 
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     // 覆盖背景填充色（默认 theme->button_normal）；传 a<0 表示不覆盖
-    void set_fill(const Vec4& color) { fill_ = color; fill_.a = -1.f; }
+    void set_fill(const Vec4& color) {  fill_ = color; fill_.a = -1.f; mark_dirty(); }
 
     void on_draw(Renderer& renderer) override;
 

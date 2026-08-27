@@ -11,7 +11,8 @@ Breadcrumb::Breadcrumb(float x, float y, float w, float h) : Widget(x, y, w, h) 
 }
 
 void Breadcrumb::add_item(const char* text) {
-    items_.push_back({text ? text : "", false});
+    mark_dirty();
+        items_.push_back({text ? text : "", false});
 }
 
 void Breadcrumb::add_current(const char* text) {

@@ -15,17 +15,20 @@ BlockQuote::BlockQuote(float w, float h, const char* text, bool nm)
 }
 
 void BlockQuote::set_font(Font* font) {
-    label_->set_font(font);
+    mark_dirty();
+        label_->set_font(font);
 }
 
 void BlockQuote::set_theme(const Theme* theme) {
-    theme_ = theme;
+    mark_dirty();
+        theme_ = theme;
     label_->set_theme(theme);
     label_->set_color(theme ? theme->text_secondary : Vec4{0.4f, 0.4f, 0.4f, 1.0f});
 }
 
 void BlockQuote::set_text(const char* text) {
-    label_->set_text(text ? text : "");
+    mark_dirty();
+        label_->set_text(text ? text : "");
 }
 
 float BlockQuote::preferred_height() const {

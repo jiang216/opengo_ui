@@ -11,14 +11,19 @@ namespace ui {
 
 namespace {
 GLFWwindow* g_primary_window = nullptr;
+bool g_glfw_initialized = false;
+bool g_glad_loaded = false;
 }
 
-Window::Window(int width, int height, const char* title)
-    : width_(width), height_(height) {
+// 全局初始化：glfwInit + OpenGL 函数加载（整个进程只需调一次）
+void Window::init_glfw() {
+    if (g_glfw_initialized) return;
     if (!glfwInit()) {
         log_error("glfwInit failed");
         return;
     }
+    g_glfw_initialized = true;
+
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -27,6 +32,20 @@ Window::Window(int width, int height, const char* title)
 #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif
+}
+
+// 全局终止：glfwTerminate（应用退出时调一次，销毁所有窗口和上下文）
+void Window::terminate_glfw() {
+    if (!g_glfw_initialized) return;
+    glfwTerminate();
+    g_glfw_initialized = false;
+    g_glad_loaded = false;
+    g_primary_window = nullptr;
+}
+
+Window::Window(int width, int height, const char* title)
+    : width_(width), height_(height) {
+    if (!g_glfw_initialized) init_glfw();
     window_ = glfwCreateWindow(width, height, title, nullptr, nullptr);
     if (!window_) {
         log_error("glfwCreateWindow failed");
@@ -36,13 +55,17 @@ Window::Window(int width, int height, const char* title)
     glfwMakeContextCurrent(window_);
     glfwSwapInterval(1);
 
-    if (!gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress))) {
-        log_error("gladLoadGL failed");
+    if (!g_glad_loaded) {
+        if (!gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress))) {
+            log_error("gladLoadGL failed");
+        } else {
+            g_glad_loaded = true;
+            log_info("GL %s | renderer %s | GLSL %s",
+                     reinterpret_cast<const char*>(glGetString(GL_VERSION)),
+                     reinterpret_cast<const char*>(glGetString(GL_RENDERER)),
+                     reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
+        }
     }
-    log_info("GL %s | renderer %s | GLSL %s",
-             reinterpret_cast<const char*>(glGetString(GL_VERSION)),
-             reinterpret_cast<const char*>(glGetString(GL_RENDERER)),
-             reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
 
     // 输入回调
     glfwSetWindowUserPointer(window_, this);
@@ -57,7 +80,6 @@ Window::Window(int width, int height, const char* title)
 
 Window::~Window() {
     if (window_) glfwDestroyWindow(window_);
-    glfwTerminate();
     if (g_primary_window == window_) g_primary_window = nullptr;
 }
 
@@ -65,6 +87,7 @@ GLFWwindow* Window::primary_handle() { return g_primary_window; }
 
 bool Window::should_close() const { return window_ ? glfwWindowShouldClose(window_) != 0 : true; }
 void Window::poll_events() { glfwPollEvents(); }
+void Window::wait_events_timeout(double timeout) { glfwWaitEventsTimeout(timeout); }
 void Window::swap_buffers() { glfwSwapBuffers(window_); }
 void Window::set_vsync(int interval) { glfwSwapInterval(interval); }
 

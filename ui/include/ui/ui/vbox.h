@@ -12,16 +12,16 @@ public:
     VBox(float x, float y, float w, float h);
 
     // 子控件之间的间距（像素）
-    void set_spacing(float spacing) { spacing_ = spacing; }
+    void set_spacing(float spacing) {  spacing_ = spacing; mark_dirty(); }
     // 内部边距（像素）
-    void set_padding(float padding) { padding_ = padding; }
+    void set_padding(float padding) {  padding_ = padding; mark_dirty(); }
 
     // 布局：把子控件按顺序纵向排列；子控件高度用各自 bounds_.h（可通过 set_bounds 预设）
     void on_layout() override;
     // 内容高度 = 子控件高度之和 + 间距 + 边距（供外层容器如 ScrollBox 计算）
     float preferred_height() const override;
 
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     void on_draw(Renderer& renderer) override;
 
 private:

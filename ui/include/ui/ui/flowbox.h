@@ -13,9 +13,9 @@ class FlowBox : public Widget {
 public:
     FlowBox(float x, float y, float w, float h);
 
-    void set_spacing(float spacing) { spacing_ = spacing; }
-    void set_padding(float padding) { padding_ = padding; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_spacing(float spacing) {  spacing_ = spacing; mark_dirty(); }
+    void set_padding(float padding) {  padding_ = padding; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     void on_layout() override;
     float preferred_height() const override;

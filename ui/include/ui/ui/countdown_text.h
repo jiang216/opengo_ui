@@ -15,8 +15,8 @@ class CountdownText : public Widget {
 public:
     CountdownText(float x, float y, float w, float h);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     void set_total(float seconds);
 
     void restart();

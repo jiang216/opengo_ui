@@ -23,50 +23,50 @@ public:
     Laydate(float x, float y, float w, float h);
 
     // ---- 配置（参考 layui laydate.render({...}) 参数） ----
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     // 类型：year / month / date(默认) / time / datetime
-    void set_type(Type t) { type_ = t; }
+    void set_type(Type t) {  type_ = t; mark_dirty(); }
     void set_type(const char* t);
     Type type() const { return type_; }
 
     // 初始日期/时间
-    void set_date(int y, int m, int d) { year_ = y; month_ = m; day_ = d; }
-    void set_time(int h, int mi, int s) { hour_ = h; minute_ = mi; second_ = s; }
+    void set_date(int y, int m, int d) {  year_ = y; month_ = m; day_ = d; mark_dirty(); }
+    void set_time(int h, int mi, int s) {  hour_ = h; minute_ = mi; second_ = s; mark_dirty(); }
     void set_value(const char* v);  // 解析 "yyyy-MM-dd" / "HH:mm:ss" 等
 
     // 范围选择
-    void set_range(bool v) { range_ = v; }
+    void set_range(bool v) {  range_ = v; mark_dirty(); }
     bool range() const { return range_; }
-    void set_range_separator(const char* s) { range_sep_ = s ? s : " - "; }
+    void set_range_separator(const char* s) {  range_sep_ = s ? s : " - "; mark_dirty(); }
 
     // 自定义格式（默认根据 type 自动）
-    void set_format(const char* f) { format_ = f ? f : ""; }
+    void set_format(const char* f) {  format_ = f ? f : ""; mark_dirty(); }
 
     // 限定范围
-    void set_min(const char* v) { min_ = v ? v : ""; }
-    void set_max(const char* v) { max_ = v ? v : ""; }
+    void set_min(const char* v) {  min_ = v ? v : ""; mark_dirty(); }
+    void set_max(const char* v) {  max_ = v ? v : ""; mark_dirty(); }
     // 相对今天偏移（天）：等效 min/max 的 -7/+7 形式，与 set_min/set_max 互斥时后者优先
-    void set_min_offset(int days) { min_offset_set_ = true; min_offset_ = days; }
-    void set_max_offset(int days) { max_offset_set_ = true; max_offset_ = days; }
+    void set_min_offset(int days) {  min_offset_set_ = true; min_offset_ = days; mark_dirty(); }
+    void set_max_offset(int days) {  max_offset_set_ = true; max_offset_ = days; mark_dirty(); }
 
     // 公历节日
-    void set_calendar(bool v) { calendar_ = v; }
+    void set_calendar(bool v) {  calendar_ = v; mark_dirty(); }
 
     // 自定义标注（"MM-DD": "文字" / "YYYY-MM-DD": "文字"）
     struct Mark { std::string key; std::string text; };
-    void set_marks(const std::vector<Mark>& m) { marks_ = m; }
+    void set_marks(const std::vector<Mark>& m) {  marks_ = m; mark_dirty(); }
 
     // 主题：""(默认) / "molv"(墨绿) / "grid"(格子) / "#rrggbb"(自定义)
-    void set_theme_style(const char* t) { theme_style_ = t ? t : ""; }
+    void set_theme_style(const char* t) {  theme_style_ = t ? t : ""; mark_dirty(); }
 
     // 底部栏
-    void set_show_bottom(bool v) { show_bottom_ = v; }
-    void set_btns(const std::vector<std::string>& b) { btns_ = b; }
+    void set_show_bottom(bool v) {  show_bottom_ = v; mark_dirty(); }
+    void set_btns(const std::vector<std::string>& b) {  btns_ = b; mark_dirty(); }
 
     // 国际化
-    void set_lang(const char* l) { lang_ = l ? l : ""; }
+    void set_lang(const char* l) {  lang_ = l ? l : ""; mark_dirty(); }
 
     // ---- 回调 ----
     void set_on_change(std::function<void(int, int, int)> cb) { on_change_ = std::move(cb); }

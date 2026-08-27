@@ -29,11 +29,11 @@ public:
     void set_text(const char* text);
     const std::string& text() const { return text_; }
 
-    void set_checked(bool on) { checked_ = on; }
+    void set_checked(bool on) {  checked_ = on; mark_dirty(); }
     bool checked() const { return checked_; }
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     // 值变化回调（参数为最新值）
     void set_on_change(std::function<void(bool)> cb) { on_change_ = std::move(cb); }
 

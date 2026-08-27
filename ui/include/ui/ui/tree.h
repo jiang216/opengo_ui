@@ -48,11 +48,11 @@ public:
     void expand_all(bool expanded);
 
     // —— 组件外观/行为开关（layui tree 选项）——
-    void set_show_checkbox(bool on) { show_checkbox_ = on; }
-    void set_show_line(bool on) { show_line_ = on; }
-    void set_accordion(bool on) { accordion_ = on; }
-    void set_only_icon_control(bool on) { only_icon_ = on; }
-    void set_is_jump(bool on) { is_jump_ = on; }
+    void set_show_checkbox(bool on) { show_checkbox_ = on; mark_dirty(); }
+    void set_show_line(bool on) { show_line_ = on; mark_dirty(); }
+    void set_accordion(bool on) { accordion_ = on; mark_dirty(); }
+    void set_only_icon_control(bool on) { only_icon_ = on; mark_dirty(); }
+    void set_is_jump(bool on) { is_jump_ = on; mark_dirty(); }
     // 开启节点操作图标（add/update/del）
     void set_editable(const std::vector<TreeEdit>& actions);
 
@@ -65,9 +65,9 @@ public:
     void set_font(Font* font);
     void set_theme(const Theme* theme);
     // 点击节点回调（index 为节点下标）
-    void set_on_click(std::function<void(int)> cb) { on_click_ = std::move(cb); }
+    void set_on_click(std::function<void(int)> cb) { on_click_ = std::move(cb); mark_dirty(); }
     // 操作图标回调（index 节点下标，act 操作类型）
-    void set_on_edit(std::function<void(int, TreeEdit)> cb) { on_edit_ = std::move(cb); }
+    void set_on_edit(std::function<void(int, TreeEdit)> cb) { on_edit_ = std::move(cb); mark_dirty(); }
 
     void on_layout() override;
     float preferred_height() const override;

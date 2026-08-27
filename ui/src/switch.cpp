@@ -72,7 +72,8 @@ Switch::~Switch() {
 }
 
 void Switch::set_text(const char* text) {
-    text_ = text ? text : "";
+    mark_dirty();
+        text_ = text ? text : "";
     // 用 "|" 分隔两态文本：开态=左段，关态=右段（layui title="ON|OFF" 语义）
     const char* sep = std::strchr(text_.c_str(), '|');
     if (sep) {
@@ -85,7 +86,8 @@ void Switch::set_text(const char* text) {
 }
 
 void Switch::set_custom_content(Widget* content) {
-    if (custom_ == content) return;
+    mark_dirty();
+        if (custom_ == content) return;
     if (custom_) {
         if (custom_->parent()) custom_->parent()->remove_child(custom_);
         delete custom_;

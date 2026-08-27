@@ -23,13 +23,15 @@ Tree::Tree(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 int Tree::add_node(const char* text, int parent) {
-    TreeNodeSpec spec;
+    mark_dirty();
+        TreeNodeSpec spec;
     spec.title = text ? text : "";
     return add_node(spec, parent);
 }
 
 int Tree::add_node(const TreeNodeSpec& spec, int parent) {
-    const int index = (int)nodes_.size();
+    mark_dirty();
+        const int index = (int)nodes_.size();
     Node n;
     n.title = spec.title;
     n.id = spec.id;
@@ -47,32 +49,38 @@ int Tree::add_node(const TreeNodeSpec& spec, int parent) {
 }
 
 void Tree::set_node_text(int index, const char* text) {
-    if (index < 0 || index >= (int)nodes_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)nodes_.size()) return;
     nodes_[index].title = text ? text : "";
 }
 
 void Tree::set_node_id(int index, int id) {
-    if (index < 0 || index >= (int)nodes_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)nodes_.size()) return;
     nodes_[index].id = id;
 }
 
 void Tree::set_node_href(int index, const char* href) {
-    if (index < 0 || index >= (int)nodes_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)nodes_.size()) return;
     nodes_[index].href = href ? href : "";
 }
 
 void Tree::set_node_disabled(int index, bool disabled) {
-    if (index < 0 || index >= (int)nodes_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)nodes_.size()) return;
     nodes_[index].disabled = disabled;
 }
 
 void Tree::set_node_checked(int index, bool checked) {
-    if (index < 0 || index >= (int)nodes_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)nodes_.size()) return;
     nodes_[index].checked = checked;
 }
 
 void Tree::set_expanded(int index, bool expanded) {
-    if (index < 0 || index >= (int)nodes_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)nodes_.size()) return;
     if (expanded && accordion_) {
         // 手风琴：收起同父级的其他子节点
         const int p = nodes_[index].parent;
@@ -87,15 +95,19 @@ bool Tree::is_expanded(int index) const {
 }
 
 void Tree::expand_all(bool expanded) {
-    for (Node& n : nodes_) n.expanded = expanded;
+    mark_dirty();
+        for (Node& n : nodes_) n.expanded = expanded;
 }
 
-void Tree::set_font(Font* font) { font_ = font; }
+void Tree::set_font(Font* font) { mark_dirty();
+        font_ = font; }
 
-void Tree::set_theme(const Theme* theme) { theme_ = theme; }
+void Tree::set_theme(const Theme* theme) { mark_dirty();
+        theme_ = theme; }
 
 void Tree::set_editable(const std::vector<TreeEdit>& actions) {
-    edit_actions_ = actions;
+    mark_dirty();
+        edit_actions_ = actions;
     editable_ = !edit_actions_.empty();
 }
 
@@ -137,13 +149,15 @@ std::vector<int> Tree::get_checked() const {
 }
 
 void Tree::set_checked(int index, bool checked) {
-    if (index < 0 || index >= (int)nodes_.size()) return;
+    mark_dirty();
+        if (index < 0 || index >= (int)nodes_.size()) return;
     set_checked_recursive(index, checked);
     update_ancestors(index);
 }
 
 void Tree::check_all(bool on) {
-    std::function<void(int)> rec = [&](int idx) {
+    mark_dirty();
+        std::function<void(int)> rec = [&](int idx) {
         nodes_[idx].checked = on;
         for (int c : nodes_[idx].children) rec(c);
     };

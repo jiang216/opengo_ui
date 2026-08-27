@@ -15,15 +15,15 @@ class RadioButton : public Widget {
 public:
     RadioButton(float x, float y, float w, float h, const char* text);
 
-    void set_text(const char* text) { text_ = text ? text : ""; }
+    void set_text(const char* text) {  text_ = text ? text : ""; mark_dirty(); }
     const std::string& text() const { return text_; }
     void set_checked(bool checked);
     bool checked() const { return checked_; }
 
     // 激活（点击/空格）回调：由 RadioGroup 统一做互斥选择
     void set_on_activate(std::function<void()> cb) { on_activate_ = std::move(cb); }
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     bool on_mouse_down(float x, float y, int button) override;
     bool on_key_down(int key, int mods) override;

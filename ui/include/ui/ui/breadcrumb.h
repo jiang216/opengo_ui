@@ -21,9 +21,9 @@ public:
     // 追加当前页（cite，#5f5f5f）
     void add_current(const char* text);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
-    void set_separator(const char* sep) { separator_ = sep ? sep : " / "; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
+    void set_separator(const char* sep) {  separator_ = sep ? sep : " / "; mark_dirty(); }
 
     float preferred_height() const override;
     void on_draw(Renderer& renderer) override;

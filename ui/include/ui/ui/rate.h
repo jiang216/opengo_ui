@@ -24,26 +24,26 @@ public:
     float value_f() const { return value_; }
 
     // 星数（layui length，默认 5）
-    void set_length(int n) { length_ = n > 0 ? n : 1; }
+    void set_length(int n) {  length_ = n > 0 ? n : 1; mark_dirty(); }
     int length() const { return length_; }
 
     // 半星（layui half）：允许 x.5 取值，绘制半颗星
-    void set_half(bool half) { half_ = half; }
+    void set_half(bool half) {  half_ = half; mark_dirty(); }
     bool half() const { return half_; }
 
     // 文本（layui text）：星后显示数值文本；text 回调自定义（layui setText）
-    void set_text(bool text) { text_ = text; }
+    void set_text(bool text) {  text_ = text; mark_dirty(); }
     bool text() const { return text_; }
     void set_text_callback(std::function<std::string(float)> cb) { text_cb_ = std::move(cb); }
 
     // 自定义主题色（layui theme）
-    void set_theme_color(const Vec4& c) { theme_color_ = c; has_theme_color_ = true; }
+    void set_theme_color(const Vec4& c) {  theme_color_ = c; has_theme_color_ = true; mark_dirty(); }
 
-    void set_readonly(bool readonly) { readonly_ = readonly; }
+    void set_readonly(bool readonly) {  readonly_ = readonly; mark_dirty(); }
     bool readonly() const { return readonly_; }
 
-    void set_theme(const Theme* theme) { theme_ = theme; }
-    void set_font(Font* font) { font_ = font; }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
     void set_on_change(std::function<void(int)> cb) { on_change_ = std::move(cb); }
 
     bool on_mouse_move(float x, float y) override;

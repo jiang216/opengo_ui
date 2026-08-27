@@ -65,7 +65,8 @@ Image::~Image() {
 }
 
 bool Image::load_from_file(const char* path) {
-    if (!path || !*path) return false;
+    mark_dirty();
+        if (!path || !*path) return false;
 
     // 资产定位（ui 库能力）：裸文件名先试 CWD，再回退 exe 目录同名文件，
     // 使资源不依赖进程工作目录（配合 POST_BUILD 拷贝三件套即开箱可用）。
@@ -101,7 +102,8 @@ bool Image::load_from_file(const char* path) {
 }
 
 void Image::set_lay_src(const char* path) {
-    if (!path || !*path) return;
+    mark_dirty();
+        if (!path || !*path) return;
     lay_src_ = path;
     loaded_ = false;  // 尚未进入可视屏，不加载
     delete texture_;

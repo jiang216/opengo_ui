@@ -20,16 +20,15 @@ public:
     void set_header(const char* text);
     const std::string& header() const { return header_; }
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     // 子控件间距（body 内）
-    void set_spacing(float spacing) { spacing_ = spacing; }
+    void set_spacing(float spacing) {  spacing_ = spacing; mark_dirty(); }
     // 可选描边（layui 图标列表等 1px 边框卡片）；a<=0 关闭
-    void set_outline(const Vec4& color, float thickness = 1.f) {
+    void set_outline(const Vec4& color, float thickness = 1.f) { 
         outline_ = color;
-        outline_thickness_ = thickness;
-    }
+        outline_thickness_ = thickness; mark_dirty(); }
 
     void on_layout() override;
     float preferred_height() const override;

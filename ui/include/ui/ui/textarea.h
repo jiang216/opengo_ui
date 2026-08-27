@@ -26,20 +26,20 @@ class TextArea : public Widget {
 public:
     TextArea(float x, float y, float w, float h);
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
-    void set_placeholder(const char* text) { placeholder_ = text ? text : ""; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
+    void set_placeholder(const char* text) {  placeholder_ = text ? text : ""; mark_dirty(); }
 
     void set_text(const char* text);
     const std::string& text() const { return text_; }
-    void set_caret(size_t pos) { caret_ = (pos <= text_.size()) ? pos : text_.size(); }
+    void set_caret(size_t pos) {  caret_ = (pos <= text_.size()) ? pos : text_.size(); mark_dirty(); }
     // 滚动到底部（日志自动跟踪最新内容）
     void scroll_to_end();
     // 文本变化（含程序 set_text）时回调
     void set_on_change(std::function<void(const char*)> cb) { on_change_ = std::move(cb); }
 
     // ---- 只读模式（日志显示用）----
-    void set_readonly(bool v) { readonly_ = v; }
+    void set_readonly(bool v) {  readonly_ = v; mark_dirty(); }
     bool readonly() const { return readonly_; }
 
     // ---- 剪贴板回调（可选覆盖；未注入时使用内置 GLFW 剪贴板，UI-103）----
@@ -47,7 +47,7 @@ public:
     void set_on_paste(std::function<std::string()> cb) { on_paste_ = std::move(cb); }
 
     // ---- 文件拖放 ----
-    void set_drop_enabled(bool v) { drop_enabled_ = v; }
+    void set_drop_enabled(bool v) {  drop_enabled_ = v; mark_dirty(); }
     bool drop_enabled() const { return drop_enabled_; }
     void set_on_drop(std::function<void(const std::vector<std::string>&)> cb) { on_drop_cb_ = std::move(cb); }
     // 向外部暴露插入能力（供 on_drop_cb_ 回调使用）

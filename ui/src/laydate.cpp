@@ -90,7 +90,8 @@ void today_ymd(int& y, int& m, int& d) {
 Laydate::Laydate(float x, float y, float w, float h) : Widget(x, y, w, h) {}
 
 void Laydate::set_type(const char* t) {
-    if (!t) return;
+    mark_dirty();
+        if (!t) return;
     if (std::strcmp(t, "year") == 0) type_ = TypeYear;
     else if (std::strcmp(t, "month") == 0) type_ = TypeMonth;
     else if (std::strcmp(t, "time") == 0) type_ = TypeTime;
@@ -99,7 +100,8 @@ void Laydate::set_type(const char* t) {
 }
 
 void Laydate::set_value(const char* v) {
-    if (!v || !*v) return;
+    mark_dirty();
+        if (!v || !*v) return;
     int y = 0, m = 0, d = 0, h = 0, mi = 0, s = 0;
     if (type_ == TypeTime) {
         if (parse_time_str(v, h, mi, s)) { hour_ = h; minute_ = mi; second_ = s; }

@@ -16,11 +16,11 @@ class Badge : public Widget {
 public:
     Badge(float x, float y, const char* text);
 
-    void set_text(const char* text) { text_ = text ? text : ""; }
+    void set_text(const char* text) {  text_ = text ? text : ""; mark_dirty(); }
     const std::string& text() const { return text_; }
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     // 内容自适应宽度（文本宽 + 左右内边距；dot 为 8px）
     float preferred_width() const;

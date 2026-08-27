@@ -88,7 +88,8 @@ Grid::Grid(float x, float y, float w, float h, int cols) : Widget(x, y, w, h) {
 }
 
 void Grid::set_cols(int cols) {
-    cols_ = std::max(1, cols);
+    mark_dirty();
+        cols_ = std::max(1, cols);
 }
 
 int Grid::breakpoint() const {

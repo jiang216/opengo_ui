@@ -94,22 +94,26 @@ void NavBar::add_child(const char* text, std::function<void()> cb) {
 }
 
 void NavBar::set_active(int index) {
-    if (index >= 0 && index < (int)items_.size()) active_ = index;
+    mark_dirty();
+        if (index >= 0 && index < (int)items_.size()) active_ = index;
 }
 
 void NavBar::set_badge(const char* text) {
-    if (items_.empty()) return;
+    mark_dirty();
+        if (items_.empty()) return;
     items_.back().has_badge = true;
     items_.back().badge_text = text ? text : "";
 }
 
 void NavBar::set_dot_badge() {
-    if (items_.empty()) return;
+    mark_dirty();
+        if (items_.empty()) return;
     items_.back().has_dot = true;
 }
 
 void NavBar::set_image(const char* path) {
-    if (items_.empty()) return;
+    mark_dirty();
+        if (items_.empty()) return;
     auto& it = items_.back();
     it.has_image = true;
     it.image_path = path ? path : "";
@@ -117,9 +121,11 @@ void NavBar::set_image(const char* path) {
     it.image_tex = load_image_from_file(path);
 }
 
-void NavBar::set_bg_color(Vec4 color) { bg_color_ = color; }
+void NavBar::set_bg_color(Vec4 color) { mark_dirty();
+        bg_color_ = color; }
 
-void NavBar::set_bar_disabled(bool disabled) { bar_disabled_ = disabled; }
+void NavBar::set_bar_disabled(bool disabled) { mark_dirty();
+        bar_disabled_ = disabled; }
 
 float NavBar::preferred_height() const { return bounds_.h > 0 ? bounds_.h : kItemH; }
 

@@ -27,7 +27,8 @@ bool ScrollBox::is_pinned(const Widget* w) const {
 }
 
 void ScrollBox::add_pinned(Widget* w, PinCorner corner, float margin_x, float margin_y) {
-    if (!w) return;
+    mark_dirty();
+        if (!w) return;
     add_child(w);
     pinned_.push_back({w, corner, margin_x, margin_y});
 }
@@ -49,7 +50,8 @@ void ScrollBox::set_scroll(float value) {
 }
 
 void ScrollBox::reset_scroll() {
-    set_scroll(0.f);
+    mark_dirty();
+        set_scroll(0.f);
 }
 
 void ScrollBox::check_bottom() {

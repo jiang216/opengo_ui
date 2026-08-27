@@ -16,14 +16,14 @@ public:
     Grid(float x, float y, float w, float h, int cols);
 
     void set_cols(int cols);
-    void set_row_height(float h) { row_h_ = h; }
-    void set_spacing(float s) { spacing_ = s; }
-    void set_padding(float p) { padding_ = p; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_row_height(float h) {  row_h_ = h; mark_dirty(); }
+    void set_spacing(float s) {  spacing_ = s; mark_dirty(); }
+    void set_padding(float p) {  padding_ = p; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     // layui 栅格：12 列基准下解析子控件 layui-col-* 类
-    void set_span_cols(int cols) { span_cols_ = std::max(1, cols); }
+    void set_span_cols(int cols) {  span_cols_ = std::max(1, cols); mark_dirty(); }
     // 断点：0=xs 1=sm 2=md 3=lg；<0 时按自身宽度自动推断（内容区宽度）
-    void set_breakpoint(int bp) { breakpoint_ = bp; }
+    void set_breakpoint(int bp) {  breakpoint_ = bp; mark_dirty(); }
 
     void on_layout() override;
     float preferred_height() const override;

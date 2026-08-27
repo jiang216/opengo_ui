@@ -14,18 +14,18 @@ public:
     Progress(float x, float y, float w, float h);
 
     // 进度 0..1
-    void set_value(float v) { value_ = v < 0.f ? 0.f : (v > 1.f ? 1.f : v); }
+    void set_value(float v) {  value_ = v < 0.f ? 0.f : (v > 1.f ? 1.f : v); mark_dirty(); }
     float value() const { return value_; }
 
     // 是否显示进度文本（layui-progress-text；默认显示百分比 "40%"）
-    void set_show_text(bool show) { show_text_ = show; }
+    void set_show_text(bool show) {  show_text_ = show; mark_dirty(); }
 
     // 自定义显示文本（如分数 "5 / 10"），为空则回退到百分比。清空后传 nullptr。
-    void set_text_override(const char* text) { text_ = text ? text : ""; }
+    void set_text_override(const char* text) {  text_ = text ? text : ""; mark_dirty(); }
     const std::string& text_override() const { return text_; }
 
-    void set_font(Font* font) { font_ = font; }
-    void set_theme(const Theme* theme) { theme_ = theme; }
+    void set_font(Font* font) {  font_ = font; mark_dirty(); }
+    void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
 
     void on_draw(Renderer& renderer) override;
 

@@ -16,17 +16,20 @@ Button::Button(float x, float y, float w, float h, const char* text)
 }
 
 void Button::set_icon(const char* icon_name) {
-    icon_cp_ = icon_name && *icon_name ? layui_icon::from_class(icon_name) : 0;
+    mark_dirty();
+        icon_cp_ = icon_name && *icon_name ? layui_icon::from_class(icon_name) : 0;
 }
 
 void Button::set_badge(const char* text) {
-    has_badge_ = true;
+    mark_dirty();
+        has_badge_ = true;
     has_dot_ = false;
     badge_text_ = text ? text : "";
 }
 
 void Button::set_dot_badge() {
-    has_dot_ = true;
+    mark_dirty();
+        has_dot_ = true;
     has_badge_ = false;
     badge_text_.clear();
 }
