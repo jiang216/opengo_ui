@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 144（BUG 136 / DOC 6 / META 2）
-- 边: 334
+- 节点: 145（BUG 137 / DOC 6 / META 2）
+- 边: 335
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -979,6 +979,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#CJK 惰性烘焙续帧：`Font` 记录「待烘焙码点集」+ 新字形上屏单调计数（bake-epoch），`Widget::advance()` 根分支在帧级门控之前查询 `any_pending_bake()/bake_epoch_sum()`，有待烘字形或 epoch 变化即 `mark_dirty_all()` 全树置脏续帧——首显后自动烘齐（≤12 字形/16ms 配额不变）并以真实宽度重排，排空后恢复空闲停帧，杜绝音频宿主首显文本无尽占位
 
+### BUG:UI-137 · UI-137: 帧级门控下控件状态写统一自报标脏——开关/下拉/滑块事件内直改漏标点（2026-08-27）
+
+- 路径: `docs/CHANGELOG.md#ui-137-帧级门控下控件状态写统一自报标脏开关下拉滑块事件内直改漏标点2026-08-27`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#控件状态写统一自报标脏（金芯）：帧级门控下事件回调内直接改成员状态必须显式 `mark_dirty()` 自报——`Switch::on_mouse_down/on_key_down` 统一走 `set_checked`（内部标脏）、`ComboBox` 开合 toggle 与键盘方向键改选项、`Slider::emit()` 均显式标脏，根治「开关/下拉需多次点击、键盘改值无重绘」
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1205,6 +1211,7 @@
 | `BUG:UI-134` | BUG | UI-134: ScrollBar 可命中区加宽 + Label scissor 裁剪防溢出（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-135` | BUG | UI-135: 帧级门控渲染完备性——draw 移除脏守卫全树绘制 + hover/pressed/focus/scroll 显式标脏（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-136` | BUG | UI-136: 帧级门控下 CJK 惰性烘焙自动续帧——待烘焙队列 + bake-epoch 全树重排（2026-08-27） | `docs/CHANGELOG.md` |
+| `BUG:UI-137` | BUG | UI-137: 帧级门控下控件状态写统一自报标脏——开关/下拉/滑块事件内直改漏标点（2026-08-27） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1428,6 +1435,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-134` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-135` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-136` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-137` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

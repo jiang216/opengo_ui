@@ -108,7 +108,8 @@ bool Switch::on_mouse_down(float x, float y, int button) {
     (void)x;
     (void)y;
     if (button != 0) return false;
-    checked_ = !checked_;
+    // 状态写统一走 set_checked 自报标脏，不依赖底层按下态副作用（键盘路径无按下态）
+    set_checked(!checked_);
     if (on_change_) on_change_(checked_);
     return true;
 }
@@ -116,7 +117,8 @@ bool Switch::on_mouse_down(float x, float y, int button) {
 bool Switch::on_key_down(int key, int mods) {
     (void)mods;
     if (key == KeyEnter || key == KeySpace) {
-        checked_ = !checked_;
+        // 修复：键盘翻转此前不标脏，dirty 门控下不重绘，表现为"开关无响应"
+        set_checked(!checked_);
         if (on_change_) on_change_(checked_);
         return true;
     }

@@ -94,6 +94,7 @@ std::string Slider::tips_text(float v) const {
 }
 
 void Slider::emit() {
+    mark_dirty();  // 状态写自报：值变更即标脏，覆盖键盘改值等无按下态路径
     if (range_ && on_range_change_) {
         on_range_change_(value_, value2_);
     } else if (on_change_) {

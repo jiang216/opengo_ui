@@ -87,6 +87,7 @@ void ComboBox::select(int index) {
 }
 
 void ComboBox::open() {
+    mark_dirty();  // 状态写自报：面板开合属于状态变更，不依赖下游 set_bounds 副作用
     // 保证同一时刻只有一个下拉面板展开：打开当前下拉前，关闭所有其他 ComboBox 面板
     for (ComboBox* other : instances_) {
         if (other != this) other->close();
@@ -174,6 +175,7 @@ bool ComboBox::on_mouse_down(float x, float y, int button) {
     (void)x;
     (void)y;
     if (button != 0) return false;
+    mark_dirty();  // 状态写自报：开合切换显式标脏，不依赖按下态副作用
     if (panel_->visible)
         close();
     else
@@ -185,6 +187,8 @@ bool ComboBox::on_key_down(int key, int mods) {
     (void)mods;
     if (key == KeyUp || key == KeyDown) {
         if (options_.empty()) return true;
+        // 修复：键盘切项此前不标脏，dirty 门控下不重绘选项文本/高亮
+        mark_dirty();
         const int n = (int)options_.size();
         const int dir = (key == KeyDown) ? 1 : -1;
         const int next = ((selected_ + dir) % n + n) % n;

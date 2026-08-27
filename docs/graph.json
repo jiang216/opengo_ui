@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-27T17:07:29+08:00",
+  "generatedAt": "2026-08-27T18:55:31+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-137": {
+      "id": "BUG:UI-137",
+      "type": "BUG",
+      "label": "UI-137: 帧级门控下控件状态写统一自报标脏——开关/下拉/滑块事件内直改漏标点（2026-08-27）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-137-帧级门控下控件状态写统一自报标脏开关下拉滑块事件内直改漏标点2026-08-27"
+    },
     "BUG:UI-136": {
       "id": "BUG:UI-136",
       "type": "BUG",
@@ -2612,6 +2619,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-137",
+      "kind": "checklist",
+      "context": "回归清单#控件状态写统一自报标脏（金芯）：帧级门控下事件回调内直接改成员状态必须显式 `mark_dirty()` 自报——`Switch::on_mouse_down/on_key_down` 统一走 `set_checked`（内部标脏）、`ComboBox` 开合 toggle 与键盘方向键改选项、`Slider::emit()` 均显式标脏，根治「开关/下拉需多次点击、键盘改值无重绘」"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -3014,6 +3027,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-137": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#控件状态写统一自报标脏（金芯）：帧级门控下事件回调内直接改成员状态必须显式 `mark_dirty()` 自报——`Switch::on_mouse_down/on_key_down` 统一走 `set_checked`（内部标脏）、`ComboBox` 开合 toggle 与键盘方向键改选项、`Slider::emit()` 均显式标脏，根治「开关/下拉需多次点击、键盘改值无重绘」"
+      }
+    ],
     "BUG:UI-136": [
       {
         "from": "DOC:ARCHITECTURE",
