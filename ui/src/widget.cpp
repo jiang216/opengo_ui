@@ -223,6 +223,7 @@ bool Widget::dispatch_mouse_move(float x, float y) {
     Widget* cap = root()->capture_;
     if (cap && cap != this) {
         cap->hovered_ = true;
+        cap->mark_dirty();  // 捕获命中即重绘（帧级门控需要显式标脏）
         return cap->on_mouse_move(x, y);
     }
     // 子节点在父之上，后添加的优先命中（禁用/隐藏的子节点不参与）
@@ -236,12 +237,13 @@ bool Widget::dispatch_mouse_move(float x, float y) {
     if (contains(x, y) && enabled) {
         const bool was_hovered = hovered_;
         hovered_ = true;
+        if (!was_hovered) mark_dirty();  // hover 状态变更 → 触发帧级重绘
         if (on_mouse_move(x, y)) return true;
-        (void)was_hovered;
         return false;
     }
     if (hovered_) {
         hovered_ = false;
+        mark_dirty();  // 移出 → 清除 hover 要高亮重绘
         on_mouse_move(x, y);
     }
     return false;
@@ -259,6 +261,7 @@ bool Widget::dispatch_mouse_down(float x, float y, int button) {
         if (child->dispatch_mouse_down(x, y, button)) return true;
     }
     if (contains(x, y) && enabled) {
+        if (!pressed_) mark_dirty();  // 按下态变更 → 帧级重绘
         pressed_ = true;
         // 命中即获焦（仅 focusable 生效），子类无需自行 focus()
         if (focusable) focus();
@@ -277,6 +280,7 @@ bool Widget::dispatch_mouse_up(float x, float y, int button) {
     // 捕获者优先：鼠标抬起路由给捕获者并释放捕获
     Widget* cap = root()->capture_;
     if (cap && cap != this) {
+        if (cap->pressed_) cap->mark_dirty();  // 抬起 → 释放按下态高亮
         cap->pressed_ = false;
         const bool handled = cap->on_mouse_up(x, y, button);
         cap->release_mouse_capture();
@@ -297,7 +301,10 @@ bool Widget::dispatch_mouse_up(float x, float y, int button) {
         }
         return false;
     }
-    pressed_ = false;
+    if (pressed_) {
+        pressed_ = false;
+        mark_dirty();  // 拖出释放 → 清除按下态高亮
+    }
     return false;
 }
 
@@ -352,6 +359,7 @@ Widget* Widget::root() {
 void Widget::set_focused(bool focused) {
     if (focused_ == focused) return;
     focused_ = focused;
+    mark_dirty();  // 焦点态视觉（边框/光标）随帧级门控重绘
     on_focus_changed(focused);
 }
 
@@ -528,9 +536,11 @@ void Widget::advance(float dt) {
     if (!parent_) flush_pending_destroys();
 }
 
+// 注意：draw() 不再按 dirty 跳过子树——begin_frame 每帧全屏清屏，
+// 只重绘脏控件会擦掉干净控件的像素（DIRTY 回归根因）。脏标记只作
+// 帧级门控用（root.is_dirty() 决定整帧渲染或跳过），渲染帧内必须全树绘制。
 void Widget::draw(Renderer& renderer) {
     if (!visible) return;
-    if (!dirty_ && !dirty_children_) return;
     on_draw(renderer);
     for (Widget* child : children_) {
         if (child->visible) child->draw(renderer);

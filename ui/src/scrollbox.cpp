@@ -45,7 +45,12 @@ void ScrollBox::set_scroll(float value) {
     const float old = scroll_offset_;
     scroll_offset_ = value;
     clamp_scroll();
-    if (scroll_offset_ != old && on_scroll_) on_scroll_();
+    // DIRTY 帧级门控：滚动偏移变化必须标脏，否则根保持 clean → 渲染被跳过 → 无法滚动
+    //（滚轮 / 拖动滚动条 / set_scroll_offset 全部经此路径）。
+    if (scroll_offset_ != old) {
+        mark_dirty();
+        if (on_scroll_) on_scroll_();
+    }
     check_bottom();
 }
 
@@ -175,6 +180,15 @@ bool ScrollBox::on_mouse_up(float x, float y, int button) {
     if (button != 0) return false;
     sb_.dragging = false;
     return true;
+}
+
+void ScrollBox::on_advance(float) {
+    // overlay 滚动条活动态迁移（悬停/拖拽/2s 内滚过）时标脏：
+    // 帧级门控下若无标脏，2s 后滚动条不会消失（残留上帧像素）。
+    const bool show =
+        !needs_layout_ && scroll_max() > 0.f && scrollbar::active(sb_, hovered());
+    if (show != bar_visible_) mark_dirty();
+    bar_visible_ = show;
 }
 
 void ScrollBox::on_draw(Renderer& renderer) {

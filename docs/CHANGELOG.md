@@ -3,6 +3,28 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-135: 帧级门控渲染完备性——draw 移除脏守卫全树绘制 + hover/pressed/focus/scroll 显式标脏（2026-08-27）
+- **类型**：Bug 修复 / 渲染正确性（audio_text：首帧后控件字体被擦除只剩日志区；demo/layui_test 整窗空白；系统设置页无法滚动）
+- **严重度**：高（IDLE-00x 空闲帧渲染优化引入的回归：画面持续残缺 + 滚动完全失效）
+- **根因**：
+  - `Widget::draw()` 带 `if (!dirty_ && !dirty_children_) return;` 子树跳过守卫，与 renderer `begin_frame()` 每帧全屏 `glClear` 不匹配：帧缓冲每帧被清空，第二帧起只有被标脏的控件重绘，干净控件像素被清掉只剩背景。三处症状同根：应用首帧完整、后续仅持续标脏的日志区可见；demo / layui_test 首帧后清空为纯背景；
+  - 帧级门控（root.is_dirty() 决定整帧渲染或跳过）下，一切“状态变更 → 需重绘”的路径都必须显式 `mark_dirty()`。漏标点：
+    1. `dispatch_mouse_move`（捕获命中 / hover 进入移出）、`dispatch_mouse_down`（按下）、`dispatch_mouse_up`（抬起 / 拖出释放）、`set_focused()`——基类直接改写 `hovered_`/`pressed_`/`focused_`，改门控后高亮 / 按压 / 焦点视觉不刷新；
+    2. `ScrollBox::set_scroll()` 滚动偏移变更未标脏 → 滚轮 / 拖动滚动条改变 `scroll_offset_` 但根保持 clean，渲染被跳过 → 滚动完全失效（长内容页“卡住”假象）；
+    3. overlay 滚动条 2s 自动隐藏按时间迁移状态，无标脏则滚动条残留上帧像素不消失。
+- **修复**：
+  - `Widget::draw()` 删除子树跳过守卫（保留 `if (!visible) return;` 与帧末清除脏标记）——渲染帧内必须全树绘制；脏标记只作帧级门控，加注释固化语义；
+  - `widget.cpp` `dispatch_mouse_move/down/up` 与 `set_focused()` 补 `mark_dirty()`（捕获命中 / hover 进移 / 按下 / 抬起 / 拖出释放 / 焦点态）；
+  - `ScrollBox::set_scroll()` 偏移变化时 `mark_dirty()`（滚轮 / 拖动 / `set_scroll_offset` 统一收敛）；新增 `ScrollBox::on_advance()` 检测滚动条活动态迁移并标脏，2s 自动隐藏正确消失。
+- **回归清单**：
+  1. 应用启动 / 切页全量渲染完整：静态控件不因每帧清屏被擦除；日志区持续重绘正常；demo、layui_test、audio_text 画面完整。
+  2. 空闲期帧级门控仍生效：根保持 clean 时跳过渲染，CPU/GPU 低占用（audio_text 实测空闲 ≈2% 单核）。
+  3. hover / 按下 / 抬起 / 拖出释放 / 焦点变更均触发整帧重绘，按钮高亮、按压态、输入框焦点边框 / 光标即时刷新。
+  4. ScrollBox 滚轮 / 拖动滚动条 / 程序化 `set_scroll_offset` 均平滑重绘；滚动条悬停浮现、拖动加宽、2s 无活动自动隐藏。
+  5. UI-134（Label scissor / 滚动条命中区加宽）、UI-131（表格开关皮肤）、ScrollBox 触底加载 / 锚定 / 下拉面板等既有语义不变。
+- **验证**：ui 库 Release 构建 + install（强制时间戳校验同步双 install/lib）；layui_test 全页渲染（像素 99% 非背景 + OCR 读全正文）；audio_text 重链后：整窗渲染完整、设置页滚动实测有像素变化（16341px）、切页稳定 340ms、空闲 CPU 2.2%；下游 regression.ps1 全 PASS（259 项 0 失败）；双仓库 graphgen --check 0 错 0 警。
+- **影响范围**：`ui/src/widget.cpp`、`ui/src/scrollbox.cpp`、`ui/include/ui/ui/scrollbox.h`（+ install/lib、头文件同步）。
+
 ## UI-134: ScrollBar 可命中区加宽 + Label scissor 裁剪防溢出（2026-08-27）
 - **类型**：Bug 修复 / 可用性
 - **严重度**：低

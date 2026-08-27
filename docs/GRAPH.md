@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 141（BUG 133 / DOC 6 / META 2）
-- 边: 331
+- 节点: 143（BUG 135 / DOC 6 / META 2）
+- 边: 333
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -961,6 +961,18 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#模态拦截可见性防御：7 处 dispatch_* 模态分支统一 `modal_ && modal_->visible`——modal 控件隐藏（destroy 待释放/手动隐藏）即解除输入拦截，杜绝宿主未接 advance 时僵尸模态永久吞输入锁死全 UI；可见模态行为不变
 
+### BUG:UI-134 · UI-134: ScrollBar 可命中区加宽 + Label scissor 裁剪防溢出（2026-08-27）
+
+- 路径: `docs/CHANGELOG.md#ui-134-scrollbar-可命中区加宽--label-scissor-裁剪防溢出2026-08-27`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBar 可命中区加宽（kMargin 6px / kHitPad 4px，命中区总宽 20px）+ Label `on_draw()` scissor 裁剪防文本溢出 bounds 上叠相邻控件/滚动条
+
+### BUG:UI-135 · UI-135: 帧级门控渲染完备性——draw 移除脏守卫全树绘制 + hover/pressed/focus/scroll 显式标脏（2026-08-27）
+
+- 路径: `docs/CHANGELOG.md#ui-135-帧级门控渲染完备性draw-移除脏守卫全树绘制--hoverpressedfocusscroll-显式标脏2026-08-27`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#帧级门控渲染完备性：`Widget::draw()` 渲染帧内全树绘制、脏标记仅作帧级门控（删除子树脏守卫——begin_frame 每帧全屏清屏下只重绘脏控件会擦净干净控件）；hover/按下/抬起/焦点变更与 `ScrollBox::set_scroll`、滚动条 2s 自动隐藏均显式 `mark_dirty()`，长内容页滚轮/拖动平滑重绘
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1184,6 +1196,8 @@
 | `BUG:UI-131` | BUG | UI-131: draw_cell_form 参数错位修复——单元格开关恒走复选分支绘矩形；表单列表头居中（2026-08-23） | `docs/CHANGELOG.md` |
 | `BUG:UI-132` | BUG | UI-132: Table preferred_height 高度语义修正——默认内容跟随，新增 set_fixed_height/set_max_content_height（2026-08-23） | `docs/CHANGELOG.md` |
 | `BUG:UI-133` | BUG | UI-133: 模态拦截可见性防御——modal 控件隐藏后不再吞输入，修复僵尸模态全 UI 死锁（2026-08-23） | `docs/CHANGELOG.md` |
+| `BUG:UI-134` | BUG | UI-134: ScrollBar 可命中区加宽 + Label scissor 裁剪防溢出（2026-08-27） | `docs/CHANGELOG.md` |
+| `BUG:UI-135` | BUG | UI-135: 帧级门控渲染完备性——draw 移除脏守卫全树绘制 + hover/pressed/focus/scroll 显式标脏（2026-08-27） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1404,6 +1418,8 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-131` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-132` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-133` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-134` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-135` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

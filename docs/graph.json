@@ -1,11 +1,25 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-23T03:04:17+08:00",
+  "generatedAt": "2026-08-27T16:12:32+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-135": {
+      "id": "BUG:UI-135",
+      "type": "BUG",
+      "label": "UI-135: 帧级门控渲染完备性——draw 移除脏守卫全树绘制 + hover/pressed/focus/scroll 显式标脏（2026-08-27）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-135-帧级门控渲染完备性draw-移除脏守卫全树绘制--hoverpressedfocusscroll-显式标脏2026-08-27"
+    },
+    "BUG:UI-134": {
+      "id": "BUG:UI-134",
+      "type": "BUG",
+      "label": "UI-134: ScrollBar 可命中区加宽 + Label scissor 裁剪防溢出（2026-08-27）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-134-scrollbar-可命中区加宽--label-scissor-裁剪防溢出2026-08-27"
+    },
     "BUG:UI-133": {
       "id": "BUG:UI-133",
       "type": "BUG",
@@ -2573,6 +2587,18 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-134",
+      "kind": "checklist",
+      "context": "回归清单#ScrollBar 可命中区加宽（kMargin 6px / kHitPad 4px，命中区总宽 20px）+ Label `on_draw()` scissor 裁剪防文本溢出 bounds 上叠相邻控件/滚动条"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-135",
+      "kind": "checklist",
+      "context": "回归清单#帧级门控渲染完备性：`Widget::draw()` 渲染帧内全树绘制、脏标记仅作帧级门控（删除子树脏守卫——begin_frame 每帧全屏清屏下只重绘脏控件会擦净干净控件）；hover/按下/抬起/焦点变更与 `ScrollBox::set_scroll`、滚动条 2s 自动隐藏均显式 `mark_dirty()`，长内容页滚轮/拖动平滑重绘"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -2975,6 +3001,20 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-135": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#帧级门控渲染完备性：`Widget::draw()` 渲染帧内全树绘制、脏标记仅作帧级门控（删除子树脏守卫——begin_frame 每帧全屏清屏下只重绘脏控件会擦净干净控件）；hover/按下/抬起/焦点变更与 `ScrollBox::set_scroll`、滚动条 2s 自动隐藏均显式 `mark_dirty()`，长内容页滚轮/拖动平滑重绘"
+      }
+    ],
+    "BUG:UI-134": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#ScrollBar 可命中区加宽（kMargin 6px / kHitPad 4px，命中区总宽 20px）+ Label `on_draw()` scissor 裁剪防文本溢出 bounds 上叠相邻控件/滚动条"
+      }
+    ],
     "BUG:UI-133": [
       {
         "from": "DOC:ARCHITECTURE",

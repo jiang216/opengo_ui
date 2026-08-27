@@ -65,6 +65,8 @@ public:
     void on_draw(Renderer& renderer) override;
     // 覆写 draw：背景 -> scissor(内容) -> 滚动条
     void draw(Renderer& renderer) override;
+    // overlay 滚动条自动隐藏（2s 无活动）：状态迁移时标脏，触发帧级重绘收/放滚动条
+    void on_advance(float dt) override;
     // 子节点变化后抑制滚动条绘制，直到下一次 on_layout()
     void on_children_changed() override { needs_layout_ = true; }
 
@@ -109,6 +111,7 @@ private:
     // ---- 垂直滚动条（共享样式/状态，见 ui/ui/scrollbar_style.h）----
     scrollbar::State sb_;
     float mx_ = -1.f, my_ = -1.f;  // 最近鼠标点（控件内坐标）
+    bool bar_visible_ = false;     // 上次 advance 判定的滚动条活动态
 
     // 锚定子控件（w 悬空——被 clear_children 释放——的条目在 on_layout 自动剔除）
     struct Pinned {
