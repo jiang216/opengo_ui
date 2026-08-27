@@ -32,6 +32,9 @@ public:
     bool is_dirty() const { return dirty_ || dirty_children_; }
     void mark_dirty();
     void clear_dirty();
+    // 全树递归置脏（UI-136）：字形逐帧烘焙导致 xadvance 变化后，由根节点 advance
+    // 调用，强制所有 Label 以真实宽度重新换行/布局（近似宽度 → 真实宽度）
+    void mark_dirty_all();
 
     // ---- CSS 类名机制（M17a）：layui 语法入口，供样式层查询 ----
     // 支持空格分隔的多个类名（如 "layui-btn layui-btn-danger"）

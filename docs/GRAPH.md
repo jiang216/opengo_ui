@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 143（BUG 135 / DOC 6 / META 2）
-- 边: 333
+- 节点: 144（BUG 136 / DOC 6 / META 2）
+- 边: 334
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -973,6 +973,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#帧级门控渲染完备性：`Widget::draw()` 渲染帧内全树绘制、脏标记仅作帧级门控（删除子树脏守卫——begin_frame 每帧全屏清屏下只重绘脏控件会擦净干净控件）；hover/按下/抬起/焦点变更与 `ScrollBox::set_scroll`、滚动条 2s 自动隐藏均显式 `mark_dirty()`，长内容页滚轮/拖动平滑重绘
 
+### BUG:UI-136 · UI-136: 帧级门控下 CJK 惰性烘焙自动续帧——待烘焙队列 + bake-epoch 全树重排（2026-08-27）
+
+- 路径: `docs/CHANGELOG.md#ui-136-帧级门控下-cjk-惰性烘焙自动续帧待烘焙队列--bake-epoch-全树重排2026-08-27`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#CJK 惰性烘焙续帧：`Font` 记录「待烘焙码点集」+ 新字形上屏单调计数（bake-epoch），`Widget::advance()` 根分支在帧级门控之前查询 `any_pending_bake()/bake_epoch_sum()`，有待烘字形或 epoch 变化即 `mark_dirty_all()` 全树置脏续帧——首显后自动烘齐（≤12 字形/16ms 配额不变）并以真实宽度重排，排空后恢复空闲停帧，杜绝音频宿主首显文本无尽占位
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1198,6 +1204,7 @@
 | `BUG:UI-133` | BUG | UI-133: 模态拦截可见性防御——modal 控件隐藏后不再吞输入，修复僵尸模态全 UI 死锁（2026-08-23） | `docs/CHANGELOG.md` |
 | `BUG:UI-134` | BUG | UI-134: ScrollBar 可命中区加宽 + Label scissor 裁剪防溢出（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-135` | BUG | UI-135: 帧级门控渲染完备性——draw 移除脏守卫全树绘制 + hover/pressed/focus/scroll 显式标脏（2026-08-27） | `docs/CHANGELOG.md` |
+| `BUG:UI-136` | BUG | UI-136: 帧级门控下 CJK 惰性烘焙自动续帧——待烘焙队列 + bake-epoch 全树重排（2026-08-27） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1420,6 +1427,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-133` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-134` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-135` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-136` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

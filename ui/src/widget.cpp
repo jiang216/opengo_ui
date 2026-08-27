@@ -1,5 +1,7 @@
 #include "ui/ui/widget.h"
 
+#include "ui/gl/font.h"
+
 namespace ui {
 
 namespace {
@@ -36,6 +38,14 @@ void Widget::mark_dirty() {
         p->dirty_children_ = true;
         p = p->parent_;
     }
+}
+
+// UI-136：全树递归置脏。字形逐帧烘焙后 xadvance 由近似变真实，仅根置脏不足以让
+// 各 Label 重新换行/布局（子节点自己的 dirty_ 仍是 false，layout 会跳过 on_layout）。
+// 由根节点 advance 在烘焙推进期调用，强制下一帧全树重排 + 重绘。
+void Widget::mark_dirty_all() {
+    mark_dirty();
+    for (Widget* c : children_) c->mark_dirty_all();
 }
 
 void Widget::clear_dirty() {
@@ -533,7 +543,20 @@ void Widget::advance(float dt) {
         }
     }
     // 根节点帧末冲刷延迟销毁队列（UI-072）：事件分发/遍历期间被 destroy() 标记的控件在此统一释放
-    if (!parent_) flush_pending_destroys();
+    if (!parent_) {
+        // UI-136：CJK 字形逐帧烘焙推进。帧级门控宿主（is_dirty() 决定整帧渲染或跳过）中，
+        // 首次渲染只烘 ≤12 个新码点，根 clean 后若停帧则其余字形永远停留在「空格占位」。
+        // advance 在门控之前每帧无条件执行，此处据两个信号决定是否续帧：
+        //   1) 仍有待烘焙字形（配额未烘）→ 继续渲染下一批；
+        //   2) 烘焙 epoch 变化（有新字形上屏，xadvance 已更新）→ 全树重排。
+        // 两者皆静即恢复空闲停帧，CPU 回落到门控下水平。
+        static unsigned last_epoch = 0;
+        const unsigned now = Font::bake_epoch_sum();
+        if (Font::any_pending_bake() || now != last_epoch) mark_dirty_all();
+        last_epoch = now;
+
+        flush_pending_destroys();
+    }
 }
 
 // 注意：draw() 不再按 dirty 跳过子树——begin_frame 每帧全屏清屏，

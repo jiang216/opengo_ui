@@ -3,6 +3,33 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-136: 帧级门控下 CJK 惰性烘焙自动续帧——待烘焙队列 + bake-epoch 全树重排（2026-08-27）
+- **类型**：Bug 修复 / 渲染正确性（audio_text：启动 / 切页后设置页与初始化日志文本残缺为空格占位、排列错位，需交互或切页一次才显示正确）
+- **严重度**：高（UI-125 逐帧烘焙配额 × 帧级门控静默停摆的交互回归：首帧后文本永久停留在「方块字宽占位」，布局宽度近似错位）
+- **根因**：
+  - CJK 字形懒烘焙（UI-125）按 16ms 窗口定额限量（默认 12 字形/帧），只有「渲染帧」才会烘焙下一批；配额耗尽的码点本帧回退方块字宽近似（绘制为空——视觉上即「空格/缺失」）。
+  - 帧级门控（IDLE-00x + UI-135）下根 `is_dirty()` 为 false 即跳过渲染：首个渲染帧只烘 ≤12 个新码点，根 clean 后停帧，其余数百个码点永远停在占位；仅当交互 / 切页产生脏帧才能再烘 ≤12 个——呈现为「交互一会儿 / 切页一次才正确」。
+  - 且仅根置脏不足以让 Label 以真实宽度重排：子节点自身 `dirty_` 仍为 false，`layout()` 跳过其 `on_layout()`，故首次布局用近似宽度算出的行 / 列宽不会自愈 → 排列错位。
+  - 只影响接可控门控的宿主（audio_text）；layui_test 每帧渲染、渐进烘焙自然完成，无此问题。
+- **修复**（ui 库级，宿主零改动）：
+  - `gl/include/ui/gl/font.h` + `gl/src/font.cpp`：
+    1. 新增 `mutable pending_cps_`（因配额未烘但已被 draw/measure 请求的码点；成功烘焙摘除，缺失 / 无位图 / 图集满等结构性失败也摘除——防永久 pending 无限渲染）；
+    2. 新增 `mutable bake_epoch_`（每次新字形成功上屏 +1，xadvance 可能变化）；
+    3. 全局字体注册表 + 静态查询 `Font::any_pending_bake()` / `Font::bake_epoch_sum()`（构造注册 / 析构注销）；顺带补 `emoji_info_` 原析构遗漏的释放。
+  - `ui/include/ui/ui/widget.h` + `ui/src/widget.cpp`：
+    4. 新增递归 `Widget::mark_dirty_all()`（自身 + 子树逐节点置脏）；
+    5. `Widget::advance()` 根分支（每帧无条件执行、位于宿主帧级门控之前）：
+       `if (Font::any_pending_bake() || bake_epoch_sum() != last_epoch) mark_dirty_all();`
+       ——待烘字形续帧渲染下一批；epoch 变化做最终一次全树重排；两者皆静恢复空闲停帧。
+- **回归清单**：
+  1. 帧级门控宿主（audio_text）首显 / 切页：设置页、初始化日志等 CJK 文本启动后约 0.5s 内自动全量补齐、无需交互；行 / 列宽最终按真实字形 advance 重排正确，无「空格占位」残留、无近似宽度错位。
+  2. 补齐完成 / 无脏 → 门控停帧恢复，空闲 CPU 维持 ≈2%（语音页实测 2.2%，设置页 ≈4%），不允许续帧忙循环。
+  3. UI-125 渐进语义不变：单帧仍 ≤12 字形 / 16ms 配额，不引入单帧批量光栅化 spike；`prebake_text()` 强制路径行为不变。
+  4. 防无限渲染：缺失码点（missing_）、无位图、图集满等结构失败摘除 pending，图集 / 码点不会导致永久渲染循环。
+  5. 非门控宿主（layui_test 每帧渲染）零影响：epoch 标脏对每帧渲染天然无害。
+- **验证**：ui 库 Release 构建 + install 同步（ui_ui.lib / ui_gl.lib / font.h / widget.h 双 install 时间戳核对）；audio_text 重建后实测——全新启动首帧初始化日志完整、设置页首显 300ms 内补齐且空闲 3s 不回落、滚动 / 切页正常、5s 空闲 CPU 2.2%；regression.ps1 259 项 0 失败；opengl_UI graphgen --check 0 错 0 警。
+- **影响范围**：`gl/include/ui/gl/font.h`、`gl/src/font.cpp`、`ui/include/ui/ui/widget.h`、`ui/src/widget.cpp` + install lib / 头文件同步（ui_ui.lib、ui_gl.lib）。
+
 ## UI-135: 帧级门控渲染完备性——draw 移除脏守卫全树绘制 + hover/pressed/focus/scroll 显式标脏（2026-08-27）
 - **类型**：Bug 修复 / 渲染正确性（audio_text：首帧后控件字体被擦除只剩日志区；demo/layui_test 整窗空白；系统设置页无法滚动）
 - **严重度**：高（IDLE-00x 空闲帧渲染优化引入的回归：画面持续残缺 + 滚动完全失效）

@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-27T16:12:32+08:00",
+  "generatedAt": "2026-08-27T17:07:29+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-136": {
+      "id": "BUG:UI-136",
+      "type": "BUG",
+      "label": "UI-136: 帧级门控下 CJK 惰性烘焙自动续帧——待烘焙队列 + bake-epoch 全树重排（2026-08-27）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-136-帧级门控下-cjk-惰性烘焙自动续帧待烘焙队列--bake-epoch-全树重排2026-08-27"
+    },
     "BUG:UI-135": {
       "id": "BUG:UI-135",
       "type": "BUG",
@@ -2599,6 +2606,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-136",
+      "kind": "checklist",
+      "context": "回归清单#CJK 惰性烘焙续帧：`Font` 记录「待烘焙码点集」+ 新字形上屏单调计数（bake-epoch），`Widget::advance()` 根分支在帧级门控之前查询 `any_pending_bake()/bake_epoch_sum()`，有待烘字形或 epoch 变化即 `mark_dirty_all()` 全树置脏续帧——首显后自动烘齐（≤12 字形/16ms 配额不变）并以真实宽度重排，排空后恢复空闲停帧，杜绝音频宿主首显文本无尽占位"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -3001,6 +3014,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-136": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#CJK 惰性烘焙续帧：`Font` 记录「待烘焙码点集」+ 新字形上屏单调计数（bake-epoch），`Widget::advance()` 根分支在帧级门控之前查询 `any_pending_bake()/bake_epoch_sum()`，有待烘字形或 epoch 变化即 `mark_dirty_all()` 全树置脏续帧——首显后自动烘齐（≤12 字形/16ms 配额不变）并以真实宽度重排，排空后恢复空闲停帧，杜绝音频宿主首显文本无尽占位"
+      }
+    ],
     "BUG:UI-135": [
       {
         "from": "DOC:ARCHITECTURE",

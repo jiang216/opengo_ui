@@ -16,7 +16,7 @@ class Texture;
 // 到同一图集的剩余区（glTexSubImage2D 局部上传），支持自定义字体路径/环境变量。
 class Font {
 public:
-    Font() = default;
+    Font();
     ~Font();
 
     Font(const Font&) = delete;
@@ -66,6 +66,15 @@ public:
     // 强制烘焙一段 UTF-8 文本的全部 CJK 字形（UI-125）：不受逐帧配额限制，
     // 供启动预热等场景一次性消除首绘卡顿；重复码点/图集内字形自动跳过
     void prebake_text(const char* utf8);
+
+    // ---- 逐帧烘焙推进状态（UI-136）----
+    // 批次受 16ms 窗口限额，只有「渲染帧」才会烘焙下一批；帧级门控宿主
+    // （root.is_dirty() 决定跳帧）必须在每帧无条件执行处查询这两个信号：
+    //   有待烘焙字形（配额耗尽未烘）→ 继续渲染；
+    //   烘焙 epoch 变化（有新字形上屏，xadvance 可能变化）→ 全树重排一次。
+    // 两者皆静 → 恢复空闲停帧。
+    static bool any_pending_bake();
+    static unsigned bake_epoch_sum();
     // 以 (cx, cy) 为中心绘制单个图标，目标尺寸 size（像素）；rotation 绕中心旋转（弧度，0 不转）
     void draw_icon(Renderer& renderer, unsigned codepoint, float cx, float cy, float size,
                    const Vec4& color, float rotation = 0.f) const;
@@ -132,6 +141,12 @@ private:
     static constexpr double kBakeWindowSec = 0.016;
     mutable int bake_budget_ = kBakeBudgetPerWindow;
     mutable std::chrono::steady_clock::time_point bake_window_;
+    // UI-136：配额耗尽仍未烘焙的已请求码点（已渲染/测量的需求集）；缺失码点
+    // （missing_）、结构失败（无位图/图集满）不入集，防止永久 pending 无限渲染。
+    mutable std::unordered_set<unsigned> pending_cps_;
+    // UI-136：新字形成功烘焙的单调计数——epoch 变化即「有字形 xadvance 更新」，
+    // 帧级门控宿主据此做最后一次性全树重排（近似宽度 → 真实宽度）。
+    mutable unsigned bake_epoch_ = 0;
 };
 
 }  // namespace ui

@@ -17,6 +17,10 @@
 namespace ui {
 namespace {
 
+// 已加载字体实例注册表（UI-136）：构造注册/析构注销，供帧级门控宿主
+// 查询全局「逐帧烘焙推进」状态（any_pending_bake / bake_epoch_sum）。
+std::vector<const Font*> g_fonts;
+
 constexpr int kAtlasW = 2048;
 constexpr int kAtlasH = 1024;
 constexpr int kIconAtlasW = 1024;
@@ -64,10 +68,14 @@ unsigned Font::decode_utf8(const char*& in) {
     return c;
 }
 
+Font::Font() { g_fonts.push_back(this); }
+
 Font::~Font() {
+    g_fonts.erase(std::remove(g_fonts.begin(), g_fonts.end(), this), g_fonts.end());
     delete atlas_;
     delete icon_atlas_;
     delete static_cast<stbtt_fontinfo*>(cjk_info_);
+    delete static_cast<stbtt_fontinfo*>(emoji_info_);
 }
 
 bool Font::load_icon_font(const char* path, float pixel_height) {
@@ -366,11 +374,22 @@ const Font::Glyph* Font::ensure_dynamic(unsigned int cp) const {
         bake_window_ = now;
         bake_budget_ = kBakeBudgetPerWindow;
     }
-    if (bake_budget_ <= 0) return nullptr;
+    if (bake_budget_ <= 0) {
+        // UI-136：预算耗尽也录入「已请求未烘焙」，帧级门控据此继续渲染该字形
+        pending_cps_.insert(cp);
+        return nullptr;
+    }
     --bake_budget_;
     bake_cjk(cp);
     it = dyn_.find(cp);
-    return it != dyn_.end() ? &it->second : nullptr;
+    if (it != dyn_.end()) {
+        pending_cps_.erase(cp);
+        return &it->second;
+    }
+    // 烘焙失败（结构问题/图集满/两源皆缺）——bake_cjk 已记 missing_ 或图集满；
+    // 摘除 pending 防止对永不能烘焙的码点无限渲染。
+    pending_cps_.erase(cp);
+    return nullptr;
 }
 
 void Font::prebake_text(const char* utf8) {
@@ -380,9 +399,10 @@ void Font::prebake_text(const char* utf8) {
         if (cp == 0) break;
         if (cp >= kFirstChar && cp < kFirstChar + kNumChars) continue;  // ASCII 已在图集
         if (icon_glyph(cp)) continue;                                   // 图标已烘焙
-        if (dyn_.count(cp)) continue;                                   // 已烘焙
-        if (missing_.count(cp)) continue;                               // UI-128：确认缺失
-        bake_cjk(cp);
+if (dyn_.count(cp)) continue;                                   // 已烘焙
+          if (missing_.count(cp)) continue;                               // UI-128：确认缺失
+          bake_cjk(cp);
+          pending_cps_.erase(cp);        // UI-136：强制烘焙路径同步摘除 pending
     }
 }
 
@@ -454,6 +474,7 @@ void Font::bake_cjk(unsigned int cp) const {
     stbtt_GetCodepointHMetrics(info, (int)cp, &adv, &lsb);
     g.xadvance = adv * scale * kAtlasInvScale;
     dyn_[cp] = g;
+    ++bake_epoch_;  // UI-136：字形宽度更新计数（帧级门控据 epoch 变化做最终重排）
 
     pack_x_ += gw;
     pack_row_h_ = std::max(pack_row_h_, gh);
@@ -610,10 +631,25 @@ float Font::char_width(unsigned int codepoint) const {
         return glyphs_[codepoint - kFirstChar].xadvance;
     if (const Glyph* ig = icon_glyph(codepoint))
         return ig->xadvance > 0.f ? ig->xadvance : pixel_height_;
-    if (codepoint == 0xFE0F || codepoint == 0x200D) return 0.f;  // UI-128：零宽组合符
+    if (codepoint == 0xFE0F || codepoint == 0x200D) return 0.f;  // UI-128：组合用零宽
     const Glyph* g = ensure_dynamic(codepoint);
     if (g) return g->xadvance;
-    return pixel_height_;  // 非图集字符按方块字近似
+    return pixel_height_;  // 未烘焙（配额回退）按方块宽估算
+}
+
+// UI-136：任一字体仍有「已请求未烘焙」码点 → 帧级门控宿主应继续渲染推进烘焙
+bool Font::any_pending_bake() {
+    for (const Font* f : g_fonts)
+        if (!f->pending_cps_.empty()) return true;
+    return false;
+}
+
+// UI-136：全库新字形成功烘焙计数之和——epoch 变化表示有字形 xadvance 更新，
+// 需做最后一次全树重排（近似宽度 → 真实宽度）后再恢复空闲停帧
+unsigned Font::bake_epoch_sum() {
+    unsigned s = 0;
+    for (const Font* f : g_fonts) s += f->bake_epoch_;
+    return s;
 }
 
 }  // namespace ui
