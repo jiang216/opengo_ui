@@ -21,8 +21,8 @@ namespace scrollbar {
 
 constexpr float kBarW = 6.f;          // 常态宽
 constexpr float kBarWHover = 8.f;     // 悬停 thumb / 拖拽中宽
-constexpr float kMargin = 4.f;        // 距控件右缘留白
-constexpr float kHitPad = 2.f;        // 命中容差（横向外扩）
+constexpr float kMargin = 6.f;        // 距控件右缘留白
+constexpr float kHitPad = 4.f;        // 命中容差（横向外扩）
 constexpr float kThumbMinH = 28.f;    // thumb 最小高度
 constexpr double kAutoHideDelay = 2.0;// 无活动自动隐藏延时（秒）
 

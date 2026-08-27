@@ -3,6 +3,23 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-134: ScrollBar 可命中区加宽 + Label scissor 裁剪防溢出（2026-08-27）
+- **类型**：Bug 修复 / 可用性
+- **严重度**：低
+- **根因**：
+  1. ScrollBar `kMargin=4px` / `kHitPad=2px`，滚动条轨道距控件右缘仅 4px，可命中区域总宽仅 14-16px，窗口缩放时难以选中
+  2. `Label::on_draw()` 无 scissor 裁剪，换行文本溢出 bounds 时绘制到相邻控件上方（与滚动条重叠）
+- **修复**：
+  1. `scrollbar_style.h`：`kMargin` 4→6px，`kHitPad` 2→4px（命中区总宽 20px）
+  2. `label.cpp`：`on_draw` 加 `push_scissor` / `pop_scissor` 裁剪到 bounds
+- **回归清单**：
+  1. ScrollBox / TextArea 滚动条外观不变（仅间距微调 2px）
+  2. 滚动条可命中区域增大，窗口缩放时更容易选中
+  3. Label 文本不再溢出 bounds，与相邻控件无重叠
+  4. 下游 audio_text 回归全 PASS（259 项）
+- **验证**：Release 构建 + install 通过；下游 audio_text regression.ps1 全 PASS（259 项 0 失败）
+- **影响范围**：`ui/include/ui/ui/scrollbar_style.h`、`ui/src/label.cpp`
+
 ## UI-133: 模态拦截可见性防御——modal 控件隐藏后不再吞输入，修复僵尸模态全 UI 死锁（2026-08-23）
 - **类型**：Bug 修复 / 健壮性（audio_text CONF-002：确认弹窗点掉后返回主界面，全部按钮/功能永久失灵）
 - **严重度**：高（宿主未接 advance() 时，一次 destroy 即可永久锁死整个界面输入）
