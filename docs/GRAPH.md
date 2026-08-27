@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 145（BUG 137 / DOC 6 / META 2）
-- 边: 335
+- 节点: 146（BUG 138 / DOC 6 / META 2）
+- 边: 336
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -985,6 +985,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#控件状态写统一自报标脏（金芯）：帧级门控下事件回调内直接改成员状态必须显式 `mark_dirty()` 自报——`Switch::on_mouse_down/on_key_down` 统一走 `set_checked`（内部标脏）、`ComboBox` 开合 toggle 与键盘方向键改选项、`Slider::emit()` 均显式标脏，根治「开关/下拉需多次点击、键盘改值无重绘」
 
+### BUG:UI-138 · UI-138: 帧级门控下 TextBox/TextArea 编辑与光标/选区/滚动路径漏标脏（2026-08-27）
+
+- 路径: `docs/CHANGELOG.md#ui-138-帧级门控下-textboxtextarea-编辑与光标选区滚动路径漏标脏2026-08-27`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#文本编辑写统一自报标脏（金芯扩展）：帧级门控下 `TextBox` / `TextArea` 的每次编辑 / 光标移动 / 选区变更 / 滚动都必须显式 `mark_dirty()` 自报（输入/删除/方向键/Home/End/Ctrl+A/C/V/X、拖选、滚轮滚动、滚动条拖拽、`scroll_to_end`），根治「输入需滚动/移鼠标才显示、光标选区不随键更新、滚动需额外一拍刷新」
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1212,6 +1218,7 @@
 | `BUG:UI-135` | BUG | UI-135: 帧级门控渲染完备性——draw 移除脏守卫全树绘制 + hover/pressed/focus/scroll 显式标脏（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-136` | BUG | UI-136: 帧级门控下 CJK 惰性烘焙自动续帧——待烘焙队列 + bake-epoch 全树重排（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-137` | BUG | UI-137: 帧级门控下控件状态写统一自报标脏——开关/下拉/滑块事件内直改漏标点（2026-08-27） | `docs/CHANGELOG.md` |
+| `BUG:UI-138` | BUG | UI-138: 帧级门控下 TextBox/TextArea 编辑与光标/选区/滚动路径漏标脏（2026-08-27） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1436,6 +1443,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-135` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-136` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-137` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-138` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

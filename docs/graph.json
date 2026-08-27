@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-27T18:55:31+08:00",
+  "generatedAt": "2026-08-27T21:37:04+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-138": {
+      "id": "BUG:UI-138",
+      "type": "BUG",
+      "label": "UI-138: 帧级门控下 TextBox/TextArea 编辑与光标/选区/滚动路径漏标脏（2026-08-27）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-138-帧级门控下-textboxtextarea-编辑与光标选区滚动路径漏标脏2026-08-27"
+    },
     "BUG:UI-137": {
       "id": "BUG:UI-137",
       "type": "BUG",
@@ -2625,6 +2632,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-138",
+      "kind": "checklist",
+      "context": "回归清单#文本编辑写统一自报标脏（金芯扩展）：帧级门控下 `TextBox` / `TextArea` 的每次编辑 / 光标移动 / 选区变更 / 滚动都必须显式 `mark_dirty()` 自报（输入/删除/方向键/Home/End/Ctrl+A/C/V/X、拖选、滚轮滚动、滚动条拖拽、`scroll_to_end`），根治「输入需滚动/移鼠标才显示、光标选区不随键更新、滚动需额外一拍刷新」"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-114",
       "kind": "checklist",
       "context": "回归清单#Button 图标右置：`set_icon_right(true)` 内容布局切为「文本居左 + 图标居右」（整体仍居中），默认 false 图标居左零影响；镜像「文字 <i 图标>」顺序 demo 必备"
@@ -3027,6 +3040,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-138": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#文本编辑写统一自报标脏（金芯扩展）：帧级门控下 `TextBox` / `TextArea` 的每次编辑 / 光标移动 / 选区变更 / 滚动都必须显式 `mark_dirty()` 自报（输入/删除/方向键/Home/End/Ctrl+A/C/V/X、拖选、滚轮滚动、滚动条拖拽、`scroll_to_end`），根治「输入需滚动/移鼠标才显示、光标选区不随键更新、滚动需额外一拍刷新」"
+      }
+    ],
     "BUG:UI-137": [
       {
         "from": "DOC:ARCHITECTURE",

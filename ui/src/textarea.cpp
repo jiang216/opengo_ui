@@ -147,6 +147,7 @@ void TextArea::selection_range(size_t& a, size_t& b) const {
 }
 
 void TextArea::erase_selection() {
+    mark_dirty();
     if (!has_selection_ || sel_start_ == sel_end_) return;
     size_t a = std::min(sel_start_, sel_end_);
     size_t b = std::max(sel_start_, sel_end_);
@@ -159,6 +160,7 @@ void TextArea::erase_selection() {
 }
 
 void TextArea::replace_selection(const std::string& repl) {
+    mark_dirty();
     if (has_selection_ && sel_start_ != sel_end_) {
         size_t a = std::min(sel_start_, sel_end_);
         size_t b = std::max(sel_start_, sel_end_);
@@ -214,6 +216,7 @@ void TextArea::set_text(const char* text) {
 
 void TextArea::scroll_to_end() {
     if (!font_) return;
+    mark_dirty();
     float line_h = 0.f;
     auto lines = cached_wrap_lines(this, text_, font_, avail_width(), &line_h);
     const float content_h = (float)lines.size() * line_h + 2.f * kPad;
@@ -222,6 +225,7 @@ void TextArea::scroll_to_end() {
 }
 
 void TextArea::erase_cp(bool backspace) {
+    mark_dirty();
     if (has_selection_ && sel_start_ != sel_end_) {
         erase_selection();
         if (on_change_) on_change_(text_.c_str());
@@ -284,6 +288,7 @@ float TextArea::offset_to_y(size_t offset, float line_h,
 // ---- Mouse events ----
 
 bool TextArea::on_mouse_down(float x, float y, int button) {
+    mark_dirty();
     if (button != 0) return false;
     mx_ = x - bounds_.x;
     my_ = y - bounds_.y;
@@ -328,6 +333,7 @@ bool TextArea::on_mouse_move(float x, float y) {
     mx_ = x - bounds_.x;
     my_ = y - bounds_.y;
     if (sb_.dragging) {
+        mark_dirty();
         float line_h = font_ ? font_->line_height() + 2.f : 16.f;
         const Rect track = scrollbar::track_rect(bounds_, scrollbar::kBarWHover);
         scroll_ = scrollbar::scroll_from_y(track, y, content_height(line_h) - bounds_.h);
@@ -335,6 +341,7 @@ bool TextArea::on_mouse_move(float x, float y) {
         return true;
     }
     if (!selecting_) return false;
+    mark_dirty();
     float local_x = x - bounds_.x;
     float local_y = y - bounds_.y;
     float line_h = font_ ? font_->line_height() + 2.f : 16.f;
@@ -371,6 +378,7 @@ bool TextArea::on_mouse_up(float x, float y, int button) {
         return true;
     }
     if (!selecting_) return false;
+    mark_dirty();
     selecting_ = false;
     release_mouse_capture();
     has_selection_ = (sel_start_ != sel_end_);
@@ -385,6 +393,7 @@ bool TextArea::on_mouse_scroll(float x, float y, float dx, float dy) {
     const float content_h = (float)lines.size() * line_h + 2.f * kPad;
     const float max_scroll = std::max(0.f, content_h - bounds_.h);
     if (max_scroll <= 0.f) return false;
+    mark_dirty();
     scroll_ -= dy * 24.f;
     scroll_ = std::max(0.f, std::min(scroll_, max_scroll));
     scrollbar::touch(sb_);  // 滚动活动：滚动条浮现并保持 2s
@@ -402,6 +411,7 @@ bool TextArea::on_drop(float x, float y, const std::vector<std::string>& paths) 
     (void)x;
     (void)y;
     if (!drop_enabled_ || paths.empty()) return false;
+    mark_dirty();
     drop_highlight_ = true;
     if (on_drop_cb_) {
         on_drop_cb_(paths);
@@ -421,6 +431,7 @@ bool TextArea::on_drop(float x, float y, const std::vector<std::string>& paths) 
 
 bool TextArea::on_key_down(int key, int mods) {
     if (!font_) return false;
+    mark_dirty();
     bool ctrl = (mods & ModControl) != 0;
     bool shift = (mods & ModShift) != 0;
     const float avail = avail_width();
@@ -555,6 +566,7 @@ bool TextArea::on_key_down(int key, int mods) {
 bool TextArea::on_char(unsigned int codepoint) {
     if (codepoint < 0x20) return false;
     if (readonly_) return true;  // 吞掉输入但不修改
+    mark_dirty();
     const std::string s = encode_cp(codepoint);
     replace_selection(s);
     float line_h = font_ ? font_->line_height() + 2.f : 16.f;

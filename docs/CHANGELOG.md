@@ -3,6 +3,21 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-138: 帧级门控下 TextBox/TextArea 编辑与光标/选区/滚动路径漏标脏（2026-08-27）
+- **类型**：Bug 修复 / 交互正确性（audio_text：设置页监听端口等输入框、关于页只读 TextArea——输入/光标移动/拖选/滚轮滚动需额外交互一次才刷新）
+- **严重度**：中（UI-135「所有状态变更必须显式 mark_dirty」规则下，文本框/多行框大量事件路径直接改 `text_`/`caret_`/`sel_`/`scroll_` 却漏标脏，帧级门控检不到 → 输入、光标移动、选区、滚动视觉停旧态，直到下一次脏帧才补画，被感知为「输入延迟/失效」「需滚动一下才显示」）
+- **根因**：UI-135 后脏检测只认 `mark_dirty()` 自报。TextBox / TextArea 的编辑与光标状态写大多在「公共方法与事件回调」内直接改状态且不自报：
+  1. TextBox：`move_caret` / `erase_cp` / `erase_selection` / `paste_clipboard` / `on_key_down`（左右/Home/End 光标、Ctrl+A 全选、Backspace/Delete）/ `on_char` / `on_mouse_down` / `on_mouse_move`（拖选）均漏标脏。
+  2. TextArea：`erase_selection` / `replace_selection` / `erase_cp` / `on_key_down`（方向键光标/选区、Ctrl+A/V/X、Enter）/ `on_char` / `on_mouse_down` / `on_mouse_move`（拖选 + 边缘自动滚屏 + 滚动条拖拽）/ `on_mouse_up` / `on_mouse_scroll` / `scroll_to_end` 均漏标脏——尤其滚动路径（`on_mouse_scroll` / `sb_` 拖拽 / `scroll_to_end`）漏标，直接对应「滚动需额外一拍才显示」。
+- **修复**（ui 库级，宿主零改动）：`textbox.cpp` / `textarea.cpp` 在上述每个编辑 / 光标 / 选区 / 滚动事件与公共方法内补 `mark_dirty()`；滚轮与拖拽滚动仅在真正改变 `scroll_` 时标脏（不随 hover 全刷）。
+- **回归清单**：
+  1. 输入框逐字符输入即时显示、光标随方向键即时移动、拖选实时高亮。
+  2. Ctrl+A 全选 / Ctrl+C/V/X 即时反映视觉。
+  3. TextArea 方向键光标移动即时、滚轮滚动即时、拖动滚动条即时、新增内容 `scroll_to_end` 即时。
+  4. UI-135 语义不变：静止场景（无任何编辑/光标/滚动写）依旧停帧省 CPU；标脏仅在真正改状态时发生。
+- **验证**：opengl_UI Release 构建 + install 同步（ui_ui.lib）→ audio_text 重链 voice_assistant.exe 成功；audio_text + opengl_UI 双库 graphgen --check 0 错 0 警。
+- **影响范围**：`ui/src/textbox.cpp`、`ui/src/textarea.cpp` + install lib 同步（ui_ui.lib）。
+
 ## UI-137: 帧级门控下控件状态写统一自报标脏——开关/下拉/滑块事件内直改漏标点（2026-08-27）
 - **类型**：Bug 修复 / 交互正确性（audio_text 设置页：个别开关需多次点击才切换、下拉菜单需多次点击才展开、键盘改值无重绘）
 - **严重度**：中（UI-135「所有状态变更必须显式 mark_dirty」规则下，事件回调内直接改成员状态又漏标脏的路径在帧级门控中表现为「点了没反应/要点两次」，并能与 UI-125 惰性烘焙配额叠加成可见间歇）

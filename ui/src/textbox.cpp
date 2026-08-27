@@ -71,6 +71,7 @@ void TextBox::set_text(const char* text) {
 }
 
 void TextBox::move_caret(int delta) {
+    mark_dirty();
     if (delta < 0)
         caret_ = prev_cp(text_, caret_);
     else
@@ -78,6 +79,7 @@ void TextBox::move_caret(int delta) {
 }
 
 void TextBox::erase_cp(bool backspace) {
+    mark_dirty();
     if (backspace) {
         const size_t start = prev_cp(text_, caret_);
         if (start == caret_) return;
@@ -105,6 +107,7 @@ std::string TextBox::selected_text() const {
 }
 
 void TextBox::erase_selection() {
+    mark_dirty();
     if (!has_selection()) return;
     const size_t s = std::min(sel_anchor_, caret_);
     const size_t e = std::max(sel_anchor_, caret_);
@@ -121,6 +124,7 @@ void TextBox::copy_selection() const {
 }
 
 void TextBox::paste_clipboard() {
+    mark_dirty();
     GLFWwindow* w = Window::primary_handle();
     if (!w) return;
     const char* c = glfwGetClipboardString(w);
@@ -168,6 +172,7 @@ size_t TextBox::hit_test_caret(float x) const {
 bool TextBox::on_key_down(int key, int mods) {
     const bool shift = (mods & ModShift) != 0;
     const bool ctrl = (mods & ModControl) != 0;
+    mark_dirty();
 
     // Ctrl 组合：全选 / 复制 / 剪切 / 粘贴
     if (ctrl) {
@@ -252,6 +257,7 @@ bool TextBox::on_char(unsigned int codepoint) {
     // 过滤 C0 控制字符与 DEL（如 Ctrl+V 组合产生的 WM_CHAR 0x16），
     // 可见字符输入不受影响
     if (codepoint < 0x20 || codepoint == 0x7f) return true;
+    mark_dirty();
     erase_selection();
     const std::string s = encode_cp(codepoint);
     text_.insert(caret_, s);
@@ -269,6 +275,7 @@ void TextBox::set_caret_pos(size_t pos) {
 
 bool TextBox::on_mouse_down(float x, float y, int button) {
     if (button != 0) return Widget::on_mouse_down(x, y, button);
+    mark_dirty();
     focus();
     dragging_ = true;
     caret_ = hit_test_caret(x);
@@ -278,6 +285,7 @@ bool TextBox::on_mouse_down(float x, float y, int button) {
 
 bool TextBox::on_mouse_move(float x, float y) {
     if (!dragging_) return Widget::on_mouse_move(x, y);
+    mark_dirty();
     caret_ = hit_test_caret(x);  // 拖选扩展（anchor 保持不动）
     return true;
 }
@@ -303,6 +311,7 @@ bool TextBox::on_drop(float x, float y, const std::vector<std::string>& paths) {
     (void)x;
     (void)y;
     if (!drop_enabled_ || paths.empty()) return false;
+    mark_dirty();
     drop_highlight_ = true;
     if (on_drop_cb_) {
         on_drop_cb_(paths);
