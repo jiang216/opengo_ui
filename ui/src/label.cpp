@@ -40,14 +40,15 @@ Label::Label(float x, float y, float w, float h, const char* text)
     : Widget(x, y, w, h), text_(text ? text : "") {}
 
 void Label::set_text(const char* text) {
-    mark_dirty();
-        text_ = text ? text : "";
+    std::string next = text ? text : "";
+    if (text_ == next) return;
+    text_ = std::move(next);
     mark_dirty();
 }
 
 void Label::set_wrap(bool wrap) {
-    mark_dirty();
-        wrap_ = wrap;
+    if (wrap_ == wrap) return;
+    wrap_ = wrap;
     mark_dirty();
 }
 
@@ -105,6 +106,10 @@ void Label::on_draw(Renderer& renderer) {
     const float total_h = (float)lines_.size() * line_h;
     float y = bounds_.y + (bounds_.h - total_h) * 0.5f;
 
+    // 裁剪到 label bounds，防止换行文本溢出到相邻控件（滚动条等）
+    const Rect clip{bounds_.x, bounds_.y, bounds_.w, bounds_.h};
+    renderer.push_scissor(clip);
+
     for (const std::string& line : lines_) {
         if (!line.empty()) {
             const float text_w = font_->measure_text(line.c_str(), text_scale_);
@@ -120,6 +125,8 @@ void Label::on_draw(Renderer& renderer) {
         }
         y += line_h;
     }
+
+    renderer.pop_scissor();
 }
 
 }  // namespace ui

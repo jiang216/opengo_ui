@@ -135,6 +135,7 @@ void Carousel::on_advance(float dt) {
     // 过渡进度
     if (trans_t_ >= 0.f) {
         trans_t_ += dt / kTransDur;
+        mark_dirty();
         if (trans_t_ >= 1.f) {
             trans_t_ = -1.f;
             if (current_ != trans_to_) {
@@ -149,6 +150,7 @@ void Carousel::on_advance(float dt) {
         if (timer_ >= interval_ / 1000.f) {
             timer_ = 0.f;
             start_transition(current_, current_ + 1);
+            mark_dirty();
         }
     }
 }

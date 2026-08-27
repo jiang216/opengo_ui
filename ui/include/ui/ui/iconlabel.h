@@ -19,20 +19,25 @@ public:
     IconLabel(float x, float y, float w, float h, const char* text = "");
 
     // ---- 文本 ----
-    void set_text(const char* text) {  text_ = text ? text : ""; mark_dirty(); mark_dirty(); }
+    void set_text(const char* text) {
+        std::string next = text ? text : "";
+        if (text_ == next) return;
+        text_ = std::move(next);
+        mark_dirty();
+    }
     const std::string& text() const { return text_; }
 
     // ---- layui 图标 ----
     void set_icon(const char* icon_name);
-    void clear_icon() { icon_cp_ = 0; mark_dirty(); }
+    void clear_icon() { if (icon_cp_ == 0) return; icon_cp_ = 0; mark_dirty(); }
 
     // ---- 本地图片（png/jpg/bmp/webp）----
     void set_image(const char* path);
     void clear_image();
 
     // ---- 布局参数 ----
-    void set_icon_size(float s) {  icon_size_ = s; mark_dirty(); mark_dirty(); }
-    void set_gap(float g) {  gap_ = g; mark_dirty(); mark_dirty(); }
+    void set_icon_size(float s) { if (icon_size_ == s) return; icon_size_ = s; mark_dirty(); }
+    void set_gap(float g) { if (gap_ == g) return; gap_ = g; mark_dirty(); }
     // 0=左对齐（默认） 1=水平居中 2=右对齐（文本相对整个控件）
     void set_align(int a) {  align_ = a; mark_dirty(); }
 

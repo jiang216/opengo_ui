@@ -201,12 +201,14 @@ float TextArea::content_height(float line_h) const {
 // ---- Text API ----
 
 void TextArea::set_text(const char* text) {
-    mark_dirty();
-        text_ = text ? text : "";
+    std::string next = text ? text : "";
+    if (text_ == next) return;
+    text_ = std::move(next);
     if (caret_ > text_.size()) caret_ = text_.size();
     sel_start_ = sel_end_ = sel_anchor_ = caret_;
     has_selection_ = false;
     invalidate_lines();
+    mark_dirty();
     if (on_change_) on_change_(text_.c_str());
 }
 
