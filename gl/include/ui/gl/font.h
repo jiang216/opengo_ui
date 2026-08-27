@@ -53,6 +53,9 @@ public:
     // （字形沿 x 错位叠加一次，偏移随字号缩放）。
     void draw_text(Renderer& renderer, const char* text, float x, float y,
                    const Vec4& color, float scale = 1.f, bool bold = false) const;
+    // 带长度的重载：绘制 text 的前 max_len 字节，避免 substr 堆分配
+    void draw_text(Renderer& renderer, const char* text, float x, float y,
+                   const Vec4& color, int max_len, float scale = 1.f, bool bold = false) const;
 
     float measure_text(const char* text, float scale = 1.f) const;
     // 单字符宽度：ASCII 用字形 advance；私用区图标用图标 advance；CJK 懒烘培后取真实 advance，

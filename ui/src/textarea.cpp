@@ -110,6 +110,20 @@ std::vector<LineSpan> wrap_lines(const std::string& text, const Font* font, floa
     return out;
 }
 
+// 带缓存的 wrap_lines：命中缓存时跳过全部逐字符宽度计算
+std::vector<LineSpan> cached_wrap_lines(TextArea* self, const std::string& text,
+                                         const Font* font, float avail, float* line_h) {
+    if (self && self->lines_cache_valid()) {
+        if (line_h) *line_h = self->cached_line_h();
+        return self->cached_lines();
+    }
+    auto result = wrap_lines(text, font, avail, line_h);
+    if (self) {
+        self->update_lines_cache(result, line_h ? *line_h : (font ? font->line_height() + 2.f : 16.f));
+    }
+    return result;
+}
+
 }  // namespace
 
 TextArea::TextArea(float x, float y, float w, float h) : Widget(x, y, w, h) {
@@ -141,6 +155,7 @@ void TextArea::erase_selection() {
     caret_ = a;
     sel_start_ = sel_end_ = sel_anchor_ = caret_;
     has_selection_ = false;
+    invalidate_lines();
 }
 
 void TextArea::replace_selection(const std::string& repl) {
@@ -156,6 +171,7 @@ void TextArea::replace_selection(const std::string& repl) {
     }
     sel_start_ = sel_end_ = sel_anchor_ = caret_;
     has_selection_ = false;
+    invalidate_lines();
     if (on_change_) on_change_(text_.c_str());
 }
 
@@ -163,7 +179,7 @@ void TextArea::clamp_scroll(float line_h) {
     float content_h = 0.f;
     {
         const float avail = avail_width();
-        auto lines = wrap_lines(text_, font_, avail, nullptr);
+        auto lines = cached_wrap_lines(this, text_, font_, avail, nullptr);
         content_h = (float)lines.size() * line_h + 2.f * kPad;
     }
     const float vis = bounds_.h;
@@ -178,7 +194,7 @@ float TextArea::avail_width() const {
 }
 
 float TextArea::content_height(float line_h) const {
-    const auto lines = wrap_lines(text_, font_, avail_width(), nullptr);
+    const auto lines = cached_wrap_lines(const_cast<TextArea*>(this), text_, font_, avail_width(), nullptr);
     return (float)lines.size() * line_h + 2.f * kPad;
 }
 
@@ -189,13 +205,14 @@ void TextArea::set_text(const char* text) {
     if (caret_ > text_.size()) caret_ = text_.size();
     sel_start_ = sel_end_ = sel_anchor_ = caret_;
     has_selection_ = false;
+    invalidate_lines();
     if (on_change_) on_change_(text_.c_str());
 }
 
 void TextArea::scroll_to_end() {
     if (!font_) return;
     float line_h = 0.f;
-    auto lines = wrap_lines(text_, font_, avail_width(), &line_h);
+    auto lines = cached_wrap_lines(this, text_, font_, avail_width(), &line_h);
     const float content_h = (float)lines.size() * line_h + 2.f * kPad;
     const float vis = bounds_.h;
     scroll_ = std::max(0.f, content_h - vis);
@@ -219,6 +236,7 @@ void TextArea::erase_cp(bool backspace) {
     }
     sel_start_ = sel_end_ = sel_anchor_ = caret_;
     has_selection_ = false;
+    invalidate_lines();
     if (on_change_) on_change_(text_.c_str());
 }
 
@@ -233,7 +251,7 @@ void TextArea::ensure_caret_visible(float line_h, size_t row) {
 size_t TextArea::caret_from_point(float local_y, float local_x) const {
     if (!font_) return text_.size();
     float line_h = 0.f;
-    const auto lines = wrap_lines(text_, font_, avail_width(), &line_h);
+    const auto lines = cached_wrap_lines(const_cast<TextArea*>(this), text_, font_, avail_width(), &line_h);
     int row = (int)((local_y - kPad + scroll_) / line_h);
     if (row < 0) row = 0;
     if (row >= (int)lines.size()) row = (int)lines.size() - 1;
@@ -293,7 +311,7 @@ bool TextArea::on_mouse_down(float x, float y, int button) {
     capture_mouse();
 
     float line_h = 0.f;
-    const auto lines = wrap_lines(text_, font_, avail_width(), &line_h);
+    const auto lines = cached_wrap_lines(this, text_, font_, avail_width(), &line_h);
     for (size_t r = 0; r < lines.size(); ++r) {
         if (caret_ >= lines[r].start && caret_ <= lines[r].end) {
             ensure_caret_visible(line_h, r);
@@ -324,7 +342,7 @@ bool TextArea::on_mouse_move(float x, float y) {
         if (scroll_ < 0.f) scroll_ = 0.f;
     } else if (local_y > bounds_.h - scroll_margin_) {
         const float avail = avail_width();
-        auto lines = wrap_lines(text_, font_, avail, nullptr);
+        auto lines = cached_wrap_lines(this, text_, font_, avail, nullptr);
         float content_h = (float)lines.size() * line_h + 2.f * kPad;
         float max_scroll = std::max(0.f, content_h - bounds_.h);
         scroll_ += 3.f;
@@ -360,13 +378,38 @@ bool TextArea::on_mouse_scroll(float x, float y, float dx, float dy) {
     (void)x; (void)y; (void)dx;
     if (dy == 0.f) return false;
     float line_h = 0.f;
-    const auto lines = wrap_lines(text_, font_, avail_width(), &line_h);
+    const auto lines = cached_wrap_lines(this, text_, font_, avail_width(), &line_h);
     const float content_h = (float)lines.size() * line_h + 2.f * kPad;
     const float max_scroll = std::max(0.f, content_h - bounds_.h);
     if (max_scroll <= 0.f) return false;
     scroll_ -= dy * 24.f;
     scroll_ = std::max(0.f, std::min(scroll_, max_scroll));
     scrollbar::touch(sb_);  // 滚动活动：滚动条浮现并保持 2s
+    return true;
+}
+
+void TextArea::insert_text(const std::string& s) {
+    if (s.empty()) return;
+    replace_selection(s);
+    if (on_change_) on_change_(text_.c_str());
+}
+
+bool TextArea::on_drop(float x, float y, const std::vector<std::string>& paths) {
+    (void)x;
+    (void)y;
+    if (!drop_enabled_ || paths.empty()) return false;
+    drop_highlight_ = true;
+    if (on_drop_cb_) {
+        on_drop_cb_(paths);
+    } else {
+        // 默认：每行一个路径
+        std::string insert;
+        for (size_t i = 0; i < paths.size(); ++i) {
+            if (i > 0) insert += '\n';
+            insert += paths[i];
+        }
+        insert_text(insert);
+    }
     return true;
 }
 
@@ -378,7 +421,7 @@ bool TextArea::on_key_down(int key, int mods) {
     bool shift = (mods & ModShift) != 0;
     const float avail = avail_width();
     const float line_h = font_->line_height() + 2.f;
-    const auto lines = wrap_lines(text_, font_, avail, nullptr);
+    const auto lines = cached_wrap_lines(this, text_, font_, avail, nullptr);
     size_t row = 0;
     for (size_t r = 0; r < lines.size(); ++r) {
         if (caret_ >= lines[r].start && caret_ <= lines[r].end) {
@@ -511,7 +554,7 @@ bool TextArea::on_char(unsigned int codepoint) {
     const std::string s = encode_cp(codepoint);
     replace_selection(s);
     float line_h = font_ ? font_->line_height() + 2.f : 16.f;
-    const auto lines = wrap_lines(text_, font_, avail_width(), nullptr);
+    const auto lines = cached_wrap_lines(this, text_, font_, avail_width(), nullptr);
     size_t row = 0;
     for (size_t r = 0; r < lines.size(); ++r) {
         if (caret_ >= lines[r].start && caret_ <= lines[r].end) {
@@ -530,9 +573,15 @@ void TextArea::on_draw(Renderer& renderer) {
     const Theme* t = theme_ ? theme_ : &kDefaultTheme;
 
     // 边框 + 内容底
-    renderer.draw_rounded_rect(bounds_, t->radius,
-                               enabled ? (focused() ? t->success : t->input_border)
-                                       : t->text_muted);
+    Vec4 border_color = t->input_border;
+    if (drop_highlight_)
+        border_color = t->accent;
+    else if (enabled && focused())
+        border_color = t->success;
+    else if (!enabled)
+        border_color = t->text_muted;
+    drop_highlight_ = false;
+    renderer.draw_rounded_rect(bounds_, t->radius, border_color);
     const Rect inner{bounds_.x + 1.f, bounds_.y + 1.f, bounds_.w - 2.f, bounds_.h - 2.f};
     renderer.draw_rounded_rect(inner, std::max(0.f, t->radius - 1.f),
                                enabled ? t->input_bg : t->border);
@@ -541,7 +590,7 @@ void TextArea::on_draw(Renderer& renderer) {
 
     const float avail = avail_width();
     float line_h = 0.f;
-    const auto lines = wrap_lines(text_, font_, avail, &line_h);
+    const auto lines = cached_wrap_lines(this, text_, font_, avail, &line_h);
 
     const Rect clip{bounds_.x + 1.f, bounds_.y + 1.f, std::max(1.f, bounds_.w - 2.f),
                     std::max(1.f, bounds_.h - 2.f)};
@@ -599,16 +648,22 @@ void TextArea::on_draw(Renderer& renderer) {
         }
     }
 
-    // ---- 文字 ----
+    // ---- 文字（只渲染可视行，避免 5000 行全量遍历）----
     if (text_.empty() && !placeholder_.empty()) {
         font_->draw_text(renderer, placeholder_.c_str(), text_x, top, t->text_muted);
     } else {
-        for (size_t r = 0; r < lines.size(); ++r) {
-            const LineSpan& ls = lines[r];
+        const float vis_top = scroll_;
+        const float vis_bot = scroll_ + bounds_.h;
+        const int first_visible = std::max(0, (int)(vis_top / line_h) - 1);
+        const int last_visible = std::min((int)lines.size() - 1,
+                                          (int)(vis_bot / line_h) + 1);
+        for (int r = first_visible; r <= last_visible; ++r) {
+            const LineSpan& ls = lines[(size_t)r];
             const float ly = top + (float)r * line_h;
-            if (ls.end > ls.start)
-                font_->draw_text(renderer, text_.substr(ls.start, ls.end - ls.start).c_str(),
-                                 text_x, ly, text_color);
+            if (ls.end > ls.start) {
+                font_->draw_text(renderer, text_.c_str() + ls.start, text_x, ly, text_color,
+                                 (int)(ls.end - ls.start));
+            }
         }
     }
 

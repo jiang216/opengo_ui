@@ -71,6 +71,8 @@ public:
     virtual bool on_mouse_down(float x, float y, int button);
     virtual bool on_mouse_up(float x, float y, int button);
     virtual bool on_mouse_scroll(float x, float y, float dx, float dy);
+    // 文件拖放：paths 为拖入的文件/文件夹路径列表
+    virtual bool on_drop(float x, float y, const std::vector<std::string>& paths);
 
     // 鼠标捕获（M5 拖拽）：on_mouse_down 返回 true 即自动捕获（如 Slider 拖动），
     // 此后鼠标 move/up 即使指针离开控件范围也路由给捕获者；up 后自动释放
@@ -100,6 +102,7 @@ public:
     bool dispatch_mouse_down(float x, float y, int button);
     bool dispatch_mouse_up(float x, float y, int button);
     bool dispatch_mouse_scroll(float x, float y, float dx, float dy);
+    bool dispatch_drop(float x, float y, const std::vector<std::string>& paths);
 
     bool hovered() const { return hovered_; }
     bool pressed() const { return pressed_; }

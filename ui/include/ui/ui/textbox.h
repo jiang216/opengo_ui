@@ -47,11 +47,20 @@ public:
     void select_all() { sel_anchor_ = 0; caret_ = text_.size(); }
     void clear_selection() { sel_anchor_ = caret_; }
 
+    // ---- 文件拖放 ----
+    void set_drop_enabled(bool v) { drop_enabled_ = v; }
+    bool drop_enabled() const { return drop_enabled_; }
+    // 自定义拖放处理：覆盖默认路径插入行为
+    void set_on_drop(std::function<void(const std::vector<std::string>&)> cb) { on_drop_cb_ = std::move(cb); }
+    // 向外部暴露插入能力（供 on_drop_cb_ 回调使用）
+    void insert_text(const std::string& s);
+
     bool on_key_down(int key, int mods) override;
     bool on_char(unsigned int codepoint) override;
     bool on_mouse_down(float x, float y, int button) override;
     bool on_mouse_move(float x, float y) override;
     bool on_mouse_up(float x, float y, int button) override;
+    bool on_drop(float x, float y, const std::vector<std::string>& paths) override;
     void on_draw(Renderer& renderer) override;
 
 private:
@@ -78,6 +87,9 @@ private:
     const Theme* theme_ = nullptr;
     std::function<void(const char*)> on_change_;
     std::function<void()> on_enter_;
+    bool drop_enabled_ = false;
+    bool drop_highlight_ = false;
+    std::function<void(const std::vector<std::string>&)> on_drop_cb_;
 };
 
 }  // namespace ui

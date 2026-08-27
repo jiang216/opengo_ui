@@ -2,6 +2,9 @@
 
 #include "ui/gl/cursor_icon_manager.h"
 
+#include <string>
+#include <vector>
+
 struct GLFWwindow;
 struct GLFWmonitor;
 struct GLFWimage;
@@ -118,6 +121,11 @@ public:
     unsigned int char_pressed_at(int i) const;
     void clear_chars();
 
+    // ---- 文件拖放 ----
+    int drop_count() const { return static_cast<int>(drop_paths_.size()); }
+    const std::string& drop_path(int i) const { return drop_paths_[static_cast<size_t>(i)]; }
+    void clear_drops() { drop_paths_.clear(); }
+
 private:
     static void cursor_pos_cb(GLFWwindow* w, double x, double y);
     static void mouse_button_cb(GLFWwindow* w, int button, int action, int mods);
@@ -125,6 +133,7 @@ private:
     static void resize_cb(GLFWwindow* w, int width, int height);
     static void key_cb(GLFWwindow* w, int key, int scancode, int action, int mods);
     static void char_cb(GLFWwindow* w, unsigned int codepoint);
+    static void drop_cb(GLFWwindow* w, int count, const char** paths);
 
     GLFWwindow* window_ = nullptr;
     int width_ = 0;
@@ -143,6 +152,7 @@ private:
     int key_mods_[512] = {0};
     unsigned int char_queue_[64] = {0};
     int char_count_ = 0;
+    std::vector<std::string> drop_paths_;
     bool dragging_ = false;
     float drag_off_x_ = 0.f;   // 非 Windows 回退用
     float drag_off_y_ = 0.f;

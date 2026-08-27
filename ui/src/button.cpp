@@ -156,6 +156,7 @@ void Button::on_draw(Renderer& renderer) {
         // ---- layui 按钮（M17b，克隆 layui.css）----
         const bool disabled = has_class("layui-btn-disabled");
         const bool primary = has_class("layui-btn-primary");
+        const bool ghost = has_class("layui-btn-ghost");
         const bool radius = has_class("layui-btn-radius");
 
         // 背景色：layui-btn 默认 #16baaa（accent），normal/warm/danger 对应语义色
@@ -185,6 +186,21 @@ void Button::on_draw(Renderer& renderer) {
             renderer.draw_rounded_rect_outline(bounds_, r, 1.f, t->border);
             draw_content(font_, renderer, text_, icon_cp_, icon_size, bounds_,
                          Vec4{0.82f, 0.82f, 0.82f, 1.0f}, icon_right_);
+            return;
+        }
+
+        // ghost：透明底、无边框，hover 时显示浅灰边框 + 白色文字/图标
+        if (ghost) {
+            Vec4 ghost_text{0.75f, 0.75f, 0.78f, 1.0f};
+            if (hovered_) {
+                ghost_text = Vec4{1.f, 1.f, 1.f, 1.f};
+                renderer.draw_rounded_rect_outline(bounds_, r, 1.f,
+                                                   Vec4{0.45f, 0.45f, 0.48f, 1.0f});
+            }
+            if (pressed_ && hovered_)
+                renderer.draw_rounded_rect(bounds_, r, Vec4{0, 0, 0, 0.08f});
+            draw_content(font_, renderer, text_, icon_cp_, icon_size, bounds_,
+                         ghost_text, icon_right_);
             return;
         }
 

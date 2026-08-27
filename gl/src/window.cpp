@@ -52,6 +52,7 @@ Window::Window(int width, int height, const char* title)
     glfwSetWindowSizeCallback(window_, &Window::resize_cb);
     glfwSetKeyCallback(window_, &Window::key_cb);
     glfwSetCharCallback(window_, &Window::char_cb);
+    glfwSetDropCallback(window_, &Window::drop_cb);
 }
 
 Window::~Window() {
@@ -188,6 +189,13 @@ void Window::char_cb(GLFWwindow* w, unsigned int codepoint) {
     Window* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
     if (!self) return;
     if (self->char_count_ < 64) self->char_queue_[self->char_count_++] = codepoint;
+}
+
+void Window::drop_cb(GLFWwindow* w, int count, const char** paths) {
+    Window* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
+    if (!self) return;
+    for (int i = 0; i < count; ++i)
+        self->drop_paths_.emplace_back(paths[i]);
 }
 
 // ---- 窗口管理 ----

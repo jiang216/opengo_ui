@@ -287,18 +287,49 @@ bool TextBox::on_mouse_up(float x, float y, int button) {
     return Widget::on_mouse_up(x, y, button);
 }
 
+void TextBox::insert_text(const std::string& s) {
+    if (s.empty()) return;
+    erase_selection();
+    text_.insert(caret_, s);
+    caret_ += s.size();
+    sel_anchor_ = caret_;
+    if (on_change_) on_change_(text_.c_str());
+}
+
+bool TextBox::on_drop(float x, float y, const std::vector<std::string>& paths) {
+    (void)x;
+    (void)y;
+    if (!drop_enabled_ || paths.empty()) return false;
+    drop_highlight_ = true;
+    if (on_drop_cb_) {
+        on_drop_cb_(paths);
+    } else {
+        // 默认：单行插入路径（空格分隔）
+        std::string insert;
+        for (size_t i = 0; i < paths.size(); ++i) {
+            if (i > 0) insert += " ";
+            insert += paths[i];
+        }
+        insert_text(insert);
+    }
+    return true;
+}
+
 void TextBox::on_draw(Renderer& renderer) {
     static const Theme kDefaultTheme;
     const Theme* t = theme_ ? theme_ : &kDefaultTheme;
 
     // 边框 + 内容底（未聚焦灰边白底，hover accent 淡边，聚焦主题色边；禁用灰化）
     Vec4 border_color = t->input_border;
-    if (enabled && focused())
+    if (drop_highlight_)
+        border_color = t->accent;
+    else if (enabled && focused())
         border_color = t->success;
     else if (enabled && hovered_)
         border_color = Vec4{t->accent.r, t->accent.g, t->accent.b, 0.5f};
     else if (!enabled)
         border_color = t->text_muted;
+    drop_highlight_ = false;
     renderer.draw_rounded_rect(bounds_, t->radius, border_color);
     const Rect inner{bounds_.x + 1.f, bounds_.y + 1.f, bounds_.w - 2.f, bounds_.h - 2.f};
     renderer.draw_rounded_rect(inner, std::max(0.f, t->radius - 1.f),

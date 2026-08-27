@@ -168,6 +168,13 @@ bool Widget::on_mouse_scroll(float x, float y, float dx, float dy) {
     return false;
 }
 
+bool Widget::on_drop(float x, float y, const std::vector<std::string>& paths) {
+    (void)x;
+    (void)y;
+    (void)paths;
+    return false;
+}
+
 bool Widget::on_mouse_up(float x, float y, int button) {
     (void)x;
     (void)y;
@@ -284,6 +291,21 @@ bool Widget::dispatch_mouse_scroll(float x, float y, float dx, float dy) {
     if (contains(x, y)) {
         if (on_mouse_scroll(x, y, dx, dy)) return true;
         return false;
+    }
+    return false;
+}
+
+bool Widget::dispatch_drop(float x, float y, const std::vector<std::string>& paths) {
+    if (!parent_ && modal_ && modal_->visible)
+        return modal_->dispatch_drop(x, y, paths);
+    const std::vector<Widget*> kids(children_);
+    for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
+        Widget* child = *it;
+        if (!child->visible || !child->enabled) continue;
+        if (child->dispatch_drop(x, y, paths)) return true;
+    }
+    if (contains(x, y)) {
+        if (on_drop(x, y, paths)) return true;
     }
     return false;
 }

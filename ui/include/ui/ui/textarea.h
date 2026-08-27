@@ -46,6 +46,13 @@ public:
     void set_on_copy(std::function<void(const std::string&)> cb) { on_copy_ = std::move(cb); }
     void set_on_paste(std::function<std::string()> cb) { on_paste_ = std::move(cb); }
 
+    // ---- 文件拖放 ----
+    void set_drop_enabled(bool v) { drop_enabled_ = v; }
+    bool drop_enabled() const { return drop_enabled_; }
+    void set_on_drop(std::function<void(const std::vector<std::string>&)> cb) { on_drop_cb_ = std::move(cb); }
+    // 向外部暴露插入能力（供 on_drop_cb_ 回调使用）
+    void insert_text(const std::string& s);
+
     // ---- 选区查询 ----
     bool has_selection() const { return has_selection_; }
     std::string selected_text() const;
@@ -58,7 +65,18 @@ public:
     bool on_mouse_move(float x, float y) override;
     bool on_mouse_up(float x, float y, int button) override;
     bool on_mouse_scroll(float x, float y, float dx, float dy) override;
+    bool on_drop(float x, float y, const std::vector<std::string>& paths) override;
     void on_draw(Renderer& renderer) override;
+
+    // ---- 换行缓存读写（供 wrap_lines 缓存命中用）----
+    bool lines_cache_valid() const { return !lines_dirty_; }
+    const std::vector<LineSpan>& cached_lines() const { return cached_lines_; }
+    float cached_line_h() const { return cached_line_h_; }
+    void update_lines_cache(std::vector<LineSpan> lines, float lh) {
+        cached_lines_ = std::move(lines);
+        cached_line_h_ = lh;
+        lines_dirty_ = false;
+    }
 
 private:
     void erase_cp(bool backspace);
@@ -105,6 +123,17 @@ private:
     // ---- 剪贴板回调 ----
     std::function<void(const std::string&)> on_copy_;
     std::function<std::string()> on_paste_;
+
+    // ---- 文件拖放 ----
+    bool drop_enabled_ = false;
+    bool drop_highlight_ = false;
+    std::function<void(const std::vector<std::string>&)> on_drop_cb_;
+
+    // ---- 换行缓存（避免每帧 O(n) 重算 wrap_lines）----
+    std::vector<LineSpan> cached_lines_;
+    float cached_line_h_ = 0.f;
+    bool lines_dirty_ = true;
+    void invalidate_lines() { lines_dirty_ = true; }
 };
 
 }  // namespace ui
