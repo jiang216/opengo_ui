@@ -3,6 +3,15 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-141: Transfer 双侧列表滚轮改 scroll 漏 mark_dirty——同类漏标脏补全（2026-08-27）
+- **类型**：Bug 修复 / 交互正确性（UI-140 同类漏标脏的系统性复查补漏）
+- **严重度**：中（`Transfer::on_mouse_scroll` 双侧列表滚轮直接改 `side->scroll` 并 `clamp_scroll`，却不 `mark_dirty()` → 帧级门控检不到 → 滚轮滚动不刷新，需额外脏事件才补画。与 UI-140 已修的 `Code::on_mouse_scroll` 同款漏标点）
+- **根因**：`transfer.cpp` `on_mouse_scroll`（滚动条目）只改 `side->scroll` 状态、不标脏；其公开方法 `move`/`add_item`/`clear`/`set_show_search` 等均有 `mark_dirty()`，唯独滚动路径漏标。
+- **修复**（ui 库级，宿主零改动）：`Transfer::on_mouse_scroll` 末尾补 `mark_dirty()`。
+- **回归清单**：
+  1. Transfer 双侧列表内容超高时滚轮滚动**即时刷新**，无需额外交互。
+  2. Transfer 搜索 / 移动 / 勾选行为不回归（原有 mark_dirty 保留）。
+
 ## UI-140: ScrollBox/Code 覆写 draw 不清自身脏标记→dirty_children_ 常脏，短路 mark_dirty 上抛、容器内控件点击/悬停不刷新（2026-08-27）
 - **类型**：Bug 修复 / 渲染门控正确性（audio_text：设置页 ScrollBox 内全部控件——开关 / 下拉 / 滑条 / 输入框点击后需额外滚动或移动鼠标才刷新；左侧导航半透明 hover 高亮不跟随。UI-137/138/139 依次补齐 mark_dirty 后**复测仍无改善**，证明根因非漏标脏，而是「标了脏也到不了 root」）
 - **严重度**：高（容器常脏使子控件 `mark_dirty()` 沿父链上抛时在此 `break` 短路，root 永不脏 → 帧级门控 `if(!root.is_dirty()) continue` 跳过整帧渲染 → 容器内任意交互视觉停驻，直到有路径让 root 脏才补画，被感知为「点击无反应、滚动/移动鼠标/点别处才显示」）

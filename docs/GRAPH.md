@@ -5,11 +5,12 @@
 
 ## 统计
 
-- 节点: 148（BUG 140 / DOC 6 / META 2）
+- 节点: 149（BUG 141 / DOC 6 / META 2）
 - 边: 336
-- lint: 0 错误 / 2 警告
+- lint: 0 错误 / 3 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-139
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-140
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-141
 
 ## 反链索引
 
@@ -1003,6 +1004,11 @@
 - 路径: `docs/CHANGELOG.md#ui-140-scrollboxcode-覆写-draw-不清自身脏标记dirtychildren-常脏短路-markdirty-上抛容器内控件点击悬停不刷新2026-08-27`
 - 反链: 无
 
+### BUG:UI-141 · UI-141: Transfer 双侧列表滚轮改 scroll 漏 mark_dirty——同类漏标脏补全（2026-08-27）
+
+- 路径: `docs/CHANGELOG.md#ui-141-transfer-双侧列表滚轮改-scroll-漏-markdirty同类漏标脏补全2026-08-27`
+- 反链: 无
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1233,6 +1239,7 @@
 | `BUG:UI-138` | BUG | UI-138: 帧级门控下 TextBox/TextArea 编辑与光标/选区/滚动路径漏标脏（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-139` | BUG | UI-139: 帧级门控下 Menu 左侧导航 hover 高亮不跟随——on_mouse_move 更新 hover_ 却漏标脏（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-140` | BUG | UI-140: ScrollBox/Code 覆写 draw 不清自身脏标记→dirty_children_ 常脏，短路 mark_dirty 上抛、容器内控件点击/悬停不刷新（2026-08-27） | `docs/CHANGELOG.md` |
+| `BUG:UI-141` | BUG | UI-141: Transfer 双侧列表滚轮改 scroll 漏 mark_dirty——同类漏标脏补全（2026-08-27） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |

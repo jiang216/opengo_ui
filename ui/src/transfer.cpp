@@ -167,6 +167,7 @@ bool Transfer::on_mouse_scroll(float x, float y, float dx, float dy) {
     if (!side || !panel) return false;
     side->scroll -= dy * 26.f;  // 每格滚轮约一行
     clamp_scroll(*side, *panel, show_search_);
+    mark_dirty();
     return true;
 }
 
