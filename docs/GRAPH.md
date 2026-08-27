@@ -5,13 +5,14 @@
 
 ## 统计
 
-- 节点: 150（BUG 142 / DOC 6 / META 2）
+- 节点: 151（BUG 143 / DOC 6 / META 2）
 - 边: 336
-- lint: 0 错误 / 4 警告
+- lint: 0 错误 / 5 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-139
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-140
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-141
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-142
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-144
 
 ## 反链索引
 
@@ -1015,6 +1016,11 @@
 - 路径: `docs/CHANGELOG.md#ui-142-scrollbox-固定头部--背景直角化页面顶部留白固定且与左栏拼全宽横条2026-08-27`
 - 反链: 无
 
+### BUG:UI-144 · UI-144: ScrollBox 滚动条按下滑块不再立即跳转，点击轨道空白仍跳转（2026-08-28）
+
+- 路径: `docs/CHANGELOG.md#ui-144-scrollbox-滚动条按下滑块不再立即跳转点击轨道空白仍跳转2026-08-28`
+- 反链: 无
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1247,6 +1253,7 @@
 | `BUG:UI-140` | BUG | UI-140: ScrollBox/Code 覆写 draw 不清自身脏标记→dirty_children_ 常脏，短路 mark_dirty 上抛、容器内控件点击/悬停不刷新（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-141` | BUG | UI-141: Transfer 双侧列表滚轮改 scroll 漏 mark_dirty——同类漏标脏补全（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-142` | BUG | UI-142: ScrollBox 固定头部 + 背景直角化——页面顶部留白固定且与左栏拼全宽横条（2026-08-27） | `docs/CHANGELOG.md` |
+| `BUG:UI-144` | BUG | UI-144: ScrollBox 滚动条按下滑块不再立即跳转，点击轨道空白仍跳转（2026-08-28） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |

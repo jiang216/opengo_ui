@@ -171,8 +171,16 @@ bool ScrollBox::on_mouse_down(float x, float y, int button) {
     my_ = y - bounds_.y;
     if (scroll_max() > 0.f && in_scrollbar(x, y)) {
         scrollbar::touch(sb_);
-        sb_.dragging = true;
-        set_scroll(scroll_from_y(y));
+        const Rect th = thumb_rect();
+        const bool on_thumb = x >= th.x && x <= th.x + th.w &&
+                              y >= th.y && y <= th.y + th.h;
+        if (on_thumb) {
+            // 按住滑块：仅进入拖拽，不在按下瞬间 set_scroll（消除按下即跳）
+            sb_.dragging = true;
+        } else {
+            // 点击轨道空白处（滑块上方/下方）：保持跳转到点击位置。
+            set_scroll(scroll_from_y(y));
+        }
         return true;  // 捕获鼠标，拖动滑块
     }
     // 下拉面板主体点击被消费，避免穿透到面板下方的其他控件（如重叠的 ComboBox）

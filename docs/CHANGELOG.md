@@ -20,6 +20,21 @@
 - **验证**：opengl_UI Release 构建 + install 同步（ui_ui.lib）→ audio_text 重链 voice_assistant.exe；设置/关于/语音/规则/声纹页实机验证固定横条贯穿全宽、滚动时固定、无圆角空隙。
 - **影响范围**：`ui/include/ui/ui/scrollbox.h`、`ui/src/scrollbox.cpp` + install lib 同步（ui_ui.lib）。
 
+## UI-144: ScrollBox 滚动条按下滑块不再立即跳转，点击轨道空白仍跳转（2026-08-28）
+- **类型**：Bug 修复 / 交互精准性（audio_text 设置页滚动条：按住滑块后「上下滑动的距离太大」）
+- **严重度**：中
+- **根因**：`ScrollBox::on_mouse_down` 对滚动条内**任意点击（含命中滑块）**都执行 `set_scroll(scroll_from_y(y))`，把滑块顶瞬间对齐到鼠标 y——按住滑块中部时按下即下跳约半个滑块高，配合 `kThumbMinH=28` 最小高 clamp，感知为「鼠标定位后滑块上下滑动距离太大」。
+- **修复**（ui 库级，最简方案）：`on_mouse_down` 按命中区域区分——
+  - **命中滑块**：仅 `sb_.dragging=true`，**不再**按下瞬间 `set_scroll`（消除按下即跳）；
+  - **命中轨道空白**（滑块上/下方）：**保持** `set_scroll(scroll_from_y(y))` 跳转到点击位置（原有行为不变）。
+  - 拖拽跟随仍用 `scroll_from_y(y)`（不做 grab 偏移），保持最简。
+- **回归清单**：
+  1. 按住滑块按下**不再**立即跳动；拖动时滑块跟随光标滚动。
+  2. 点击轨道空白处（滑块上/下方）**仍**跳转到点击对应位置。
+  3. 滚轮滚动 / 触底 / 固定头带（UI-142 header_height）不回归。
+- **验证**：opengl_UI Release 构建 + install 同步（ui_ui.lib）→ audio_text 重链 voice_assistant.exe；设置页实机验证按滑块不跳、点轨道空白跳转、滚轮/触底正常。
+- **影响范围**：`ui/src/scrollbox.cpp` + install lib 同步（ui_ui.lib）。
+
 ## UI-141: Transfer 双侧列表滚轮改 scroll 漏 mark_dirty——同类漏标脏补全（2026-08-27）
 - **类型**：Bug 修复 / 交互正确性（UI-140 同类漏标脏的系统性复查补漏）
 - **严重度**：中（`Transfer::on_mouse_scroll` 双侧列表滚轮直接改 `side->scroll` 并 `clamp_scroll`，却不 `mark_dirty()` → 帧级门控检不到 → 滚轮滚动不刷新，需额外脏事件才补画。与 UI-140 已修的 `Code::on_mouse_scroll` 同款漏标点）
