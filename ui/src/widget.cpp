@@ -238,11 +238,13 @@ bool Widget::dispatch_mouse_move(float x, float y) {
     }
     // 子节点在父之上，后添加的优先命中（禁用/隐藏的子节点不参与）
     // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
-    const std::vector<Widget*> kids(children_);
-    for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
-        Widget* child = *it;
-        if (!child->visible || !child->enabled) continue;
-        if (child->dispatch_mouse_move(x, y)) return true;
+    if (pass_hit_to_children(x, y)) {
+        const std::vector<Widget*> kids(children_);
+        for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
+            Widget* child = *it;
+            if (!child->visible || !child->enabled) continue;
+            if (child->dispatch_mouse_move(x, y)) return true;
+        }
     }
     if (contains(x, y) && enabled) {
         const bool was_hovered = hovered_;
@@ -264,11 +266,13 @@ bool Widget::dispatch_mouse_down(float x, float y, int button) {
     if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_down(x, y, button);
     prune_popups(x, y);
     // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
-    const std::vector<Widget*> kids(children_);
-    for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
-        Widget* child = *it;
-        if (!child->visible || !child->enabled) continue;
-        if (child->dispatch_mouse_down(x, y, button)) return true;
+    if (pass_hit_to_children(x, y)) {
+        const std::vector<Widget*> kids(children_);
+        for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
+            Widget* child = *it;
+            if (!child->visible || !child->enabled) continue;
+            if (child->dispatch_mouse_down(x, y, button)) return true;
+        }
     }
     if (contains(x, y) && enabled) {
         if (!pressed_) mark_dirty();  // 按下态变更 → 帧级重绘
@@ -297,11 +301,13 @@ bool Widget::dispatch_mouse_up(float x, float y, int button) {
         return handled;
     }
     // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
-    const std::vector<Widget*> kids2(children_);
-    for (auto it = kids2.rbegin(); it != kids2.rend(); ++it) {
-        Widget* child = *it;
-        if (!child->visible || !child->enabled) continue;
-        if (child->dispatch_mouse_up(x, y, button)) return true;
+    if (pass_hit_to_children(x, y)) {
+        const std::vector<Widget*> kids2(children_);
+        for (auto it = kids2.rbegin(); it != kids2.rend(); ++it) {
+            Widget* child = *it;
+            if (!child->visible || !child->enabled) continue;
+            if (child->dispatch_mouse_up(x, y, button)) return true;
+        }
     }
     if (contains(x, y)) {
         const bool was_pressed = pressed_;
@@ -322,11 +328,13 @@ bool Widget::dispatch_mouse_scroll(float x, float y, float dx, float dy) {
     // 模态：事件仅路由给模态子树，模态外一律屏蔽
     if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_scroll(x, y, dx, dy);
     // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
-    const std::vector<Widget*> kids3(children_);
-    for (auto it = kids3.rbegin(); it != kids3.rend(); ++it) {
-        Widget* child = *it;
-        if (!child->visible || !child->enabled) continue;
-        if (child->dispatch_mouse_scroll(x, y, dx, dy)) return true;
+    if (pass_hit_to_children(x, y)) {
+        const std::vector<Widget*> kids3(children_);
+        for (auto it = kids3.rbegin(); it != kids3.rend(); ++it) {
+            Widget* child = *it;
+            if (!child->visible || !child->enabled) continue;
+            if (child->dispatch_mouse_scroll(x, y, dx, dy)) return true;
+        }
     }
     if (contains(x, y)) {
         if (on_mouse_scroll(x, y, dx, dy)) return true;
@@ -338,11 +346,13 @@ bool Widget::dispatch_mouse_scroll(float x, float y, float dx, float dy) {
 bool Widget::dispatch_drop(float x, float y, const std::vector<std::string>& paths) {
     if (!parent_ && modal_ && modal_->visible)
         return modal_->dispatch_drop(x, y, paths);
-    const std::vector<Widget*> kids(children_);
-    for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
-        Widget* child = *it;
-        if (!child->visible || !child->enabled) continue;
-        if (child->dispatch_drop(x, y, paths)) return true;
+    if (pass_hit_to_children(x, y)) {
+        const std::vector<Widget*> kids(children_);
+        for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
+            Widget* child = *it;
+            if (!child->visible || !child->enabled) continue;
+            if (child->dispatch_drop(x, y, paths)) return true;
+        }
     }
     if (contains(x, y)) {
         if (on_drop(x, y, paths)) return true;

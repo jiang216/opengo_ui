@@ -159,6 +159,12 @@ public:
     virtual void draw_overlay(Renderer& renderer) { (void)renderer; }
 
 protected:
+    // 命中裁剪守卫（UI-152）：返回 false 时跳过本控件的子节点事件分发。
+    // 与绘制端 scissor 对称——ScrollBox 绘制用 push_scissor(bounds_) 裁剪可视区，
+    // 但基类 dispatch 命中无裁剪：滚动越界到可视区（如标题栏区域）的子控件仍可被
+    // contains 命中，造成「点击上层透明区却落到越界内容」穿透。默认放行不影响其它控件。
+    virtual bool pass_hit_to_children(float x, float y) { (void)x; (void)y; return true; }
+
     // 焦点请求内部的设置/清除：通知旧焦点 on_focus_changed(false)、新焦点 on_focus_changed(true)
     virtual void set_focused(bool focused);
     // 子节点变化回调：add_child/remove_child/clear_children 后调用，供子类标记布局脏
