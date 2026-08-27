@@ -3,6 +3,23 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-142: ScrollBox 固定头部 + 背景直角化——页面顶部留白固定且与左栏拼全宽横条（2026-08-27）
+- **类型**：功能改进 / 视觉一致性（audio_text 多页面 UI：设置页顶部留白随滚动上移 + 右面板圆角与左侧导航直角交界出现月牙空隙）
+- **严重度**：中
+- **根因**：
+  - 设置页 `ScrollBox` 顶部内边距 `padding_` 参与 `content_height`/`scroll_max`/`on_layout` 光标计算，卡片随滚动整体上移，首个卡片上方的空白留白随之「滚动到顶外」而被感知为「顶部留白移动」。
+  - 面板默认画 `draw_rounded_rect(bounds_, radius=6, button_normal)`，左上角 (200,36) 圆角弧内露出更暗的 `window_bg`，与左侧 `SidebarNav` 直角 `{0.18,0.21,0.24}` 交界产生月牙空隙。
+- **修复**（ui 库级）：
+  - `ScrollBox` 新增 `set_header_height(float)`：置顶一条**固定高度、不随滚动移动**的头部带；内容区/滚动范围/裁剪区均以 `header_height_` 为顶边内边距，header 高度之上永远只显示滚动容器背景（固定留白）。
+  - `ScrollBox` 默认背景由圆角矩形改为**直角** `draw_quad(bounds_, button_normal)`，消除面板圆角与左侧导航直角交界的月牙空隙；保留 `layui-round` class 可显式切回圆角（下拉面板等既有圆角分支不受影响）。
+- **回归清单**：
+  1. ScrollBox 内容超高时滚动，顶部固定头带（header_height）**始终停驻在容器顶部**，内容从其下方滚过。
+  2. 未调用 `set_header_height` 的 ScrollBox（0）行为与旧版一致（顶部留白=padding，随内容滚动）。
+  3. 背景直角化后，`layui-round` class 的 ScrollBox 仍画圆角（下拉面板等不回归）。
+  4. 滚动条 thumb 范围 / 命中裁剪与固定头带一致（内容不滚穿头带区）。
+- **验证**：opengl_UI Release 构建 + install 同步（ui_ui.lib）→ audio_text 重链 voice_assistant.exe；设置/关于/语音/规则/声纹页实机验证固定横条贯穿全宽、滚动时固定、无圆角空隙。
+- **影响范围**：`ui/include/ui/ui/scrollbox.h`、`ui/src/scrollbox.cpp` + install lib 同步（ui_ui.lib）。
+
 ## UI-141: Transfer 双侧列表滚轮改 scroll 漏 mark_dirty——同类漏标脏补全（2026-08-27）
 - **类型**：Bug 修复 / 交互正确性（UI-140 同类漏标脏的系统性复查补漏）
 - **严重度**：中（`Transfer::on_mouse_scroll` 双侧列表滚轮直接改 `side->scroll` 并 `clamp_scroll`，却不 `mark_dirty()` → 帧级门控检不到 → 滚轮滚动不刷新，需额外脏事件才补画。与 UI-140 已修的 `Code::on_mouse_scroll` 同款漏标点）

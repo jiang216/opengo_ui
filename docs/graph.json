@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-27T22:26:08+08:00",
+  "generatedAt": "2026-08-27T23:50:57+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-142": {
+      "id": "BUG:UI-142",
+      "type": "BUG",
+      "label": "UI-142: ScrollBox 固定头部 + 背景直角化——页面顶部留白固定且与左栏拼全宽横条（2026-08-27）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-142-scrollbox-固定头部--背景直角化页面顶部留白固定且与左栏拼全宽横条2026-08-27"
+    },
     "BUG:UI-141": {
       "id": "BUG:UI-141",
       "type": "BUG",
@@ -3061,6 +3068,7 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-142": [],
     "BUG:UI-141": [],
     "BUG:UI-140": [],
     "BUG:UI-139": [],
@@ -5039,7 +5047,8 @@
     "warnings": [
       "孤儿条目（无任何文档引用）: BUG:UI-139",
       "孤儿条目（无任何文档引用）: BUG:UI-140",
-      "孤儿条目（无任何文档引用）: BUG:UI-141"
+      "孤儿条目（无任何文档引用）: BUG:UI-141",
+      "孤儿条目（无任何文档引用）: BUG:UI-142"
     ]
   }
 }

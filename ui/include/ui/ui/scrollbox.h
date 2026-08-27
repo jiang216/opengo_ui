@@ -23,6 +23,11 @@ public:
     // 内部边距（像素）
     void set_padding(float padding) {  padding_ = padding; mark_dirty(); }
     float padding() const { return padding_; }
+    // 固定头部高度（像素，默认 0=关闭）。>0 时顶部留出高度 header_height_ 的固定
+    // 不可滚动横条（背景与内容面板连续），内容在其下方滚动——用于把「首个卡片上方
+    // 的留白」固定在顶部而不随滚动上移（UI-142）。既可用默认直角背景，也可 layui class。
+    void set_header_height(float h) {  header_height_ = h > 0.f ? h : 0.f; mark_dirty(); }
+    float header_height() const { return header_height_; }
     // 滚动步长（每滚一格滚轮）
     void set_scroll_step(float step) {  scroll_step_ = step; mark_dirty(); }
     float scroll_offset() const { return scroll_offset_; }
@@ -65,6 +70,9 @@ public:
     void on_draw(Renderer& renderer) override;
     // 覆写 draw：背景 -> scissor(内容) -> 滚动条
     void draw(Renderer& renderer) override;
+    // 命中裁剪守卫（UI-152）：与绘制端 scissor(bounds_) 对称，滚动越界到可视区外的
+    // 子控件（如滚到标题栏区域的设置页内容）不可命中，消除「点击上层却落到越界内容」穿透。
+    bool pass_hit_to_children(float x, float y) override;
     // overlay 滚动条自动隐藏（2s 无活动）：状态迁移时标脏，触发帧级重绘收/放滚动条
     void on_advance(float dt) override;
     // 子节点变化后抑制滚动条绘制，直到下一次 on_layout()
@@ -98,6 +106,7 @@ private:
 
     float spacing_ = 4.f;
     float padding_ = 8.f;
+    float header_height_ = 0.f;  // 固定头部高度（0=关闭）；>0 时内容在其下方滚动
     float scroll_step_ = 40.f;
     float scroll_offset_ = 0.f;
     bool needs_layout_ = false;  // 子树变化后抑制滚动条绘制，直到下一次 on_layout()
