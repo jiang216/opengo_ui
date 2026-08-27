@@ -341,7 +341,6 @@ void Widget::layout() {
     for (Widget* child : children_) {
         if (child->visible) child->layout();
     }
-    dirty_children_ = false;
 }
 
 Widget* Widget::root() {

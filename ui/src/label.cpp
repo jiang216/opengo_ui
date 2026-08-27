@@ -61,7 +61,6 @@ float Label::preferred_height() const {
 
 void Label::recompute_lines() {
     lines_.clear();
-    dirty_ = false;
     if (!font_ || text_.empty()) {
         lines_.push_back("");
         return;
