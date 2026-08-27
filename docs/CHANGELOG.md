@@ -3,6 +3,17 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-140: ScrollBox/Code 覆写 draw 不清自身脏标记→dirty_children_ 常脏，短路 mark_dirty 上抛、容器内控件点击/悬停不刷新（2026-08-27）
+- **类型**：Bug 修复 / 渲染门控正确性（audio_text：设置页 ScrollBox 内全部控件——开关 / 下拉 / 滑条 / 输入框点击后需额外滚动或移动鼠标才刷新；左侧导航半透明 hover 高亮不跟随。UI-137/138/139 依次补齐 mark_dirty 后**复测仍无改善**，证明根因非漏标脏，而是「标了脏也到不了 root」）
+- **严重度**：高（容器常脏使子控件 `mark_dirty()` 沿父链上抛时在此 `break` 短路，root 永不脏 → 帧级门控 `if(!root.is_dirty()) continue` 跳过整帧渲染 → 容器内任意交互视觉停驻，直到有路径让 root 脏才补画，被感知为「点击无反应、滚动/移动鼠标/点别处才显示」）
+- **根因**：`mark_dirty()`（widget.cpp:37 `if (p->dirty_children_) break;`）是沿父链的短路优化——祖先只要 `dirty_children_` 已为 true 就停止上抛。而 **`ScrollBox::draw()`（scrollbox.cpp:221-239）与 `Code::draw()`（code.cpp:69-77）覆写了基类 `Widget::draw` 却不像基类那样在末尾清掉自己的 `dirty_/dirty_children_`**（基类 widget.cpp:576-577 会清）。于是 ScrollBox/Code 一旦被任一子控件标过脏，其 `dirty_children_` 即**永久为 true** → 其内所有控件再标脏都被短路吞掉、永远到不了 root → 不重绘。仅容器自身标脏（ScrollBox `set_scroll` 触发滚动）或容器外事件（移鼠标到左导航等非 ScrollBox 控件、点别处）能让 root 脏 → 补画。精确解释「点一下无反应，滚动/移动鼠标/点别处才显示」；无 ScrollBox 的 speaker/voice 页正常；UI-137/138 给容器内控件补的 mark_dirty 每次都被短路吞掉故无效。
+- **修复**（ui 库级，宿主零改动）：`ScrollBox::draw()` 与 `Code::draw()` 在绘制完子树后补 `dirty_ = false; dirty_children_ = false;`（与基类 `Widget::draw` 末尾一致），解除常脏短路，恢复子控件标脏一路传回 root → 帧级门控即时重绘。附带：`Code::on_mouse_scroll` 改 `scroll_` 时补 `mark_dirty()`（此前改滚动不经标脏，与 ScrollBox::set_scroll 语义相反，同属漏标脏）。
+- **回归清单**：
+  1. 设置页 ScrollBox 内开关 / 下拉 / 滑条 / 输入框：点击或悬停后**即时刷新**，无需滚动 / 移动鼠标 / 点别处。
+  2. speaker / voice 页（无 ScrollBox）行为不受影响、不回归。
+  3. ScrollBox 内下拉面板等 overlay 节点正常绘制、滚动条 overlay 行为不变。
+  4. Code（notepad）滚动即时刷新。
+
 ## UI-139: 帧级门控下 Menu 左侧导航 hover 高亮不跟随——on_mouse_move 更新 hover_ 却漏标脏（2026-08-27）
 - **类型**：Bug 修复 / 交互正确性（audio_text：左侧垂直导航菜单——半透明 hover 高亮框只有首个命中项定位准确，继续在菜单项间移动不跟随过去，需额外交互一次才刷新到新位置）
 - **严重度**：中（UI-135「所有状态变更必须显式 mark_dirty」规则下，`Menu::on_mouse_move` 直接更新 `hover_` / `active_hover_`（决定哪一行画高亮）却全程不标脏，帧级门控检不到 → 高亮视觉停在首个命中行，直到下一次脏帧才补画，被感知为「跟随框移不动 / 只对了一次」）

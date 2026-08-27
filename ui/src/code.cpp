@@ -63,6 +63,7 @@ bool Code::on_mouse_scroll(float x, float y, float dx, float dy) {
     scroll_ -= dy * 24.f;
     if (scroll_ < 0.f) scroll_ = 0.f;
     if (scroll_ > max_scroll) scroll_ = max_scroll;
+    mark_dirty();
     return true;
 }
 
@@ -74,6 +75,9 @@ void Code::draw(Renderer& renderer) {
         if (child->visible) child->draw(renderer);
     }
     renderer.pop_scissor();
+    // 与基类 Widget::draw 末尾一致：清掉本节点脏标记，避免容器常脏短路 mark_dirty()。
+    dirty_ = false;
+    dirty_children_ = false;
 }
 
 void Code::on_draw(Renderer& renderer) {

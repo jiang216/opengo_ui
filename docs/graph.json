@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-27T21:59:57+08:00",
+  "generatedAt": "2026-08-27T22:17:40+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-140": {
+      "id": "BUG:UI-140",
+      "type": "BUG",
+      "label": "UI-140: ScrollBox/Code 覆写 draw 不清自身脏标记→dirty_children_ 常脏，短路 mark_dirty 上抛、容器内控件点击/悬停不刷新（2026-08-27）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-140-scrollboxcode-覆写-draw-不清自身脏标记dirtychildren-常脏短路-markdirty-上抛容器内控件点击悬停不刷新2026-08-27"
+    },
     "BUG:UI-139": {
       "id": "BUG:UI-139",
       "type": "BUG",
@@ -3047,6 +3054,7 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-140": [],
     "BUG:UI-139": [],
     "BUG:UI-138": [
       {
@@ -5021,7 +5029,8 @@
   "lint": {
     "errors": [],
     "warnings": [
-      "孤儿条目（无任何文档引用）: BUG:UI-139"
+      "孤儿条目（无任何文档引用）: BUG:UI-139",
+      "孤儿条目（无任何文档引用）: BUG:UI-140"
     ]
   }
 }
