@@ -27,6 +27,7 @@ public:
     void set_options(const std::vector<std::string>& options);
     void select(int index);  // 选中并触发 on_change
     void close();
+    void open();  // 展开下拉面板（UI-143：Table 行内下拉等外部调用方需要显式展开）
     int selected() const { return selected_; }
     void set_on_change(std::function<void(int)> cb) { on_change_ = std::move(cb); }
 
@@ -39,7 +40,6 @@ public:
     void on_draw(Renderer& renderer) override;
 
 private:
-    void open();
     void sync_panel();
 
     // 全实例注册表：保证「打开一个下拉，关闭其他所有下拉」（open 时遍历关闭）

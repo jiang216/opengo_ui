@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-08-28T00:35:35+08:00",
+  "generatedAt": "2026-08-30T11:36:33+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-143": {
+      "id": "BUG:UI-143",
+      "type": "BUG",
+      "label": "UI-143: Table 新增下拉单元格列——表格行内下拉选择（2026-08-30）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-143-table-新增下拉单元格列表格行内下拉选择2026-08-30"
+    },
     "BUG:UI-142": {
       "id": "BUG:UI-142",
       "type": "BUG",
@@ -2649,6 +2656,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-143",
+      "kind": "checklist",
+      "context": "回归清单#Table 下拉单元格列：`set_cell_combobox(col)` 该列每格渲染文本 + 右侧下拉三角（#c2c2c2），`set_combobox_options(col,opts)` 指定选项、`set_on_cell_combobox(visible_row,col,index,text)` 选中回调（复用 ComboBox layui-form-select 皮肤与 popup 弹出；单击展开、选中即写回格文本）；对象池复用生命周期（on_change 回调栈内不 delete 触发者自身），文本/开关/复选/按钮/树形/分页路径零变化"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-135",
       "kind": "checklist",
       "context": "回归清单#帧级门控渲染完备性：`Widget::draw()` 渲染帧内全树绘制、脏标记仅作帧级门控（删除子树脏守卫——begin_frame 每帧全屏清屏下只重绘脏控件会擦净干净控件）；hover/按下/抬起/焦点变更与 `ScrollBox::set_scroll`、滚动条 2s 自动隐藏均显式 `mark_dirty()`，长内容页滚轮/拖动平滑重绘"
@@ -3075,6 +3088,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-143": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table 下拉单元格列：`set_cell_combobox(col)` 该列每格渲染文本 + 右侧下拉三角（#c2c2c2），`set_combobox_options(col,opts)` 指定选项、`set_on_cell_combobox(visible_row,col,index,text)` 选中回调（复用 ComboBox layui-form-select 皮肤与 popup 弹出；单击展开、选中即写回格文本）；对象池复用生命周期（on_change 回调栈内不 delete 触发者自身），文本/开关/复选/按钮/树形/分页路径零变化"
+      }
+    ],
     "BUG:UI-142": [],
     "BUG:UI-144": [],
     "BUG:UI-141": [],

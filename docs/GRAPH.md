@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 151（BUG 143 / DOC 6 / META 2）
-- 边: 336
+- 节点: 152（BUG 144 / DOC 6 / META 2）
+- 边: 337
 - lint: 0 错误 / 5 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-139
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-140
@@ -1016,6 +1016,12 @@
 - 路径: `docs/CHANGELOG.md#ui-142-scrollbox-固定头部--背景直角化页面顶部留白固定且与左栏拼全宽横条2026-08-27`
 - 反链: 无
 
+### BUG:UI-143 · UI-143: Table 新增下拉单元格列——表格行内下拉选择（2026-08-30）
+
+- 路径: `docs/CHANGELOG.md#ui-143-table-新增下拉单元格列表格行内下拉选择2026-08-30`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 下拉单元格列：`set_cell_combobox(col)` 该列每格渲染文本 + 右侧下拉三角（#c2c2c2），`set_combobox_options(col,opts)` 指定选项、`set_on_cell_combobox(visible_row,col,index,text)` 选中回调（复用 ComboBox layui-form-select 皮肤与 popup 弹出；单击展开、选中即写回格文本）；对象池复用生命周期（on_change 回调栈内不 delete 触发者自身），文本/开关/复选/按钮/树形/分页路径零变化
+
 ### BUG:UI-144 · UI-144: ScrollBox 滚动条按下滑块不再立即跳转，点击轨道空白仍跳转（2026-08-28）
 
 - 路径: `docs/CHANGELOG.md#ui-144-scrollbox-滚动条按下滑块不再立即跳转点击轨道空白仍跳转2026-08-28`
@@ -1253,6 +1259,7 @@
 | `BUG:UI-140` | BUG | UI-140: ScrollBox/Code 覆写 draw 不清自身脏标记→dirty_children_ 常脏，短路 mark_dirty 上抛、容器内控件点击/悬停不刷新（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-141` | BUG | UI-141: Transfer 双侧列表滚轮改 scroll 漏 mark_dirty——同类漏标脏补全（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-142` | BUG | UI-142: ScrollBox 固定头部 + 背景直角化——页面顶部留白固定且与左栏拼全宽横条（2026-08-27） | `docs/CHANGELOG.md` |
+| `BUG:UI-143` | BUG | UI-143: Table 新增下拉单元格列——表格行内下拉选择（2026-08-30） | `docs/CHANGELOG.md` |
 | `BUG:UI-144` | BUG | UI-144: ScrollBox 滚动条按下滑块不再立即跳转，点击轨道空白仍跳转（2026-08-28） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
@@ -1479,6 +1486,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-136` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-137` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-138` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-143` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

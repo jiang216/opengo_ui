@@ -2396,6 +2396,10 @@ parent->add_child(tb);
 | `void set_on_selection(std::function<void(int visible_row, bool checked)> cb)` | 选中 / 单选变化回调（参数：可见行号, 最新选中态） |
 | `void set_cell_switch(int col)` | —— 单元格表单列（layui templet 内嵌 switch/checkbox，form.html）—— 该列每格渲染 Switch（基于该行第 col 列文本非空与否预置开） |
 | `void set_cell_checkbox(int col)` | 该列每格渲染 CheckBox（默认勾选：文本为 "1"/"true"） |
+| `void set_cell_combobox(int col)` | —— 下拉单元格列（[UI-143](CHANGELOG.md#ui-143-table-新增下拉单元格列表格行内下拉选择2026-08-30)）—— 该列每格渲染文本 + 右侧下拉三角，单击展开行内 ComboBox（复用 layui-form-select 皮肤与 popup 弹出） |
+| `bool is_cell_combobox(int col) const` |  |
+| `void set_combobox_options(int col, const std::vector<std::string>& options)` | 下拉列可选项（与列下标平行；未设置视为空选项集） |
+| `void set_on_cell_combobox(std::function<void(int visible_row, int col, int index, const std::string& text)> cb)` | 下拉选中回调（参数：可见行号, 列号, 选项下标, 选中文本）；选中即写回该格文本 |
 | `void set_total_row(bool on)` | —— 合计行（layui totalRow，totalRow.html / parseData.html）—— |
 | `bool total_row() const` |  |
 | `void set_total_row_text(const char* s)` |  |

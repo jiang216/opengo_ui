@@ -8,6 +8,7 @@
 #include <vector>
 
 namespace ui {
+class ComboBox;
 class Font;
 class Laypage;
 class Renderer;
@@ -128,6 +129,16 @@ public:
     // 列级可编辑开关（UI-134）：false 则该列双击不进入行内编辑（默认 true 可编辑）
     void set_cell_editable(int col, bool editable);
 
+    // —— 下拉单元格列（UI-143：表格行内下拉选择，复用 ComboBox layui-form-select 皮肤）——
+    // 该列每格渲染文本 + 右侧下拉三角，单击单元格展开行内 ComboBox；
+    // 选项选中后写回该格文本并触发选中回调。
+    void set_cell_combobox(int col);
+    bool is_cell_combobox(int col) const;
+    // 指定下拉列的可选项（与列下标平行；未设置视为空选项集）
+    void set_combobox_options(int col, const std::vector<std::string>& options);
+    // 下拉选中回调（参数：可见行号, 列号, 选项下标, 选中文本）
+    void set_on_cell_combobox(std::function<void(int visible_row, int col, int index, const std::string& text)> cb) { on_cell_combo_ = std::move(cb); }
+
     // —— 合计行（layui totalRow，totalRow.html / parseData.html）——
     void set_total_row(bool on) { total_row_ = on; mark_dirty(); }
     bool total_row() const { return total_row_; }
@@ -203,7 +214,7 @@ public:
 
 private:
     // 列内容类型
-    enum class ColKind { Data, Checkbox, Radio, Numbers, CellSwitch, CellCheckbox, Button };
+    enum class ColKind { Data, Checkbox, Radio, Numbers, CellSwitch, CellCheckbox, Button, ComboBox };
     struct Column {
         std::string title;
         float width = 0.f;
@@ -219,6 +230,9 @@ private:
     void sort_rows(int col);
     void begin_edit(int row, int col, float click_x = -1.f);
     void commit_edit();
+    // 下拉单元格列：单击展开行内 ComboBox（UI-143）
+    void begin_combo(int row, int col);
+    void close_combo();
     bool in_header(float x, float y) const;
     int header_col_at(float x) const;
     int col_hit(float x) const;
@@ -303,6 +317,15 @@ private:
     int edit_row_ = -1;   // 编辑的可视行号（定位用）
     int edit_col_ = -1;
     int edit_data_row_ = -1;  // 编辑对应的数据行下标（写回用，跨分页）
+
+    // 下拉单元格状态（UI-143）
+    ComboBox* combo_box_ = nullptr;
+    int combo_row_ = -1;   // 展开的可视行号
+    int combo_col_ = -1;
+    int combo_data_row_ = -1;  // 展开对应的数据行下标
+    // 下拉列选项集（与 cols_ 下标平行；未设置列留空）
+    std::vector<std::vector<std::string>> combo_options_;
+    std::function<void(int, int, int, const std::string&)> on_cell_combo_;
 
     // 列宽自适应：容器宽 > 各列宽之和时，剩余空间按比例分配给所有列
     std::vector<float> eff_widths_;  // 每列实际渲染宽度（on_layout 计算）

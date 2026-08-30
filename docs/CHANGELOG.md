@@ -3,6 +3,27 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-143: Table 新增下拉单元格列——表格行内下拉选择（2026-08-30）
+- **类型**：功能新增（audio_text 插件配置面板表格式：翻译路径/模型/URL/api_key/目标语言/启用/测试 单行表，「目标语言」列须行内下拉）
+- **严重度**：中
+- **根因**：Table 此前仅有文本行内编辑（UI-134）/ 开关复选（UI-131）/ 按钮列 / 树形等能力，**缺行内下拉选择列**。宿主在表格上浮一层伪下拉会破坏滚动/命中/编辑协同，按「ui 库能力缺陷归因到 ui 库」强制归因在库内新增列类型。
+- **修复**（ui 库级）：
+  - `ColKind` 新增 `ComboBox`；新增 `set_cell_combobox(col)` / `set_combobox_options(col, options)` / `set_on_cell_combobox(visible_row, col, index, text)`。
+  - 该列每格绘制格文本 + 右侧下拉三角（#c2c2c2，与 ComboBox 皮肤一致）；表头标题居中（与开关/复选列 UI-131 一致）。
+  - 单击单元格展开行内 ComboBox（`begin_combo`）：复用 ComboBox 皮肤与 `open_popup` 弹出机制，定位沿用 `begin_edit` 坐标约定（表头下 + 列偏移 − 内容滚动偏移）。
+  - 选中即写回该格文本（`rows_` 直写，无需 rebuild 即生效）并触发回调。
+  - 生命周期：`combo_box_` **对象池式复用**（on_change 回调栈内禁止 delete 触发者自身——`ComboBox::select` 返回后仍执行 `close()/focus()`，delete 即 use-after-free）；`close_combo` 仅隐藏；`rebuild_rows` / 点击格子以外区域统一关闭。
+  - `ComboBox::open()` 由 private 提为 public（Table 需显式展开面板）。
+- **回归清单**：
+  1. 文本/开关/复选/按钮/树形/分页既有列类型行为不变（仅新增枚举分支）。
+  2. 下拉列单击展开面板；选项点击选中写回单元格并触发 `on_cell_combobox`（参数为可见行号/列号/选项下标/文本）。
+  3. 选中后 ComboBox 隐藏，不残留点击拦截（`visible=false` 不参与 dispatch 命中/绘制，widget.cpp:273）。
+  4. 展开中点击表格其他区域自动关闭；滚动/重建（reload/sort/set_page/add_row）自动关闭。
+  5. 未设置 `set_combobox_options` 的下拉列展开为空选项面板，不崩溃。
+  6. 行内编辑（双击文本格）与下拉列互不干扰：点击下拉列前先 commit 编辑框。
+- **验证**：opengl_UI Release 构建 + install 同步（ui_ui.lib / table.h / combobox.h）→ audio_text 插件配置面板表格式实施后实机验证。
+- **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`、`ui/include/ui/ui/combobox.h` + install 同步。
+
 ## UI-142: ScrollBox 固定头部 + 背景直角化——页面顶部留白固定且与左栏拼全宽横条（2026-08-27）
 - **类型**：功能改进 / 视觉一致性（audio_text 多页面 UI：设置页顶部留白随滚动上移 + 右面板圆角与左侧导航直角交界出现月牙空隙）
 - **严重度**：中

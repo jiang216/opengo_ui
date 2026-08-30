@@ -2,6 +2,7 @@
 
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
+#include "ui/ui/combobox.h"
 #include "ui/ui/label.h"
 #include "ui/ui/laypage.h"
 #include "ui/ui/layui_icons.h"
@@ -93,6 +94,14 @@ public:
                     font_->draw_text(renderer, std::to_string(index_ + 1).c_str(),
                                      x + owner_->cell_pad_x(), cy - font_->line_height() * 0.5f,
                                      Vec4{0.2f, 0.2f, 0.2f, 1.0f});
+            } else if (owner_->is_cell_combobox(c)) {
+                // UI-143：下拉单元格列——格文本 + 右侧下拉三角（与 ComboBox 皮肤 #c2c2c2 三角一致）
+                if (font_ && !text.empty())
+                    font_->draw_text(renderer, text.c_str(), x + owner_->cell_pad_x(),
+                                     cy - font_->line_height() * 0.5f, Vec4{0.2f, 0.2f, 0.2f, 1.0f});
+                const float ccx = x + w - 14.f;
+                const Vec2 tri[3] = {{ccx - 5, cy - 3}, {ccx + 5, cy - 3}, {ccx, cy + 3}};
+                renderer.draw_polygon(tri, 3, Vec4{0.76f, 0.76f, 0.76f, 1.0f});
             } else if (!text.empty() && font_) {
                 const char* drawText = text.c_str();
                 std::string truncated;
@@ -518,6 +527,22 @@ void Table::set_cell_checkbox(int col) {
         if (col >= 0 && col < (int)cols_.size()) cols_[col].kind = ColKind::CellCheckbox;
 }
 
+void Table::set_cell_combobox(int col) {
+    mark_dirty();
+        if (col >= 0 && col < (int)cols_.size()) cols_[col].kind = ColKind::ComboBox;
+}
+
+bool Table::is_cell_combobox(int col) const {
+    return col >= 0 && col < (int)cols_.size() && cols_[col].kind == ColKind::ComboBox;
+}
+
+void Table::set_combobox_options(int col, const std::vector<std::string>& options) {
+    mark_dirty();
+        if (col < 0) return;
+    if ((int)combo_options_.size() <= col) combo_options_.resize(col + 1);
+    combo_options_[col] = options;
+}
+
 void Table::add_button_column(const char* title, float width,
                               const std::vector<std::string>& labels,
                               const std::vector<std::string>& events) {
@@ -624,6 +649,8 @@ float Table::preferred_height() const {
 }
 
 void Table::rebuild_rows() {
+    // UI-143：行结构重建时回收行内下拉（仅非 ComboBox 回调栈内触发，安全）
+    close_combo();
     // 树形可见性：先序遍历，祖先任一折叠则整棵子树隐藏
     tree_visible_.clear();
     {
@@ -808,6 +835,68 @@ void Table::set_cell_editable(int col, bool editable) {
     cols_[col].editable = editable;
 }
 
+// UI-143：关闭行内下拉（对象池式——仅隐藏并清状态，不 delete）。
+// 理由：on_change 回调栈内宿主可能 reload() → rebuild_rows() → 该路径，
+// 若 delete 会销毁正在执行回调的 ComboBox 自身，select() 返回后 close()/focus()
+// 即 use-after-free。combo_box_ 作为 Table 子树常驻，由 Widget 树统一析构。
+void Table::close_combo() {
+    if (combo_box_) combo_box_->visible = false;
+    combo_row_ = -1;
+    combo_col_ = -1;
+    combo_data_row_ = -1;
+}
+
+void Table::begin_combo(int row, int col) {
+    if (row < 0 || row >= (int)visible_rows_.size() || col < 0 || col >= (int)cols_.size()) return;
+    if (cols_[col].kind != ColKind::ComboBox) return;
+    commit_edit();
+    close_combo();
+
+    // 定位单元格（与 begin_edit 同一坐标约定：表头高之下 + 列偏移，扣除内容滚动）
+    float cx = bounds_.x;
+    for (int i = 0; i < col; ++i) cx += col_width(i);
+    const float cy = bounds_.y + header_h() + row * row_h() - body_->scroll_offset();
+    const float cw = col_width(col);
+    const int data = data_row_of(row);
+
+    if (!combo_box_) {
+        combo_box_ = new ComboBox(cx, cy, cw, row_h());
+        combo_box_->set_font(font_);
+        combo_box_->set_theme(theme_);
+        add_child(combo_box_);
+    }
+    combo_box_->set_bounds(cx, cy, cw, row_h());
+    combo_box_->visible = true;
+    if ((int)combo_options_.size() <= col) combo_options_.resize(col + 1);
+    combo_box_->set_options(combo_options_[col]);
+    // 恢复当前单元格文本对应的选中项（此时 on_change 未设置，select 仅复位显示）
+    if (data >= 0 && data < (int)rows_.size() && col < (int)rows_[data].size()) {
+        const std::string& cur = rows_[data][col];
+        for (int i = 0; i < (int)combo_options_[col].size(); ++i) {
+            if (combo_options_[col][i] == cur) {
+                combo_box_->select(i);
+                break;
+            }
+        }
+    }
+    combo_box_->set_on_change([this, row, col, data](int index) {
+        // UI-143：选中即写回该格文本并通知调用方。处于 ComboBox::select 的 on_change
+        // 回调栈内，故只写回 + 隐藏（不 delete），对象由下一次 begin_combo 复用。
+        std::string text;
+        if (index >= 0 && col < (int)combo_options_.size() && index < (int)combo_options_[col].size())
+            text = combo_options_[col][index];
+        if (data >= 0 && data < (int)rows_.size() && col < (int)rows_[data].size())
+            rows_[data][col] = text;
+        combo_box_->visible = false;
+        if (on_cell_combo_) on_cell_combo_(row, col, index, text);
+    });
+    combo_row_ = row;
+    combo_col_ = col;
+    combo_data_row_ = data;
+    combo_box_->focus();
+    combo_box_->open();
+}
+
 void Table::commit_edit() {
     if (!edit_box_) return;
     int data = edit_data_row_;
@@ -851,6 +940,10 @@ bool Table::on_mouse_down(float x, float y, int button) {
     // 如果正在编辑单元格，单击其他位置先提交编辑
     if (edit_box_) {
         commit_edit();
+    }
+    // UI-143：下拉展开中，点击格子以外的区域先行关闭（命中格内由 ComboBox 自身处理）
+    if (combo_box_ && combo_box_->visible) {
+        close_combo();
     }
 
     // 表头：点击可排序列切换排序；点复选头全选当前页
@@ -920,6 +1013,12 @@ bool Table::on_mouse_down(float x, float y, int button) {
                 // UI-129：翻转后通知调用方（此前仅改文本，调用方无法感知切换）
                 if (on_cell_form_) on_cell_form_(row, col, !on);
             }
+            return true;
+        }
+
+        // 下拉单元格列（UI-143）：单击展开行内 ComboBox
+        if (col >= 0 && is_cell_combobox(col)) {
+            begin_combo(row, col);
             return true;
         }
 
@@ -1017,8 +1116,9 @@ void Table::on_draw(Renderer& renderer) {
             if (font_)
                 font_->draw_text(renderer, col.title.c_str(), x + cell_pad_x(),
                                  cy - font_->line_height() * 0.5f, Vec4{0.2f, 0.2f, 0.2f, 1.0f});
-        } else if (col.kind == ColKind::CellSwitch || col.kind == ColKind::CellCheckbox) {
-            // UI-131：表单列（开关/复选）表头标题居中，与单元格控件对齐
+        } else if (col.kind == ColKind::CellSwitch || col.kind == ColKind::CellCheckbox ||
+                   col.kind == ColKind::ComboBox) {
+            // UI-131：表单列（开关/复选）表头标题居中，与单元格控件对齐；UI-143：下拉列同
             if (font_ && !col.title.empty()) {
                 const float tw = font_->measure_text(col.title.c_str());
                 font_->draw_text(renderer, col.title.c_str(), x + (w - tw) * 0.5f,
