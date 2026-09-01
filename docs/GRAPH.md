@@ -1102,7 +1102,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-157-事件分发阶段新建控件同帧被绘在-00-闪一帧scene-帧循环调度绘制间补一次幂等布局2026-09-01`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#事件阶段新建控件不闪 (0,0)：`Scene::frame()` 帧序「帧首 `root_.layout()` → 事件分发 → 绘制」下，鼠标点击在事件回调里 `new`+`add_child` 的控件同帧早先 layout 已过 → 会以 (0,0,0,0) 画一帧；故在 `root_.draw()` 前补一次 `root_.layout()`（带 `dirty_‖dirty_children_` 门控，无变更帧即时 no-op、幂等），事件阶段新建即重排后再绘，消除 (0,0) 闪帧
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#事件阶段新建控件不闪 (0,0)：`Scene::frame()` 帧序「帧首 `root_.layout()` → 事件分发 → 绘制」下，鼠标点击在事件回调里 `new`+`add_child` 的控件同帧早先 layout 已过 → 会以 (0,0,0,0) 画一帧；故在 `root_.draw()` 前补一次 `root_.layout()`（带 `dirty_‖dirty_children_` 门控，无变更帧即时 no-op、幂等）；并在 `Widget::draw()` 入口再兜底一次同款门控 `if (dirty_‖dirty_children_) layout();`（覆盖绕过 Scene 裸调 `Widget::draw` 的库分发第三方），事件阶段新建即重排后再绘，消除 (0,0) 闪帧
 
 ### DOC:API_REFERENCE · API_REFERENCE
 

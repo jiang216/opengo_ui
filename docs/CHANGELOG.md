@@ -7,13 +7,16 @@
 - **类型**：缺陷修复（ui 库 `Scene` 帧序缺陷——事件阶段动态创建控件会在 (0,0) 闪现一帧）
 - **严重度**：中（运行时鼠标点击新建的控件先以 (0,0,0,0) 画一帧再归位；smoke/预建路径因有事件循环缓冲不触发，故此前未见）
 - **根因**：`Scene::frame()` 帧循环顺序为「帧首 `root_.layout()` → 事件分发（鼠标/滚轮/键盘）→ `root_.draw()`」（`scene.cpp`）。当**鼠标点击**在事件分发回调里 `new` 控件并 `add_child` 时，同帧早先的 `layout()` 已跑过、新控件尚未上树 → 保持构造默认 `(0,0,0,0)` bounds；紧接着**同一帧** `draw()` 就把这个 (0,0) 控件画出来，直到**下一帧** `layout()`（由 UI-154 的 `add_child→mark_dirty` 触发）才把它排到正确坐标 —— 用户所见即「点击后控件在左上角闪一帧再跳到位」。UI-154/UI-156 只保证「下一帧重排」，阻不断「创建当帧先绘制一次 (0,0)」。smoke 切页在应用回调/事件循环外预建页面、有缓冲被后续 layout 排好，故不触发该时序。
-- **修复**（ui 库 `Scene`）：在 `root_.draw()` 之前补一次 `root_.layout()`（`scene.cpp`「消费：绘制」段）。`Widget::layout()` 自带 `if (!dirty_ && !dirty_children_) return;` 门控（`widget.cpp`）——无变更帧即时返回、零开销且不破坏既有帧级门控；事件阶段新建控件已 `mark_dirty()` 则门控开启，本次 layout 把新控件排到唯一事实源 bounds 后再 draw → **(0,0) 闪帧消除**。布局幂等：`on_layout` 为确定性 `set_bounds`，ScrollBox `needs_layout_` 在 on_layout 清零、popup `place_popup`/`sync_panel` 幂等重算（UI-156 回归清单第 4 项已保证），同帧二次布局无副作用。
+- **修复**（ui 库，两层兜底）：
+  - **Scene 帧封装补布局**：在 `root_.draw()` 之前补一次 `root_.layout()`（`scene.cpp`「消费：绘制」段）。`Widget::layout()` 自带 `if (!dirty_ && !dirty_children_) return;` 门控（`widget.cpp`）——无变更帧即时返回、零开销且不破坏既有帧级门控；事件阶段新建控件已 `mark_dirty()` 则门控开启，本次 layout 把新控件排到唯一事实源 bounds 后再 draw → **(0,0) 闪帧消除**。布局幂等：`on_layout` 为确定性 `set_bounds`，ScrollBox `needs_layout_` 在 on_layout 清零、popup `place_popup`/`sync_panel` 幂等重算（UI-156 回归清单第 4 项已保证），同帧二次布局无副作用。
+  - **`Widget::draw()` 入口兜底（覆盖绕过 Scene 的裸用）**：库分发后第三方若不复用 `Scene::frame()`、而是裸调公共 `Widget::draw(Renderer&)`，上述 Scene 补布局不生效。故在 `draw()` 开头加门控：`if (dirty_ || dirty_children_) layout();` 再绘制（`widget.cpp`）。`layout()` 不自清脏（去标由帧末 `finish_draw_dirty()` 负责）、布局不调 draw（无递归）、自带脏门控（clean 帧零开销）——对走 Scene 的标准路径与帧首 layout 形如重复但幂等无害，对绕过 Scene 的第三方则保证「画前先排位」。`add_child/remove_child/clear_children/set_visible` 的 `mark_dirty` 沿父链上溯（UI-154/156），故深层新加子控件也会把祖先置脏，`root.draw()` 门控即开、整树先排后画。
 - **回归清单**（新增保证项，不得破坏既有）：
   1. 运行时**事件阶段**（鼠标点击/拖拽/键盘）动态创建的控件（`new` + `add_child`、挂 root 的弹出面板/表格单元格下拉/日期面板等）在创建帧即绘制于正确坐标，**不再 (0,0) 闪一帧**。
-  2. 无变更帧 `root_.layout()` 因脏门控即时返回，帧循环性能/空闲帧门控（UI-135/136）不退化。
+  2. 无变更帧 `layout()` 因脏门控即时返回，帧循环性能/空闲帧门控（UI-135/136）不退化。
   3. 布局幂等：ScrollBox 内容重排、popup `place_popup`/`sync_panel` 相对位置、PanelWindow 拖拽重定位在二次布局后结果一致（UI-142/146/153/154/155/156 回归项保持）。
+  4. **绕过 `Scene` 裸调 `Widget::draw(Renderer&)`**（库分发/第三方自定义渲染循环）时，脏子树仍先布局后绘制，不因未走 `Scene::frame()` 而 (0,0) 闪帧。
 - **验证**（Windows cmake MSVC Release）：`ui_ui` 重编译通过、`layui_test` 重链通过；`layui_test --smoke 3`/`--smoke 8` exit 0（69 页切页全过）。注：smoke 走预建/缓冲路径本就不闪，本条目验证重点是**运行时点击创建**（人工/脚本在事件阶段 `new` 控件），由 smoke 回归项兜底确认无退化。
-- **影响范围**：`ui/src/scene.cpp`、`docs/CHANGELOG.md`、`docs/ARCHITECTURE.md`。
+- **影响范围**：`ui/src/scene.cpp`、`ui/src/widget.cpp`、`docs/CHANGELOG.md`、`docs/ARCHITECTURE.md`。
 
 ## UI-156: 标脏三态闭环「标记/去标/重标」——库级 set_visible 重标 + finish_draw_dirty 统一去标 + 清理死码 clear_dirty（2026-09-01）
 - **类型**：缺陷修复（ui 库脏标记机制的「重标」缺口的缺陷）+ 去重重构（去标三处分叉 → 单一实现）

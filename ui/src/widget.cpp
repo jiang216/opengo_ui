@@ -633,6 +633,11 @@ void Widget::advance(float dt) {
 // 帧级门控用（root.is_dirty() 决定整帧渲染或跳过），渲染帧内必须全树绘制。
 void Widget::draw(Renderer& renderer) {
     if (!visible) return;
+    // UI-157：绘制前兜底布局——若自身或子树仍脏（事件阶段新建/变更后未被 Scene::frame()
+    // 的补布局覆盖，比如绕过 Scene 裸调 Widget::draw 的第三方），先排位再画，杜绝 (0,0) 闪帧。
+    // layout() 自带 `dirty_ || dirty_children_` 门控：无变更即时返回（零开销），且 layout 不
+    // 调 draw（无递归）。Scene::frame() 已先布局，此处对标准路径是 no-op（双保险）。
+    if (dirty_ || dirty_children_) layout();
     on_draw(renderer);
     for (Widget* child : children_) {
         if (child->visible) child->draw(renderer);
