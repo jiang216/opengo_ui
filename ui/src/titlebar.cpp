@@ -108,8 +108,8 @@ void TitleBar::on_draw(Renderer& renderer) {
     const Theme* t = theme_ ? theme_ : &kDefaultTheme;
     (void)t;
 
-    // 深色底（镜像 ws-header #2f363c），与下方 layui Header 连续
-    renderer.draw_quad(bounds_, Vec4{0.18f, 0.21f, 0.24f, 1.0f});
+    // 深色底：独立标题条深色（#262a2f），与下方 layui Header(#2f363c) 区分，避免视觉上无缝融合成一块
+    renderer.draw_quad(bounds_, Vec4{0.149f, 0.165f, 0.184f, 1.0f});
     // 底部 1px 分隔线
     renderer.draw_quad({bounds_.x, bounds_.y + bounds_.h - 1.f, bounds_.w, 1.f},
                        Vec4{0.13f, 0.15f, 0.17f, 1.0f});

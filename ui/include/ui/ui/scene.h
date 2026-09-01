@@ -72,6 +72,17 @@ public:
     ui::Widget& root() { return root_; }
     void set_root_background(const ui::Vec4& clear_color) { clear_ = clear_color; }
 
+    // ---- 顶部装帧（chrome）内容区原点 ----
+    // 注册一个自绘顶部条（如无边框窗口的自绘 TitleBar）与它占用的顶部高度 top。
+    // 库由此掌握「内容区起始 y」，Rest/Draw/HUD 等直接绘制可经 content_origin_y()
+    // 统一对齐，避免各应用在 header/sidebar/content/HUD 里各自硬编码同一偏移量。
+    // chrome 仍由应用作为 root 普通子控件加入（其自身以绝对坐标绘制于 y=0）；
+    // 本 API 仅登记其高度与指针（不拥有、不移动 chrome），供内容区消费。
+    void set_chrome(Widget* chrome, float top);
+    Widget* chrome() const { return chrome_; }
+    // 内容区起始 y（= 顶部 chrome 占用高度，未注册时为 0）
+    float content_origin_y() const { return content_y_; }
+
     // ---- 全量发布-订阅（观察者）----
     using PhaseFn = std::function<void(Scene&, float dt)>;
     // 返回订阅 token（非 0），供 unsubscribe 单独摘除（页面级局部订阅切页时摘除，防悬空）。
@@ -122,6 +133,8 @@ private:
     ui::Window& window_;
     ui::Renderer& renderer_;
     ui::Widget root_;
+    ui::Widget* chrome_ = nullptr;   // 顶部装帧（自绘 TitleBar），不拥有，应用自持
+    float content_y_ = 0.f;          // 内容区起始 y（顶部 chrome 占用高度）
     ui::Vec4 clear_{0.12f, 0.12f, 0.12f, 1.f};
     // 每阶段观察者表：{token, fn}；token 稳定不随删除位移（unsubscribe 按 token 精确摘除）
     struct Observer {

@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 156（BUG 148 / DOC 6 / META 2）
-- 边: 352
+- 节点: 160（BUG 152 / DOC 6 / META 2）
+- 边: 356
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1056,6 +1056,30 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换图标 `□`/`⧉`、关闭钮 `on_close_`）、`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列
 
+### BUG:UI-149 · UI-149: 修复主窗口自绘标题条被顶部 Header 遮住——Header 构造默认 y=0 与 TitleBar 重叠，首帧标题条不可见（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-149-修复主窗口自绘标题条被顶部-header-遮住header-构造默认-y0-与-titlebar-重叠首帧标题条不可见2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#自绘标题条布局回归项：无边框主窗口首帧（未发生 Resize）标题条即完整可见、不被顶部 Header（y=0..30 需让出）遮盖，Header 位于 y=kTitleBarH 起不重叠
+
+### BUG:UI-150 · UI-150: 自绘 TitleBar 默认背景与下方 Header 同色导致"无缝融合、标题条不可区分"——改为独立更深灰（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-150-自绘-titlebar-默认背景与下方-header-同色导致无缝融合标题条不可区分改为独立更深灰2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#自绘 TitleBar 独立配色回归项：标题条默认背景 `#262A2F` 与紧邻下方页头/导航栏底色（`#2F363C`）明度可区分，标题条作为导航栏上方独立深色条可见，不与其无缝融合
+
+### BUG:UI-151 · UI-151: 修复主窗口顶部导航题条重叠的深层根因——Header 子项未随父 y 偏移（本库子控件 bounds 为绝对坐标）（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-151-修复主窗口顶部导航题条重叠的深层根因header-子项未随父-y-偏移本库子控件-bounds-为绝对坐标2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#顶部导航内容偏移回归项：Header 的 logo 图、导航文本、下拉、开关等子项须叠加父 `bounds_.y` 偏移（本库子控件 bounds 为绝对坐标），随 Header 外框整体下移到标题条下方，不与标题条重叠
+
+### BUG:UI-153 · UI-153: 库级「顶部装帧内容区原点」——Scene::set_chrome/content_origin_y，其余控件统一绘制于标题栏下方 + 修复帧率 HUD 与标题条重叠（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-153-库级顶部装帧内容区原点scenesetchromecontentoriginy其余控件统一绘制于标题栏下方--修复帧率-hud-与标题条重叠2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#内容区原点回归项：注册 `Scene::set_chrome(titlebar, h)` 后，header/sidebar/tabs/content/帧率 HUD 的 y 统一以 `Scene::content_origin_y()` 为单一来源派生（承接 UI-149/151），其余控件绘制于标题条下方、帧率 HUD 垂直居中于 Header 不与标题条重叠
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1295,6 +1319,10 @@
 | `BUG:UI-146` | BUG | UI-146: 新增统一生命周期抽象 ui::Scene——生产者→分配者→消费者→清理重置（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-147` | BUG | UI-147: 新增自绘系统风格标题条 TitleBar + 窗口居中——无边框窗口可拖动 / 关闭（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-148` | BUG | UI-148: TitleBar 补齐 最小化/最大化/关闭 三键 + 左上角应用图标；Menu 分组头箭头改用 iconfont + 可联动收起子菜单列（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-149` | BUG | UI-149: 修复主窗口自绘标题条被顶部 Header 遮住——Header 构造默认 y=0 与 TitleBar 重叠，首帧标题条不可见（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-150` | BUG | UI-150: 自绘 TitleBar 默认背景与下方 Header 同色导致"无缝融合、标题条不可区分"——改为独立更深灰（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-151` | BUG | UI-151: 修复主窗口顶部导航题条重叠的深层根因——Header 子项未随父 y 偏移（本库子控件 bounds 为绝对坐标）（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-153` | BUG | UI-153: 库级「顶部装帧内容区原点」——Scene::set_chrome/content_origin_y，其余控件统一绘制于标题栏下方 + 修复帧率 HUD 与标题条重叠（2026-09-01） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1535,6 +1563,10 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-146` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-147` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-148` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-149` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-150` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-151` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-153` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

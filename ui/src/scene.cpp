@@ -16,6 +16,11 @@ Scene::Scene(ui::Window& window, ui::Renderer& renderer)
     notify_phase(ScenePhase::Ready, 0.f);
 }
 
+void Scene::set_chrome(Widget* chrome, float top) {
+    chrome_ = chrome;
+    content_y_ = top < 0.f ? 0.f : top;
+}
+
 Scene::~Scene() {
     shutdown();
 }

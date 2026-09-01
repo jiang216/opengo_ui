@@ -3,6 +3,79 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-153: 库级「顶部装帧内容区原点」——Scene::set_chrome/content_origin_y，其余控件统一绘制于标题栏下方 + 修复帧率 HUD 与标题条重叠（2026-09-01）
+- **类型**：功能增强（ui 库 `ui::Scene`）+ 缺陷修复（测试程序 layui_test 帧率 HUD 直绘点位错误）
+- **严重度**：中
+- **根因**：库坐标模型为**绝对像素坐标**（`widget.h`），`TitleBar` 只是普通 `Widget`，库**没有任何机制**让其余内容自动绘制在标题栏下方——每个使用方都要自己为 header/sidebar/tabs/content/HUD 分别硬编码同一顶部偏移。layui_test 里 header/sidebar/nav/content/截图四处手动 `+kTitleBarH`，但**帧率 HUD 直绘**（`app.cpp` 的 `font.draw_text`）漏加偏移，`y=(kHeaderH-line_height)*0.5=20px`（绝对），落在标题条带(0..30)内，与自绘标题条重叠。
+- **修复**（ui 库 `ui::Scene`，UI-153 新 API）：
+  - `Scene::set_chrome(Widget* chrome, float top)`：注册顶部装帧并登记其占用高度，Scene 掌握内容区起始 y（`content_y_`，存成员）。
+  - `Scene::content_origin_y()`：返回内容区起始 y（未注册为 0），供 PostDraw/HUD/截图/钩子统一对齐；`Scene::chrome()` 返回装帧指针。
+  - 只登记高度/指针，**不移动 chrome**（应用仍将其作 root 普通子控件置于 y=0）；内容区坐标改由该原点为单一来源派生。
+- **修复**（测试程序 layui_test）：注册 `scene.set_chrome(&titlebar, kTitleBarH)`，`header/sidebar/tabs/content` 的 y 均以 `scene.content_origin_y()`（本地 `kChromeTop`）为单一来源派生（`kTopH=kChromeTop+kHeaderH`、`content_y=…+kTabTitleH`），不再各自硬编码 `kTitleBarH`；帧率 HUD 的 `draw_text` y 改为 `kChromeTop+(kHeaderH-line_height)*0.5f`，在深色 Header 内垂直居中、不再压标题条。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 标题条带（window y 0..kTitleBarH）除标题条自身标题/图标/三键外，无任何导航内容/HUD 与其重叠。
+  2. 帧率 HUD 文本垂直居中于 Header（window y≈kChromeTop+(kHeaderH-line_height)/2），位于标题条下方，不与标题条重叠。
+  3. Header 的 logo/导航文本/下拉/开关、sidear/nav/tabs/content 全部以库 `content_origin_y()` 为单一原点派生，位于标题条下方（承接 UI-149/151 回归项）。
+  4. 窗口 Resize 后以上布局仍正确（Resize 钩子沿用同一 `kChromeTop` 派生）。
+- **验证**（Windows cmake MSVC Release）：`ui_ui` 重编译通过、`layui_test` 重链通过；`layui_test --smoke 2` exit 0。截屏像素采样：标题条 winy=15 `rgb(38,42,47)` 干净、Header winy=40 `rgb(46,54,61)`、HUD 文本行 winy≈54..68（峰值 58..64）落于 Header 带内、winy=60 采样 `rgb(81,83,85)`＝HUD 文字色、标题条带 (0..30) 无 HUD/导航内容。
+- **影响范围**：`ui/include/ui/ui/scene.h`、`ui/src/scene.cpp`、`layui_test/src/app.cpp`、`docs/CHANGELOG.md`。
+
+## UI-151: 修复主窗口顶部导航题条重叠的深层根因——Header 子项未随父 y 偏移（本库子控件 bounds 为绝对坐标）（2026-09-01）
+- **类型**：缺陷修复（测试程序 layui_test 自定义 `Header` 布局缺漏；非 ui 库缺陷）
+- **严重度**：高（UI-149 仅修复 Header 外框定位，未解决其**内容**仍压在标题条的真实重叠）
+- **根因**：本 ui 库布局模型为**子控件 bounds 即绝对坐标**（`Widget::draw` 递归调用子 `on_draw` 直接以 `bounds_` 绘制、无父级坐标叠加；
+  库内容器如 `card.cpp`/`collapse.cpp`/`blockquote.cpp`/`checkbox.cpp` 在 `on_layout` 中都手动叠加 `bounds_.x/y`）。而 layui_test 的
+  `Header`（`app.cpp`）`on_layout` 把所有子项（`logo_img_`/navs/dropdowns/`theme_switch_`）按**局部 (0,0) 起**摆放，未叠加父 `bounds_.y`。
+  于是把 Header 外框 `set_bounds(0,kTitleBarH,..)` 下移后：外框背景（`on_draw` 用 `bounds_`）确实下移到 y=30，但各子项仍绘制在
+  绝对 y=0.. → **logo 图片、导航文本、下拉、主题开关全部压在自绘 TitleBar 上**，与标题栏重叠。UI-149 只动了外框位置、未动内容，
+  故用户看到「背景分离了但 logo/文本/按钮没下移」。
+- **修复**（测试程序 layui_test `app.cpp`）：`Header::on_layout` 引入 `const float oy = bounds_.y;`，对所有子项坐标叠加 `oy`：
+  `logo_img_`(0,oy)、`theme_switch_`/dropdowns 的垂直居中 `oy+(h-child_h)*0.5f`、navs(0,oy,..)。使导航栏**内容随 Header 外框整体下移**
+  到标题条下方 y=kTitleBarH 起。遵循库内容器叠加父偏移的一致约定。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 标题条带（y=0..kTitleBarH）内除标题条自身图标/三键外不再有任何导航内容（logo/文本/开关）与之重叠。
+  2. 导航栏内容（logo 图、组件/笔记文本、生态/2.13.9 下拉、主题开关）垂直位于 Header 外框 y=kTitleBarH 起，与标题条不相交。
+  3. UI-147/148/149/150 回归项全部保持：标题条三键/图标/拖动/关闭、Header 底色可区分、Resize 后布局不变。
+- **验证**（Windows cmake MSVC Release）：`layui_test` 重编译重链通过；`layui_test --smoke 2` exit 0。截屏扫描主窗口顶部：
+  x=400 纵扫 y=0..30 为纯标题条深色 `rgb(38,42,47)`（无内容），y≈32 起出现导航内容亮像素、y=36..88 为 Header 带；
+  全宽内容扫描 y=3..21 为 0 内容（标题条清空），y=24..87 为导航内容带 → 标题条与导航内容不再重叠。
+- **影响范围**：`layui_test/src/app.cpp`、`docs/CHANGELOG.md`。
+
+## UI-150: 自绘 TitleBar 默认背景与下方 Header 同色导致"无缝融合、标题条不可区分"——改为独立更深灰（2026-09-01）
+- **类型**：缺陷修复（ui 库 `ui::TitleBar` 默认配色缺陷）
+- **严重度**：低
+- **根因**：UI-147/148 的 `ui::TitleBar::on_draw` 深色底用 `Vec4{0.18,0.21,0.24}`（= `#2F363C`），与主窗口顶部自定义
+  `Header`（layui_test `app.cpp`）的下方导航栏底色**完全相同**。二者上下紧贴（TitleBar y=0..30、Header y=30..90）且同色，
+  中间仅 1px 分隔线，视觉上标题条"无缝融入"导航栏变成一整块，用户无法把标题条识别为导航栏上方独立的一条。
+- **修复**（ui 库 `ui/src/titlebar.cpp`）：TitleBar 顶部深色底改为**更深一档** `Vec4{0.149,0.165,0.184}`（≈ `#262A2F`），
+  与紧邻其下的 Header `#2F363C` 形成明确明度差，标题条作为独立深色条清晰可见。分隔线与三键/图标/标题绘制不变。
+  只改背景常量，不引入新 API，不影响其它使用 TitleBar 的场景。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. TitleBar 背景色（`#262A2F`）与紧邻下方页头/导航栏底色（如 `#2F363C`）**明度可区分**，标题条作为独立条带可见。
+  2. UI-147/148/149 回归项全部保持：三键 hover/按下红底、关闭 `on_close_`、拖动整窗、`set_icon` 左上图标、标题裁剪防压键。
+- **验证**（Windows cmake MSVC Release）：`ui_ui` 重建通过，`layui_test` 重链通过。截屏扫描主窗口顶部条带：
+  标题条 y=0..30 采样 `rgb(38,42,47)`、下方 Header y=30..90 采样 `rgb(46,54,61)`，两带明度差明显、分界在 y=30。
+- **影响范围**：`ui/src/titlebar.cpp`、`docs/CHANGELOG.md`。
+
+## UI-149: 修复主窗口自绘标题条被顶部 Header 遮住——Header 构造默认 y=0 与 TitleBar 重叠，首帧标题条不可见（2026-09-01）
+- **类型**：缺陷修复（测试程序 layui_test 布局定位错误，非 ui 库缺陷）
+- **严重度**：中
+- **根因**：UI-148 主窗口布局中，自定义 `Header`（`layui_test/src/app.cpp` 的 `Header(float w,float h)`）构造默认为
+  `Widget(0,0,w,h)`（y=0），与自绘 `TitleBar`（y=0,h=30）**重叠**。Header 在 root 中晚于 TitleBar 加入、绘制在其上，
+  其深色底 + logo 首帧即盖住标题条（三键 + 标题不可见）。Header 仅在被加到 `kTitleBarH=30` 处，位置修正只发生在
+  **Resize 事件**（`SceneEvent::Resized` 钩子里的 `header.set_bounds(0,kTitleBarH,...)`）→ 首帧/未 resize 时标题条被遮，
+  直到窗口发生尺寸变化（用户所见「隐藏后再显示才显示」）才自我纠正。属测试程序把构建期坐标与布局期坐标割裂的定位缺漏。
+- **修复**（测试程序 layui_test，非 ui 库）：`Header` 构造加入 root 前显式 `header.set_bounds(0, kTitleBarH, window.width(), kHeaderH)`
+  与 Resize 钩子同值，保证**首帧即让出标题条**，无需等 Resize 事件纠正。标题条（y=0..30）与 Header（y=30..90）首帧即正确上下排布。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 主窗口首帧（未发生任何 Resize）自绘标题条即完整可见：三键在右上、标题/应用图标在左上，不被 Header 遮盖。
+  2. Header（logo / 导航文本 / 下拉 / 主题开关）位于标题条下方 y=kTitleBarH 起，二者不重叠、不错位。
+  3. 窗口 Resize 后标题条/Header 位置仍正确（Resize 钩子逻辑不变）。
+- **验证**（Windows cmake MSVC Release）：`layui_test` 编译链接通过；`layui_test --smoke 2` exit 0（"page switches ok"）。
+  截屏采样顶部条带：y=15 行检测到标题文字亮像素（x≈17..149）与右上窗口键（x≈1195 最小化 / x≈1264 关闭），
+  Header 深色带位于 y=30..90，标题条与 Header 首帧正确分离。
+- **影响范围**：`layui_test/src/app.cpp`、`docs/CHANGELOG.md`。
+
 ## UI-148: TitleBar 补齐 最小化/最大化/关闭 三键 + 左上角应用图标；Menu 分组头箭头改用 iconfont + 可联动收起子菜单列（2026-09-01）
 - **类型**：功能补强（ui 库，UI-147 基础上的标题条交互补全 + 菜单分组头图标与联动缺口修复）
 - **严重度**：中

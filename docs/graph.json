@@ -1,11 +1,39 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-01T12:15:15+08:00",
+  "generatedAt": "2026-09-01T13:21:15+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-153": {
+      "id": "BUG:UI-153",
+      "type": "BUG",
+      "label": "UI-153: 库级「顶部装帧内容区原点」——Scene::set_chrome/content_origin_y，其余控件统一绘制于标题栏下方 + 修复帧率 HUD 与标题条重叠（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-153-库级顶部装帧内容区原点scenesetchromecontentoriginy其余控件统一绘制于标题栏下方--修复帧率-hud-与标题条重叠2026-09-01"
+    },
+    "BUG:UI-151": {
+      "id": "BUG:UI-151",
+      "type": "BUG",
+      "label": "UI-151: 修复主窗口顶部导航题条重叠的深层根因——Header 子项未随父 y 偏移（本库子控件 bounds 为绝对坐标）（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-151-修复主窗口顶部导航题条重叠的深层根因header-子项未随父-y-偏移本库子控件-bounds-为绝对坐标2026-09-01"
+    },
+    "BUG:UI-150": {
+      "id": "BUG:UI-150",
+      "type": "BUG",
+      "label": "UI-150: 自绘 TitleBar 默认背景与下方 Header 同色导致\"无缝融合、标题条不可区分\"——改为独立更深灰（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-150-自绘-titlebar-默认背景与下方-header-同色导致无缝融合标题条不可区分改为独立更深灰2026-09-01"
+    },
+    "BUG:UI-149": {
+      "id": "BUG:UI-149",
+      "type": "BUG",
+      "label": "UI-149: 修复主窗口自绘标题条被顶部 Header 遮住——Header 构造默认 y=0 与 TitleBar 重叠，首帧标题条不可见（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-149-修复主窗口自绘标题条被顶部-header-遮住header-构造默认-y0-与-titlebar-重叠首帧标题条不可见2026-09-01"
+    },
     "BUG:UI-148": {
       "id": "BUG:UI-148",
       "type": "BUG",
@@ -1790,6 +1818,30 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-149",
+      "kind": "checklist",
+      "context": "回归清单#自绘标题条布局回归项：无边框主窗口首帧（未发生 Resize）标题条即完整可见、不被顶部 Header（y=0..30 需让出）遮盖，Header 位于 y=kTitleBarH 起不重叠"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-151",
+      "kind": "checklist",
+      "context": "回归清单#顶部导航内容偏移回归项：Header 的 logo 图、导航文本、下拉、开关等子项须叠加父 `bounds_.y` 偏移（本库子控件 bounds 为绝对坐标），随 Header 外框整体下移到标题条下方，不与标题条重叠"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-153",
+      "kind": "checklist",
+      "context": "回归清单#内容区原点回归项：注册 `Scene::set_chrome(titlebar, h)` 后，header/sidebar/tabs/content/帧率 HUD 的 y 统一以 `Scene::content_origin_y()` 为单一来源派生（承接 UI-149/151），其余控件绘制于标题条下方、帧率 HUD 垂直居中于 Header 不与标题条重叠"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-150",
+      "kind": "checklist",
+      "context": "回归清单#自绘 TitleBar 独立配色回归项：标题条默认背景 `#262A2F` 与紧邻下方页头/导航栏底色（`#2F363C`）明度可区分，标题条作为导航栏上方独立深色条可见，不与其无缝融合"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-003",
       "kind": "checklist",
       "context": "回归清单#core 层不得 include GL/OpenCV/FFmpeg 头文件（纯 C++，保证核心可移植、可单测）"
@@ -3206,6 +3258,34 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-153": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#内容区原点回归项：注册 `Scene::set_chrome(titlebar, h)` 后，header/sidebar/tabs/content/帧率 HUD 的 y 统一以 `Scene::content_origin_y()` 为单一来源派生（承接 UI-149/151），其余控件绘制于标题条下方、帧率 HUD 垂直居中于 Header 不与标题条重叠"
+      }
+    ],
+    "BUG:UI-151": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#顶部导航内容偏移回归项：Header 的 logo 图、导航文本、下拉、开关等子项须叠加父 `bounds_.y` 偏移（本库子控件 bounds 为绝对坐标），随 Header 外框整体下移到标题条下方，不与标题条重叠"
+      }
+    ],
+    "BUG:UI-150": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#自绘 TitleBar 独立配色回归项：标题条默认背景 `#262A2F` 与紧邻下方页头/导航栏底色（`#2F363C`）明度可区分，标题条作为导航栏上方独立深色条可见，不与其无缝融合"
+      }
+    ],
+    "BUG:UI-149": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#自绘标题条布局回归项：无边框主窗口首帧（未发生 Resize）标题条即完整可见、不被顶部 Header（y=0..30 需让出）遮盖，Header 位于 y=kTitleBarH 起不重叠"
+      }
+    ],
     "BUG:UI-148": [
       {
         "from": "DOC:ARCHITECTURE",

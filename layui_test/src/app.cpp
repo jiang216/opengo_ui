@@ -41,7 +41,6 @@ namespace {
 
 constexpr float kHeaderH = 60.f;
 constexpr float kTitleBarH = 30.f;   // 自绘系统风格标题条高（顶部可拖动条）
-constexpr float kTopH = kTitleBarH + kHeaderH;  // 内容区起始 y（标题条 + 头部）
 constexpr float kSidebarW = 240.f;  // 新镜像 docs/2 侧栏宽（ws-menu 240）
 constexpr float kChildSidebarW = 160.f;  // 第二列子菜单宽（镜像 side-child 160）
 constexpr float kTabTitleH = 40.f;
@@ -121,27 +120,30 @@ public:
     }
 
     void on_layout() override {
+        // 本 ui 库子控件 bounds 为绝对坐标（draw 无父级坐标变换），故子项均需叠加父 bounds_.y 偏移，
+        // 否则导航栏内容（logo/文本/开关）会绘制在父顶部 (y=0) 而与自绘标题条重叠。
+        const float oy = bounds_.y;
         // 左 240px logo 区域（与侧栏对齐，镜像 ws-logo 宽 240）
-        logo_img_->set_bounds(0.f, 0.f, kSidebarW, bounds_.h);
+        logo_img_->set_bounds(0.f, oy, kSidebarW, bounds_.h);
         // 右侧导航从右往左排布（镜像 ws-header-menu 右 16px）：
         // 顺序（左→右）＝ 组件 / 笔记 / 生态(dropdown) / 2.13.9(dropdown) / 主题开关
         // 因此入队顺序 [组件, 笔记, 生态, 2.13.9, 开关] → 从右往左依次摆放。
         float x = bounds_.w - 16.f;
         if (theme_switch_) {
             const float sw_w = 44.f;
-            theme_switch_->set_bounds(x - sw_w, (bounds_.h - 24.f) * 0.5f, sw_w, 24.f);
+            theme_switch_->set_bounds(x - sw_w, oy + (bounds_.h - 24.f) * 0.5f, sw_w, 24.f);
             x -= sw_w + 24.f;
         }
         // 下拉（生态、2.13.9）：从右往左，最后加入的靠右
         for (int i = (int)dropdowns_.size() - 1; i >= 0; --i) {
             const float dd_w = 88.f, dd_h = 38.f;
-            dropdowns_[i]->set_bounds(x - dd_w, (bounds_.h - dd_h) * 0.5f, dd_w, dd_h);
+            dropdowns_[i]->set_bounds(x - dd_w, oy + (bounds_.h - dd_h) * 0.5f, dd_w, dd_h);
             x -= dd_w + 24.f;
         }
         // 导航文本（组件、笔记）从右往左布局：navs_ 顺序 = [组件, 笔记] → 组件靠左
         for (int i = (int)navs_.size() - 1; i >= 0; --i) {
             const float w = navs_[i]->preferred_width();
-            navs_[i]->set_bounds(x - w, 0.f, w, bounds_.h);
+            navs_[i]->set_bounds(x - w, oy, w, bounds_.h);
             x -= w + 32.f;
         }
     }
@@ -287,7 +289,6 @@ int main(int argc, char** argv) {
 
     // 第二列子菜单可见态：选中数据表格板块时为 true，内容区右移 kChildSidebarW
     bool child_visible = false;
-    const float content_y = kTitleBarH + kHeaderH + kTabTitleH;
 
     // ---- 顶部自绘标题条（无边框窗口可拖动 + 最小化/最大化/关闭三键 + 左上角应用图标）----
     ui::TitleBar titlebar((float)window.width(), kTitleBarH, "layui_test", &window);
@@ -297,10 +298,21 @@ int main(int argc, char** argv) {
     titlebar.set_on_close([&window]() { window.set_should_close(true); });
     root.add_child(&titlebar);
 
+    // 库级顶部装帧：注册标题条为 chrome，Scene 掌握内容区起始 y（content_origin_y）。
+    // 以下所有内容坐标（header/sidebar/tabs/content/HUD）均以该原点为单一来源派生，
+    // 不再各自硬编码 kTitleBarH，保证"除标题栏外其余控件绘制在其下方"由库统一保证（UI-153）。
+    scene.set_chrome(&titlebar, kTitleBarH);
+    const float kChromeTop = scene.content_origin_y();
+    const float kTopH = kChromeTop + kHeaderH;            // 内容区起始 y（标题条 + 头部）
+    const float content_y = kChromeTop + kHeaderH + kTabTitleH;
+
     // ---- 顶部栏：深色头部（新镜像 docs/2）+ logo + 组件/笔记/生态 + 主题开关 ----
     Header header((float)window.width(), kHeaderH);
     header.set_font(&font);
     header.set_theme(&theme);
+    // 构造即定位于标题条下方（UI-148 回归）：y 以库内容区原点 kChromeTop 下移，
+    // 否则首帧会与自绘 TitleBar(y=0) 重叠，标题条被深色 Header 盖住不可见
+    header.set_bounds(0, kChromeTop, (float)window.width(), kHeaderH);
     root.add_child(&header);
     header.load_logo("logo.png");  // POST_BUILD 已拷贝到 exe 目录（Image 带 exe 回退）
     // 顺序（左→右）＝ 组件(active) / 笔记 / 生态(dropdown) / 2.13.9(dropdown) / 主题开关
@@ -602,7 +614,7 @@ int main(int argc, char** argv) {
     // 窗口尺寸变化：Scene 已更新视口+root；此处重排顶部/侧栏 + 内容
     scene.set_event_hook(ui::SceneEvent::Resized, [&](ui::Scene&) {
         titlebar.set_bounds(0, 0, (float)window.width(), kTitleBarH);
-        header.set_bounds(0, kTitleBarH, (float)window.width(), kHeaderH);
+        header.set_bounds(0, kChromeTop, (float)window.width(), kHeaderH);
         sidebar.set_bounds(0, kTopH, kSidebarW, (float)window.height() - kTopH);
         nav.set_bounds(0, 0, kSidebarW, (float)window.height() - kTopH);
         place_content();
@@ -656,9 +668,11 @@ int main(int argc, char** argv) {
         }
         if (hud[0]) {
             // 头部中段空区（logo 区之后、右侧控件群之前）：右对齐会压在
-            // 主题开关/生态/2.13.9 下拉上（UI-105）
+            // 主题开关/生态/2.13.9 下拉上（UI-105）。垂直以库内容区原点 kChromeTop 下移，
+            // 在深色 Header（y=kChromeTop..+kHeaderH）内垂直居中，避免与自绘标题条重叠（UI-153）。
             const float hud_x = kSidebarW + 16.f;
-            font.draw_text(renderer, hud, hud_x, (kHeaderH - font.line_height()) * 0.5f,
+            font.draw_text(renderer, hud, hud_x,
+                           kChromeTop + (kHeaderH - font.line_height()) * 0.5f,
                            theme.text_secondary);
         }
     });

@@ -24,6 +24,10 @@ core   ui_core 静态库（纯 C++：math/log/version，禁止 include GL/媒体
 | 多窗口独立 GL 上下文：每窗口 = 独立 `Scene` + `Window`/`Renderer`/`Font`/`root`；绘制某窗口前先 `window.make_current()`（`Window::make_current()`），禁止同上下文运行两个 `Renderer`（Renderer 实例级缓存 active_program_/scissor_stack_/proj_[16] 等 GL 全局状态会冲突） | [UI-146](CHANGELOG.md#ui-146-新增统一生命周期抽象-uiscene生产者分配者消费者清理重置2026-09-01) |
 | 无边框窗口框架：`GLFW_DECORATED=false` 下，`ui::TitleBar(w,h,title,win)` 提供自绘系统风格标题条（空白区 `start_drag/update_drag/end_drag` 拖动整窗、关闭钮触发 `on_close_`，win 为空仅绘制）；`Window::center_on_primary_monitor()` 在主显示器工作区内居中（窗口大于工作区贴左上）。主窗口 / Scene 子窗均经其拖动与关闭 | [UI-147](CHANGELOG.md#ui-147-新增自绘系统风格标题条-titlebar--窗口居中无边框窗口可拖动--关闭2026-09-01) |
 | 标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换图标 `□`/`⧉`、关闭钮 `on_close_`）、`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列 | [UI-148](CHANGELOG.md#ui-148-titlebar-补齐-最小化最大化关闭-三键--左上角应用图标menu-分组头箭头改用-iconfont--可联动收起子菜单列2026-09-01) |
+| 自绘标题条布局回归项：无边框主窗口首帧（未发生 Resize）标题条即完整可见、不被顶部 Header（y=0..30 需让出）遮盖，Header 位于 y=kTitleBarH 起不重叠 | [UI-149](CHANGELOG.md#ui-149-修复主窗口自绘标题条被顶部-header-遮住header-构造默认-y0-与-titlebar-重叠首帧标题条不可见2026-09-01) |
+| 顶部导航内容偏移回归项：Header 的 logo 图、导航文本、下拉、开关等子项须叠加父 `bounds_.y` 偏移（本库子控件 bounds 为绝对坐标），随 Header 外框整体下移到标题条下方，不与标题条重叠 | [UI-151](CHANGELOG.md#ui-151-修复主窗口顶部导航题条重叠的深层根因header-子项未随父-y-偏移本库子控件-bounds-为绝对坐标2026-09-01) |
+| 内容区原点回归项：注册 `Scene::set_chrome(titlebar, h)` 后，header/sidebar/tabs/content/帧率 HUD 的 y 统一以 `Scene::content_origin_y()` 为单一来源派生（承接 UI-149/151），其余控件绘制于标题条下方、帧率 HUD 垂直居中于 Header 不与标题条重叠 | [UI-153](CHANGELOG.md#ui-153-库级顶部装帧内容区原点scenesetchromecontent_origin_y其余控件统一绘制于标题栏下方--修复帧率-hud-与标题条重叠2026-09-01) |
+| 自绘 TitleBar 独立配色回归项：标题条默认背景 `#262A2F` 与紧邻下方页头/导航栏底色（`#2F363C`）明度可区分，标题条作为导航栏上方独立深色条可见，不与其无缝融合 | [UI-150](CHANGELOG.md#ui-150-自绘-titlebar-默认背景与下方-header-同色导致无缝融合标题条不可区分改为独立更深灰2026-09-01) |
 | core 层不得 include GL/OpenCV/FFmpeg 头文件（纯 C++，保证核心可移植、可单测） | UI-003 |
 | media 层仅反向依赖 ui/ui_gl/ui_core，且默认 OFF（纯 UI 构建不依赖媒体库） | UI-003 |
 | Demo 冒烟验证：GL 3.3 Core 上下文 + 清屏 + 色块矩形 + 垂直同步 + FPS 循环，运行正常 | UI-003 |
