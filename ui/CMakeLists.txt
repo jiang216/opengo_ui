@@ -62,6 +62,15 @@ target_include_directories(ui_ui PUBLIC
 )
 target_link_libraries(ui_ui PUBLIC ui_gl ui_core)
 
+if(OPENGUI_USE_PCH)
+    # ui 库大量 TU 均含标准库 + 渲染/字体头，纳入 PCH 降低重复解析
+    target_precompile_headers(ui_ui PRIVATE
+        <vector>
+        <string>
+        <algorithm>
+    )
+endif()
+
 # IME 候选窗跟随（ime.cpp，仅 Windows）
 if(WIN32)
     target_link_libraries(ui_ui PRIVATE imm32)

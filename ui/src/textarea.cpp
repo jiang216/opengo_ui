@@ -1,5 +1,6 @@
 #include "ui/ui/textarea.h"
 
+#include "ui/core/utf8.h"
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
 #include "ui/gl/window.h"
@@ -30,32 +31,13 @@ std::string default_paste() {
     return c ? std::string(c) : std::string();
 }
 
-// ---- UTF-8 工具 ----
+// ---- UTF-8 工具（统一到 core/ui/core/utf8.h，消除多文件重复实现） ----
 
-size_t next_cp(const std::string& s, size_t i) {
-    if (i >= s.size()) return s.size();
-    size_t j = i + 1;
-    while (j < s.size() && ((unsigned char)s[j] & 0xC0) == 0x80) ++j;
-    return j;
-}
+size_t next_cp(const std::string& s, size_t i) { return utf8::next_index(s, i); }
 
-size_t prev_cp(const std::string& s, size_t i) {
-    if (i == 0) return 0;
-    size_t j = i - 1;
-    while (j > 0 && ((unsigned char)s[j] & 0xC0) == 0x80) --j;
-    return j;
-}
+size_t prev_cp(const std::string& s, size_t i) { return utf8::prev_index(s, i); }
 
-unsigned int decode_cp(const std::string& s, size_t i) {
-    const unsigned char c = (unsigned char)s[i];
-    if (c < 0x80) return c;
-    if ((c & 0xE0) == 0xC0) return ((c & 0x1F) << 6) | ((unsigned char)s[i + 1] & 0x3F);
-    if ((c & 0xF0) == 0xE0)
-        return ((c & 0x0F) << 12) | (((unsigned char)s[i + 1] & 0x3F) << 6) |
-               ((unsigned char)s[i + 2] & 0x3F);
-    return ((c & 0x07) << 18) | (((unsigned char)s[i + 1] & 0x3F) << 12) |
-           (((unsigned char)s[i + 2] & 0x3F) << 6) | ((unsigned char)s[i + 3] & 0x3F);
-}
+unsigned int decode_cp(const std::string& s, size_t i) { return utf8::decode_cp(s, i); }
 
 std::string encode_cp(unsigned int cp) {
     std::string s;

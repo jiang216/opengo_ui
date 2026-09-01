@@ -482,6 +482,18 @@ void Font::bake_cjk(unsigned int cp) const {
 
 void Font::draw_text(Renderer& renderer, const char* text, float x, float y,
                      const Vec4& color, float scale, bool bold) const {
+    draw_text_impl(renderer, text, x, y, color, scale, bold, nullptr);
+}
+
+void Font::draw_text(Renderer& renderer, const char* text, float x, float y,
+                     const Vec4& color, int max_len, float scale, bool bold) const {
+    if (max_len <= 0 || !text) return;
+    draw_text_impl(renderer, text, x, y, color, scale, bold, text + max_len);
+}
+
+// draw_text 两个公开重载的共享实现体（去重，避免同一绘制循环维护两份，防逻辑漂移）。
+void Font::draw_text_impl(Renderer& renderer, const char* text, float x, float y,
+                          const Vec4& color, float scale, bool bold, const char* end) const {
     if ((!atlas_ && !icon_atlas_) || !text) return;
     const float baseline = y + ascent_ * scale;
     float cursor = x;
@@ -493,7 +505,7 @@ void Font::draw_text(Renderer& renderer, const char* text, float x, float y,
     // 边缘仅与图集 padding（透明）混合，笔画更实；cursor 仍按浮点累加，行内
     // 间距与 measure_text 保持一致。
     const auto align = [](float v) { return std::round(v); };
-    for (const char* p = text; *p;) {
+    for (const char* p = text; (end ? p < end : true) && *p;) {
         const unsigned cp = decode_utf8(p);
         if (cp == 0) break;
         if (cp >= kFirstChar && cp < kFirstChar + kNumChars) {
@@ -533,57 +545,6 @@ void Font::draw_text(Renderer& renderer, const char* text, float x, float y,
                 cursor += g->xadvance * scale;
             } else {
                 cursor += pixel_height_ * scale;  // 非图集字符（CJK 等）按方块字近似
-            }
-        }
-    }
-}
-
-void Font::draw_text(Renderer& renderer, const char* text, float x, float y,
-                     const Vec4& color, int max_len, float scale, bool bold) const {
-    if ((!atlas_ && !icon_atlas_) || !text || max_len <= 0) return;
-    const float baseline = y + ascent_ * scale;
-    float cursor = x;
-    const float bold_off = std::max(1.f, std::round(pixel_height_ * scale / 16.f));
-    const auto align = [](float v) { return std::round(v); };
-    const char* end = text + max_len;
-    for (const char* p = text; p < end && *p;) {
-        const unsigned cp = decode_utf8(p);
-        if (cp == 0) break;
-        if (cp >= kFirstChar && cp < kFirstChar + kNumChars) {
-            const Glyph& g = glyphs_[cp - kFirstChar];
-            if (g.x1 <= g.x0 || g.y1 <= g.y0) { cursor += g.xadvance * scale; continue; }
-            const Rect rect{align(cursor + g.x0 * scale), align(baseline + g.y0 * scale),
-                            (g.x1 - g.x0) * scale, (g.y1 - g.y0) * scale};
-            const Rect uv{g.u0, g.v0, g.u1, g.v1};
-            renderer.draw_textured_quad(rect, atlas_->id(), uv, color);
-            if (bold)
-                renderer.draw_textured_quad({rect.x + bold_off, rect.y, rect.w, rect.h},
-                                            atlas_->id(), uv, color);
-            cursor += g.xadvance * scale;
-        } else if (const Glyph* ig = icon_atlas_ ? icon_glyph(cp) : nullptr) {
-            if (ig->x1 <= ig->x0 || ig->y1 <= ig->y0) { cursor += ig->xadvance * scale; continue; }
-            const Rect rect{align(cursor + ig->x0 * scale), align(baseline + ig->y0 * scale),
-                            (ig->x1 - ig->x0) * scale, (ig->y1 - ig->y0) * scale};
-            const Rect uv{ig->u0, ig->v0, ig->u1, ig->v1};
-            renderer.draw_textured_quad(rect, icon_atlas_->id(), uv, color);
-            if (bold)
-                renderer.draw_textured_quad({rect.x + bold_off, rect.y, rect.w, rect.h},
-                                            icon_atlas_->id(), uv, color);
-            cursor += ig->xadvance * scale;
-        } else {
-            if (cp == 0xFE0F || cp == 0x200D) continue;
-            const Glyph* g = ensure_dynamic(cp);
-            if (g && g->x1 > g->x0 && g->y1 > g->y0) {
-                const Rect rect{align(cursor + g->x0 * scale), align(baseline + g->y0 * scale),
-                                (g->x1 - g->x0) * scale, (g->y1 - g->y0) * scale};
-                const Rect uv{g->u0, g->v0, g->u1, g->v1};
-                renderer.draw_textured_quad(rect, atlas_->id(), uv, color);
-                if (bold)
-                    renderer.draw_textured_quad({rect.x + bold_off, rect.y, rect.w, rect.h},
-                                                atlas_->id(), uv, color);
-                cursor += g->xadvance * scale;
-            } else {
-                cursor += pixel_height_ * scale;
             }
         }
     }

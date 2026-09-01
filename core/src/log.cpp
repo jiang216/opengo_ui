@@ -9,7 +9,11 @@ namespace detail {
 static void log_print(const char* level, const char* fmt, va_list args) {
     std::time_t t = std::time(nullptr);
     std::tm tm{};
+#if defined(_WIN32)
     localtime_s(&tm, &t);
+#else
+    localtime_r(&t, &tm);
+#endif
     char ts[32];
     std::strftime(ts, sizeof(ts), "%H:%M:%S", &tm);
     std::fprintf(stderr, "[%s][ui][%s] ", ts, level);

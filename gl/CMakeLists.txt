@@ -20,6 +20,15 @@ target_include_directories(ui_gl PUBLIC
 
 target_link_libraries(ui_gl PUBLIC ui_core glfw OpenGL::GL)
 
+if(OPENGUI_USE_PCH)
+    # GLFW 解析重，纳入 PCH 显著降低 window.cpp/renderer 等 TU 的重复解析成本
+    target_precompile_headers(ui_gl PRIVATE
+        <GLFW/glfw3.h>
+        <vector>
+        <string>
+    )
+endif()
+
 # MSVC：GLAD 的 gl.c 是 C 文件，加 -TP 让 MSVC 按 C++ 编译（避免 C 代码警告当错误）
 if(MSVC)
     set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/glad/src/gl.c PROPERTIES LANGUAGE CXX)

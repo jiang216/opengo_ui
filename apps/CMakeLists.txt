@@ -53,50 +53,64 @@ endif()
 if(OPENGUI_MEDIA_FFMPEG AND OPENGUI_MEDIA_OPENCV)
     list(APPEND _APP_TARGETS opengl_ui_media_load_test)
 endif()
+if(OPENGUI_MEDIA_FFMPEG)
+    file(GLOB _FFMPEG_DLLS "${OPENGUI_3RDPARTY}/bin/*.dll")
+endif()
+if(OPENGUI_MEDIA_OPENCV)
+    # OpenCV 安装树在架构子目录下（x86 安装也可能落在 x64/vc16），用通配匹配
+    file(GLOB _OPENCV_DLLS "${OPENGUI_3RDPARTY}/*/vc16/bin/opencv_world*.dll")
+endif()
 foreach(_TGT ${_APP_TARGETS})
-    add_custom_command(TARGET ${_TGT} POST_BUILD
+    # 合并 glfw/FFmpeg/OpenCV 依赖 DLL 拷贝为单条 POST_BUILD（多条 COMMAND 顺序执行）
+    # 注：不用嵌套 $<$<BOOL:>:COMMAND...> 生成器表达式（CMake 4.x 对含词面 COMMAND 的
+    # 嵌套 genex 解析残留字面 $<0: 致 POST_BUILD 失败），改用 if 分支显式拼接命令。
+    set(_DLL_CMDS
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${OPENGUI_3RDPARTY}/bin/glfw3.dll"
-            $<TARGET_FILE_DIR:${_TGT}>
-    )
+            "${OPENGUI_3RDPARTY}/bin/glfw3.dll" $<TARGET_FILE_DIR:${_TGT}>)
     if(OPENGUI_MEDIA_FFMPEG)
-        file(GLOB _FFMPEG_DLLS "${OPENGUI_3RDPARTY}/bin/*.dll")
-        add_custom_command(TARGET ${_TGT} POST_BUILD
+        list(APPEND _DLL_CMDS
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_FFMPEG_DLLS}
                 $<TARGET_FILE_DIR:${_TGT}>)
     endif()
     if(OPENGUI_MEDIA_OPENCV)
-        # OpenCV 安装树在架构子目录下（x86 安装也可能落在 x64/vc16），用通配匹配
-        file(GLOB _OPENCV_DLLS "${OPENGUI_3RDPARTY}/*/vc16/bin/opencv_world*.dll")
-        add_custom_command(TARGET ${_TGT} POST_BUILD
+        list(APPEND _DLL_CMDS
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_OPENCV_DLLS}
                 $<TARGET_FILE_DIR:${_TGT}>)
     endif()
+    add_custom_command(TARGET ${_TGT} POST_BUILD ${_DLL_CMDS})
 endforeach()
 
-# 拷贝演示素材（测试图片/视频/图标字体）到可执行目录
+# 拷贝演示素材（测试图片/视频/图标字体）到可执行目录：按目标合并为单条 POST_BUILD
 # 图标字体（M17d iconfont，Demo 始终加载）：任何配置都拷贝
 file(GLOB _ICON_FONT "${CMAKE_SOURCE_DIR}/assets/iconfont.ttf")
-foreach(_TGT opengl_ui_demo opengl_ui_api_demo)
-    add_custom_command(TARGET ${_TGT} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_ICON_FONT}
-            $<TARGET_FILE_DIR:${_TGT}>)
-endforeach()
 if(OPENGUI_MEDIA_OPENCV)
     file(GLOB _TEST_IMG "${CMAKE_SOURCE_DIR}/assets/test.png")
-    foreach(_TGT opengl_ui_demo opengl_ui_image_viewer opengl_ui_api_demo)
-        add_custom_command(TARGET ${_TGT} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_TEST_IMG}
-                $<TARGET_FILE_DIR:${_TGT}>)
-    endforeach()
 endif()
 if(OPENGUI_MEDIA_FFMPEG)
     file(GLOB _TEST_VID "${CMAKE_SOURCE_DIR}/assets/test.mp4")
     file(GLOB _TEST_AV "${CMAKE_SOURCE_DIR}/assets/test_av.mp4")
     file(GLOB _TEST_H264 "${CMAKE_SOURCE_DIR}/assets/test_h264.mp4")
-    foreach(_TGT opengl_ui_demo opengl_ui_video_player opengl_ui_api_demo)
-        add_custom_command(TARGET ${_TGT} POST_BUILD
+endif()
+set(_ASSET_TARGETS opengl_ui_demo opengl_ui_api_demo opengl_ui_scene_multiwin)
+if(OPENGUI_MEDIA_OPENCV)
+    list(APPEND _ASSET_TARGETS opengl_ui_image_viewer)
+endif()
+if(OPENGUI_MEDIA_FFMPEG)
+    list(APPEND _ASSET_TARGETS opengl_ui_video_player)
+endif()
+foreach(_TGT ${_ASSET_TARGETS})
+    set(_ASSET_CMDS
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_ICON_FONT}
+            $<TARGET_FILE_DIR:${_TGT}>)
+    if(OPENGUI_MEDIA_OPENCV)
+        list(APPEND _ASSET_CMDS
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_TEST_IMG}
+                $<TARGET_FILE_DIR:${_TGT}>)
+    endif()
+    if(OPENGUI_MEDIA_FFMPEG)
+        list(APPEND _ASSET_CMDS
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_TEST_VID} ${_TEST_AV} ${_TEST_H264}
                 $<TARGET_FILE_DIR:${_TGT}>)
-    endforeach()
-endif()
+    endif()
+    add_custom_command(TARGET ${_TGT} POST_BUILD ${_ASSET_CMDS})
+endforeach()

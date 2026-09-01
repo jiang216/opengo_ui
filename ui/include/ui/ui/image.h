@@ -2,6 +2,7 @@
 
 #include "ui/ui/widget.h"
 
+#include <memory>
 #include <string>
 
 namespace ui {
@@ -39,7 +40,7 @@ public:
     void on_draw(Renderer& renderer) override;
 
 private:
-    Texture* texture_ = nullptr;
+    std::unique_ptr<Texture> texture_;  // 独占纹理，随控件析构自动释放，杜绝手动 delete 泄漏
     bool loaded_ = false;
     float display_w_ = 0.f;
     float display_h_ = 0.f;

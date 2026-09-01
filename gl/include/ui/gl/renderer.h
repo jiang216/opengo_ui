@@ -73,15 +73,21 @@ private:
     // 上述自检共用：离屏 32x32 FBO 执行 draw，读回中心像素（返回 false 表示 FBO 未就绪）
     bool run_offscreen_check(const std::function<void()>& draw, unsigned char px[4]);
 
+    // 应用一个像素坐标（y 向下）裁剪矩形到 GL scissor（原点左下角，y 需翻转）。
+    // push/pop 共用，避免重复 y-flip 逻辑（性能/维护优化）。
+    void apply_scissor_gl(const Rect& r);
+
     unsigned int color_program_ = 0;
     unsigned int tex_program_ = 0;
     unsigned int vao_ = 0;
     unsigned int vbo_ = 0;
     // 纯色管线 uniform 位置
     unsigned int u_proj_ = 0, u_rect_ = 0, u_color_ = 0, u_radius_ = 0, u_size_ = 0, u_outline_ = 0;
+    unsigned int u_cosrot_ = 0, u_sinrot_ = 0;
     // 纹理管线 uniform 位置
     unsigned int t_proj_ = 0, t_rect_ = 0, t_color_ = 0, t_uv_ = 0, t_tex_ = 0;
-    unsigned int t_size_ = 0, t_radius_ = 0, t_rotation_ = 0;
+    unsigned int t_size_ = 0, t_radius_ = 0;
+    unsigned int t_cosrot_ = 0, t_sinrot_ = 0;
     // 多边形管线（动态 VBO，每帧上传顶点）
     unsigned int poly_program_ = 0;
     unsigned int poly_vao_ = 0;
@@ -89,6 +95,11 @@ private:
     unsigned int p_proj_ = 0, p_color_ = 0;
     int viewport_width_ = 0;
     int viewport_height_ = 0;
+    // 正交投影矩阵：只依赖视口尺寸，由 set_viewport 缓存，避免每个 draw call 重算/上传（性能优化）
+    float proj_[16] = {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f,
+                       0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f};
+    // 最近一次 glUseProgram 的 program（去重，避免每 draw call 频繁切换 program）
+    unsigned int active_program_ = 0;
     // scissor 栈：push 与栈顶求交后压栈，pop 恢复栈顶矩形（嵌套裁剪，UI-057）
     std::vector<Rect> scissor_stack_;
 };

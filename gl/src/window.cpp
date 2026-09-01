@@ -425,11 +425,52 @@ void Window::end_drag() { dragging_ = false; }
 // ---- 光标形状 ----
 
 namespace {
-CursorIconManager* g_cursor_manager = nullptr;
-
+// 函数局部静态：程序退出时自动调用 CursorIconManager 析构释放全部 GLFW 光标，
+// 消除原 `new CursorIconManager()` 永不 delete 的全局泄漏。
 CursorIconManager& get_cursor_manager() {
-    if (!g_cursor_manager) g_cursor_manager = new CursorIconManager();
-    return *g_cursor_manager;
+    static CursorIconManager manager;
+    return manager;
+}
+
+// 标准系统光标缓存：arrow/hand/ns/ew/ibeam 建一次复用，
+// 避免每次 set_cursor_* 都 glfwCreateStandardCursor + Destroy（频繁切换时反复创建销毁）。
+struct StandardCursorCache {
+    GLFWcursor* arrow = nullptr;
+    GLFWcursor* hand = nullptr;
+    GLFWcursor* vresize = nullptr;
+    GLFWcursor* hresize = nullptr;
+    GLFWcursor* ibeam = nullptr;
+    bool built = false;
+
+    void ensure() {
+        if (built) return;
+        arrow = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+        hand = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+        vresize = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+        hresize = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+        ibeam = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+        built = true;
+    }
+    void destroy() {
+        if (arrow) glfwDestroyCursor(arrow);
+        if (hand) glfwDestroyCursor(hand);
+        if (vresize) glfwDestroyCursor(vresize);
+        if (hresize) glfwDestroyCursor(hresize);
+        if (ibeam) glfwDestroyCursor(ibeam);
+        arrow = hand = vresize = hresize = ibeam = nullptr;
+        built = false;
+    }
+};
+StandardCursorCache& standard_cursors() {
+    static StandardCursorCache cache;
+    return cache;
+}
+
+// 五个 set_cursor_* 共用：确保标准光标缓存已建立，然后把光标应用到窗口。
+void apply_standard_cursor(GLFWwindow* w, GLFWcursor* cursor) {
+    if (!w) return;
+    standard_cursors().ensure();
+    if (cursor) glfwSetCursor(w, cursor);
 }
 }
 
@@ -466,43 +507,23 @@ void Window::set_cursor(CursorType type) {
 }
 
 void Window::set_cursor_arrow() {
-    if (window_) {
-        GLFWcursor* c = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-        glfwSetCursor(window_, c);
-        glfwDestroyCursor(c);
-    }
+    apply_standard_cursor(window_, standard_cursors().arrow);
 }
 
 void Window::set_cursor_hand() {
-    if (window_) {
-        GLFWcursor* c = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
-        glfwSetCursor(window_, c);
-        glfwDestroyCursor(c);
-    }
+    apply_standard_cursor(window_, standard_cursors().hand);
 }
 
 void Window::set_cursor_resize_ns() {
-    if (window_) {
-        GLFWcursor* c = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
-        glfwSetCursor(window_, c);
-        glfwDestroyCursor(c);
-    }
+    apply_standard_cursor(window_, standard_cursors().vresize);
 }
 
 void Window::set_cursor_resize_ew() {
-    if (window_) {
-        GLFWcursor* c = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-        glfwSetCursor(window_, c);
-        glfwDestroyCursor(c);
-    }
+    apply_standard_cursor(window_, standard_cursors().hresize);
 }
 
 void Window::set_cursor_ibeam() {
-    if (window_) {
-        GLFWcursor* c = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
-        glfwSetCursor(window_, c);
-        glfwDestroyCursor(c);
-    }
+    apply_standard_cursor(window_, standard_cursors().ibeam);
 }
 
 }  // namespace ui

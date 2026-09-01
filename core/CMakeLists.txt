@@ -3,6 +3,14 @@ add_library(ui_core STATIC
     src/log.cpp
 )
 
+if(OPENGUI_USE_PCH)
+    target_precompile_headers(ui_core PRIVATE
+        <string>
+        <vector>
+        <cstdint>
+    )
+endif()
+
 target_include_directories(ui_core PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>

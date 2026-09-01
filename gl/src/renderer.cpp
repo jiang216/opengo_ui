@@ -17,16 +17,15 @@ layout(location = 0) in vec2 aPos;
 uniform mat4 uProj;
 uniform vec4 uRect;   // x, y, w, h（像素）
 uniform vec4 uUv;     // u0, v0, u1, v1（纹理管线使用）
-uniform float uRotation;  // 绕矩形中心旋转（弧度；0 不旋转，兼容 UI-037 等既有绘制）
+uniform float uCosRot;   // cos(旋转角)，CPU 预算（不逐顶点算 trig）
+uniform float uSinRot;   // sin(旋转角)
 out vec2 vLocal;      // 相对矩形左上角，像素
 out vec2 vUv;         // 子矩形内 0..1
 void main() {
     vec2 pos = aPos * uRect.zw + uRect.xy;
-    float c = cos(uRotation);
-    float s = sin(uRotation);
     vec2 center = uRect.xy + uRect.zw * 0.5;
     vec2 p = pos - center;
-    pos = vec2(p.x * c - p.y * s, p.x * s + p.y * c) + center;
+    pos = vec2(p.x * uCosRot - p.y * uSinRot, p.x * uSinRot + p.y * uCosRot) + center;
     vLocal = aPos * uRect.zw;
     vUv = uUv.xy + aPos * (uUv.zw - uUv.xy);
     gl_Position = uProj * vec4(pos, 0.0, 1.0);
@@ -195,6 +194,8 @@ bool Renderer::create_color_pipeline() {
     u_radius_ = glGetUniformLocation(color_program_, "uRadius");
     u_size_ = glGetUniformLocation(color_program_, "uSize");
     u_outline_ = glGetUniformLocation(color_program_, "uOutline");
+    u_cosrot_ = glGetUniformLocation(color_program_, "uCosRot");
+    u_sinrot_ = glGetUniformLocation(color_program_, "uSinRot");
     return true;
 }
 
@@ -211,7 +212,8 @@ bool Renderer::create_texture_pipeline() {
     t_tex_ = glGetUniformLocation(tex_program_, "uTex");
     t_size_ = glGetUniformLocation(tex_program_, "uSize");
     t_radius_ = glGetUniformLocation(tex_program_, "uRadius");
-    t_rotation_ = glGetUniformLocation(tex_program_, "uRotation");
+    t_cosrot_ = glGetUniformLocation(tex_program_, "uCosRot");
+    t_sinrot_ = glGetUniformLocation(tex_program_, "uSinRot");
     return true;
 }
 
@@ -245,7 +247,28 @@ void Renderer::set_viewport(int width, int height) {
     viewport_width_ = width;
     viewport_height_ = height;
     glViewport(0, 0, width, height);
+    // 正交投影矩阵只依赖视口尺寸，这里一次性算好缓存，避免每个 draw call 重算/上传
+    const float w = (float)width;
+    const float h = (float)height;
+    if (w <= 0.f || h <= 0.f) return;
+    proj_[0] = 2.f / w;  proj_[1] = 0.f;      proj_[2] = 0.f;  proj_[3] = 0.f;
+    proj_[4] = 0.f;      proj_[5] = -2.f / h; proj_[6] = 0.f;  proj_[7] = 0.f;
+    proj_[8] = 0.f;      proj_[9] = 0.f;      proj_[10] = -1.f; proj_[11] = 0.f;
+    proj_[12] = -1.f;    proj_[13] = 1.f;     proj_[14] = 0.f;  proj_[15] = 1.f;
 }
+
+namespace {
+// 只在 program 变化时切换（去重 per-draw 状态切换），同时使能混合/关闭深度测试一次
+void bind_color_blend(unsigned int program, unsigned int& active_program) {
+    if (active_program != program) {
+        glUseProgram(program);
+        active_program = program;
+    }
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_DEPTH_TEST);
+}
+}  // namespace
 
 Rect Renderer::current_scissor() const {
     if (!scissor_stack_.empty()) return scissor_stack_.back();
@@ -265,29 +288,19 @@ void Renderer::draw_rounded_rect_outline(const Rect& rect, float radius, float t
 void Renderer::draw_rounded_rect_impl(const Rect& rect, float radius, float outline,
                                       const Vec4& color) {
     if (rect.w <= 0.f || rect.h <= 0.f) return;
-    glUseProgram(color_program_);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_DEPTH_TEST);
+    bind_color_blend(color_program_, active_program_);
 
-    // 正交投影：像素坐标，(0,0)=左上角，y 向下
-    const float w = (float)viewport_width_;
-    const float h = (float)viewport_height_;
-    float proj[16] = {
-        2.f / w, 0.f,      0.f, 0.f,
-        0.f,     -2.f / h, 0.f, 0.f,
-        0.f,     0.f,      -1.f, 0.f,
-        -1.f,    1.f,      0.f, 1.f,
-    };
     const float max_radius = std::min(rect.w, rect.h) * 0.5f;
     const float r = std::min(std::max(radius, 0.f), max_radius);
 
-    glUniformMatrix4fv(u_proj_, 1, GL_FALSE, proj);
+    glUniformMatrix4fv(u_proj_, 1, GL_FALSE, proj_);
     glUniform4f(u_rect_, rect.x, rect.y, rect.w, rect.h);
     glUniform4f(u_color_, color.r, color.g, color.b, color.a);
     glUniform1f(u_radius_, r);
     glUniform1f(u_outline_, outline);
     glUniform2f(u_size_, rect.w, rect.h);
+    glUniform1f(u_cosrot_, 1.f);
+    glUniform1f(u_sinrot_, 0.f);
 
     glBindVertexArray(vao_);
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -375,29 +388,22 @@ void Renderer::draw_rect_outline(const Rect& rect, float thickness, const Vec4& 
 void Renderer::draw_textured_quad(const Rect& rect, unsigned int texture_id, const Rect& uv,
                                   const Vec4& color, float radius, float rotation) {
     if (rect.w <= 0.f || rect.h <= 0.f) return;
-    glUseProgram(tex_program_);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_DEPTH_TEST);
+    bind_color_blend(tex_program_, active_program_);
 
-    const float w = (float)viewport_width_;
-    const float h = (float)viewport_height_;
-    float proj[16] = {
-        2.f / w, 0.f,      0.f, 0.f,
-        0.f,     -2.f / h, 0.f, 0.f,
-        0.f,     0.f,      -1.f, 0.f,
-        -1.f,    1.f,      0.f, 1.f,
-    };
     const float max_radius = std::min(rect.w, rect.h) * 0.5f;
     const float r = std::min(std::max(radius, 0.f), max_radius);
+    // 旋转角 trig 在 CPU 预算一次（避免 per-vertex 逐字形算 cos/sin）
+    const float cosr = std::cos(rotation);
+    const float sinr = std::sin(rotation);
     // uv = {u0, v0, u1, v1}（用 Rect 的 x,y,w,h 承载）
-    glUniformMatrix4fv(t_proj_, 1, GL_FALSE, proj);
+    glUniformMatrix4fv(t_proj_, 1, GL_FALSE, proj_);
     glUniform4f(t_rect_, rect.x, rect.y, rect.w, rect.h);
     glUniform4f(t_color_, color.r, color.g, color.b, color.a);
     glUniform4f(t_uv_, uv.x, uv.y, uv.w, uv.h);
     glUniform2f(t_size_, rect.w, rect.h);
     glUniform1f(t_radius_, r);
-    glUniform1f(t_rotation_, rotation);
+    glUniform1f(t_cosrot_, cosr);
+    glUniform1f(t_sinrot_, sinr);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -427,27 +433,20 @@ void Renderer::push_scissor(const Rect& rect) {
     }
     scissor_stack_.push_back(effective);
     if (scissor_stack_.size() == 1) glEnable(GL_SCISSOR_TEST);
+    apply_scissor_gl(effective);
+}
+
+void Renderer::apply_scissor_gl(const Rect& r) {
     // GL scissor 原点是左下角，因此 y 需要先翻转
-    const int y_gl = (int)((float)viewport_height_ - (effective.y + effective.h));
-    glScissor((int)effective.x, y_gl, (int)effective.w, (int)effective.h);
+    const int y_gl = (int)((float)viewport_height_ - (r.y + r.h));
+    glScissor((int)r.x, y_gl, (int)r.w, (int)r.h);
 }
 
 void Renderer::draw_polygon(const Vec2* points, int count, const Vec4& color) {
     if (!points || count < 3) return;
-    glUseProgram(poly_program_);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_DEPTH_TEST);
+    bind_color_blend(poly_program_, active_program_);
 
-    const float w = (float)viewport_width_;
-    const float h = (float)viewport_height_;
-    float proj[16] = {
-        2.f / w, 0.f,      0.f, 0.f,
-        0.f,     -2.f / h, 0.f, 0.f,
-        0.f,     0.f,      -1.f, 0.f,
-        -1.f,    1.f,      0.f, 1.f,
-    };
-    glUniformMatrix4fv(p_proj_, 1, GL_FALSE, proj);
+    glUniformMatrix4fv(p_proj_, 1, GL_FALSE, proj_);
     glUniform4f(p_color_, color.r, color.g, color.b, color.a);
 
     glBindVertexArray(poly_vao_);
@@ -465,9 +464,7 @@ void Renderer::pop_scissor() {
         return;
     }
     // 恢复上一级裁剪区矩形（嵌套裁剪的关键，UI-057）
-    const Rect& top = scissor_stack_.back();
-    const int y_gl = (int)((float)viewport_height_ - (top.y + top.h));
-    glScissor((int)top.x, y_gl, (int)top.w, (int)top.h);
+    apply_scissor_gl(scissor_stack_.back());
 }
 
 }  // namespace ui

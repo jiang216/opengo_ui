@@ -67,8 +67,7 @@ public:
     // 供启动预热等场景一次性消除首绘卡顿；重复码点/图集内字形自动跳过
     void prebake_text(const char* utf8);
 
-    // ---- 逐帧烘焙推进状态（UI-136）----
-    // 批次受 16ms 窗口限额，只有「渲染帧」才会烘焙下一批；帧级门控宿主
+    // ---- 逐帧烘焙推进状态（UI-136）----    // 批次受 16ms 窗口限额，只有「渲染帧」才会烘焙下一批；帧级门控宿主
     // （root.is_dirty() 决定跳帧）必须在每帧无条件执行处查询这两个信号：
     //   有待烘焙字形（配额耗尽未烘）→ 继续渲染；
     //   烘焙 epoch 变化（有新字形上屏，xadvance 可能变化）→ 全树重排一次。
@@ -86,6 +85,10 @@ public:
     bool cjk_ready() const { return cjk_ready_; }
 
 private:
+    // draw_text 两个公开重载共享的实现体：end 为可选的字节上限（nullptr 表示无上限绘制到 \0）
+    void draw_text_impl(Renderer& renderer, const char* text, float x, float y,
+                        const Vec4& color, float scale, bool bold, const char* end) const;
+
     static constexpr int kFirstChar = 32;
     static constexpr int kNumChars = 95;  // 32..126
     static constexpr unsigned kIconFirst = 0xE600;

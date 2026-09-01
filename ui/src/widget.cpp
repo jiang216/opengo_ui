@@ -8,6 +8,22 @@ namespace {
 // 延迟销毁队列（UI-072）：destroy() 标记待销毁，帧末由根节点统一冲刷。
 // 事件分发/遍历期间子树保持存活，避免悬空 this 与迭代器失效。
 std::vector<Widget*> g_pending_destroy;
+
+// 小缓冲快照：事件分发需在回调可改 children_ 的前提下安全遍历（UI-073），
+// 但顶层/容器常用子节点数少，逐事件 new vector 造成每帧堆分配。
+// 此处用栈上固定数组承载常见规模（≤32），超限才退化为堆分配，语义与 vector 快照完全一致。
+// 返回指向快照首元素；返回 nullptr 表示无子节点（调用方直接跳过）。
+Widget** snapshot_children(const std::vector<Widget*>& children, Widget** small, int small_cap,
+                           std::vector<Widget*>* heap) {
+    const size_t n = children.size();
+    if (n == 0) return nullptr;
+    if (n <= (size_t)small_cap) {
+        for (size_t i = 0; i < n; ++i) small[i] = children[i];
+        return small;
+    }
+    heap->assign(children.begin(), children.end());
+    return heap->data();
+}
 }  // namespace
 
 Widget::Widget(float x, float y, float w, float h)
@@ -237,13 +253,19 @@ bool Widget::dispatch_mouse_move(float x, float y) {
         return cap->on_mouse_move(x, y);
     }
     // 子节点在父之上，后添加的优先命中（禁用/隐藏的子节点不参与）
-    // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
+    // 快照遍历：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）。
+    // 常见规模 ≤32 走栈上小缓冲，避免每帧堆分配（性能优化）；超限退化为堆快照，语义不变。
     if (pass_hit_to_children(x, y)) {
-        const std::vector<Widget*> kids(children_);
-        for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
-            Widget* child = *it;
-            if (!child->visible || !child->enabled) continue;
-            if (child->dispatch_mouse_move(x, y)) return true;
+        const int n = (int)children_.size();
+        Widget* small[32];
+        std::vector<Widget*> heap;
+        Widget** kids = snapshot_children(children_, small, 32, &heap);
+        if (kids) {
+            for (int i = n - 1; i >= 0; --i) {
+                Widget* child = kids[i];
+                if (!child->visible || !child->enabled) continue;
+                if (child->dispatch_mouse_move(x, y)) return true;
+            }
         }
     }
     if (contains(x, y) && enabled) {
@@ -265,13 +287,18 @@ bool Widget::dispatch_mouse_down(float x, float y, int button) {
     // 模态：事件仅路由给模态子树，模态外一律屏蔽
     if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_down(x, y, button);
     prune_popups(x, y);
-    // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
+    // 快照遍历：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
     if (pass_hit_to_children(x, y)) {
-        const std::vector<Widget*> kids(children_);
-        for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
-            Widget* child = *it;
-            if (!child->visible || !child->enabled) continue;
-            if (child->dispatch_mouse_down(x, y, button)) return true;
+        const int n = (int)children_.size();
+        Widget* small[32];
+        std::vector<Widget*> heap;
+        Widget** kids = snapshot_children(children_, small, 32, &heap);
+        if (kids) {
+            for (int i = n - 1; i >= 0; --i) {
+                Widget* child = kids[i];
+                if (!child->visible || !child->enabled) continue;
+                if (child->dispatch_mouse_down(x, y, button)) return true;
+            }
         }
     }
     if (contains(x, y) && enabled) {
@@ -300,13 +327,18 @@ bool Widget::dispatch_mouse_up(float x, float y, int button) {
         cap->release_mouse_capture();
         return handled;
     }
-    // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
+    // 快照遍历：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
     if (pass_hit_to_children(x, y)) {
-        const std::vector<Widget*> kids2(children_);
-        for (auto it = kids2.rbegin(); it != kids2.rend(); ++it) {
-            Widget* child = *it;
-            if (!child->visible || !child->enabled) continue;
-            if (child->dispatch_mouse_up(x, y, button)) return true;
+        const int n = (int)children_.size();
+        Widget* small[32];
+        std::vector<Widget*> heap;
+        Widget** kids = snapshot_children(children_, small, 32, &heap);
+        if (kids) {
+            for (int i = n - 1; i >= 0; --i) {
+                Widget* child = kids[i];
+                if (!child->visible || !child->enabled) continue;
+                if (child->dispatch_mouse_up(x, y, button)) return true;
+            }
         }
     }
     if (contains(x, y)) {
@@ -327,13 +359,18 @@ bool Widget::dispatch_mouse_up(float x, float y, int button) {
 bool Widget::dispatch_mouse_scroll(float x, float y, float dx, float dy) {
     // 模态：事件仅路由给模态子树，模态外一律屏蔽
     if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_scroll(x, y, dx, dy);
-    // 拷贝快照：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
+    // 快照遍历：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
     if (pass_hit_to_children(x, y)) {
-        const std::vector<Widget*> kids3(children_);
-        for (auto it = kids3.rbegin(); it != kids3.rend(); ++it) {
-            Widget* child = *it;
-            if (!child->visible || !child->enabled) continue;
-            if (child->dispatch_mouse_scroll(x, y, dx, dy)) return true;
+        const int n = (int)children_.size();
+        Widget* small[32];
+        std::vector<Widget*> heap;
+        Widget** kids = snapshot_children(children_, small, 32, &heap);
+        if (kids) {
+            for (int i = n - 1; i >= 0; --i) {
+                Widget* child = kids[i];
+                if (!child->visible || !child->enabled) continue;
+                if (child->dispatch_mouse_scroll(x, y, dx, dy)) return true;
+            }
         }
     }
     if (contains(x, y)) {
@@ -347,11 +384,16 @@ bool Widget::dispatch_drop(float x, float y, const std::vector<std::string>& pat
     if (!parent_ && modal_ && modal_->visible)
         return modal_->dispatch_drop(x, y, paths);
     if (pass_hit_to_children(x, y)) {
-        const std::vector<Widget*> kids(children_);
-        for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
-            Widget* child = *it;
-            if (!child->visible || !child->enabled) continue;
-            if (child->dispatch_drop(x, y, paths)) return true;
+        const int n = (int)children_.size();
+        Widget* small[32];
+        std::vector<Widget*> heap;
+        Widget** kids = snapshot_children(children_, small, 32, &heap);
+        if (kids) {
+            for (int i = n - 1; i >= 0; --i) {
+                Widget* child = kids[i];
+                if (!child->visible || !child->enabled) continue;
+                if (child->dispatch_drop(x, y, paths)) return true;
+            }
         }
     }
     if (contains(x, y)) {

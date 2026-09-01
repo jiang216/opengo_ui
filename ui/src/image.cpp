@@ -61,7 +61,7 @@ Image::Image(float x, float y, float w, float h) : Widget(x, y, w, h) {
 }
 
 Image::~Image() {
-    delete texture_;
+    // texture_ 由 std::unique_ptr 自动释放（阶段2 生命周期优化，消除手动 delete）
 }
 
 bool Image::load_from_file(const char* path) {
@@ -81,18 +81,16 @@ bool Image::load_from_file(const char* path) {
         const char* t = targets[i];
         if (!t || !*t) continue;
         if (!file_readable(t)) continue;
-        Texture* tex = new Texture;
+        auto tex = std::make_unique<Texture>();
         if (!tex->load_from_file(t)) {  // 解码失败由 gl 层 log
-            delete tex;
             return false;
         }
-        delete texture_;
-        texture_ = tex;
+        texture_ = std::move(tex);
         loaded_ = true;
         // 未显式指定显示尺寸时，跟随图片原始尺寸
         if (display_w_ <= 0.f || display_h_ <= 0.f) {
-            display_w_ = (float)tex->width();
-            display_h_ = (float)tex->height();
+            display_w_ = (float)texture_->width();
+            display_h_ = (float)texture_->height();
         }
         has_display_size_ = (display_w_ > 0.f && display_h_ > 0.f);
         return true;
@@ -106,8 +104,7 @@ void Image::set_lay_src(const char* path) {
         if (!path || !*path) return;
     lay_src_ = path;
     loaded_ = false;  // 尚未进入可视屏，不加载
-    delete texture_;
-    texture_ = nullptr;
+    texture_.reset();  // 独占指针归还，替换旧纹理（阶段2）
 }
 
 float Image::preferred_height() const {

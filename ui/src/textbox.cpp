@@ -1,5 +1,6 @@
 #include "ui/ui/textbox.h"
 
+#include "ui/core/utf8.h"
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
 #include "ui/gl/window.h"
@@ -12,21 +13,11 @@
 namespace ui {
 namespace {
 
-// 下一个 UTF-8 字符起始下标（跳过后续续字节）
-size_t next_cp(const std::string& s, size_t i) {
-    if (i >= s.size()) return s.size();
-    size_t j = i + 1;
-    while (j < s.size() && ((unsigned char)s[j] & 0xC0) == 0x80) ++j;
-    return j;
-}
+// 下一个 UTF-8 字符起始下标（跳过后续续字节）——统一到 core/ui/core/utf8.h
+size_t next_cp(const std::string& s, size_t i) { return utf8::next_index(s, i); }
 
 // 上一个 UTF-8 字符起始下标
-size_t prev_cp(const std::string& s, size_t i) {
-    if (i == 0) return 0;
-    size_t j = i - 1;
-    while (j > 0 && ((unsigned char)s[j] & 0xC0) == 0x80) --j;
-    return j;
-}
+size_t prev_cp(const std::string& s, size_t i) { return utf8::prev_index(s, i); }
 
 // Unicode 码点 -> UTF-8
 std::string encode_cp(unsigned int cp) {

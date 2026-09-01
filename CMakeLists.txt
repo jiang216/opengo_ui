@@ -10,10 +10,30 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# ---- 发布构建优化（阶段4）：LTO + 高优化等级 ----
+# GCC/Clang 用 -O3 + 显式 LTO；MSVC 用 /O2（已含 LTCG 由 CMAKE_INTERPROCEDURAL_OPTIMIZATION 控制）。
+# 统一收敛各类静态库/可执行目标，reduce 迭代产出体积并提升运行性能。
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+    if(MSVC)
+        add_compile_options(/O2)
+    else()
+        add_compile_options(-O3)
+    endif()
+endif()
+
+# PCH（可选项，默认开；编译慢/兼容问题时 -DOPENGUI_USE_PCH=OFF 关闭）
+option(OPENGUI_USE_PCH "Use precompiled headers to speed up builds" ON)
+
 # 源码（头文件注释等）为 UTF-8，MSVC 默认按 GBK 读会报 C2447/C4819
 if(MSVC)
     add_compile_options(/utf-8)
 endif()
+
+# GLFW 默认在未定义 GLFW_INCLUDE_NONE 时 include 系统 <GL/gl.h>（仅 Windows 分支），
+# 与 GLAD 的 <glad/gl.h> 在同一 TU 冲突（glad 会 #error "already included"）。
+# 统一定义 GLFW_INCLUDE_NONE，由各 TU 显式 include <glad/gl.h> 提供 GL API。
+add_compile_definitions(GLFW_INCLUDE_NONE)
 
 # ---- 可选模块开关（默认 OFF，纯 UI 不依赖媒体库） ----
 option(OPENGUI_MEDIA_FFMPEG "Build FFmpeg media module (video decode)" OFF)
