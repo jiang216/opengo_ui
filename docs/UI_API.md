@@ -604,6 +604,9 @@ scene.on(ui::SceneEvent::Key, [&](int key, int mods){ if (key==UI_KEY_ESCAPE) { 
 | `ui::Renderer& renderer()` |  |
 | `ui::Widget& root()` | 根控件树（Scene 拥有，构造时按窗口尺寸初始化 bounds；reset 清空后重建） |
 | `void set_root_background(const ui::Vec4& clear_color)` |  |
+| `void set_chrome(Widget* chrome, float top)` | ---- 顶部装帧（chrome）内容区原点 ---- 注册一个自绘顶部条（如无边框窗口的自绘 TitleBar）与它占用的顶部高度 top。 库由此掌握「内容区起始 y」，Rest/Draw/HUD 等直接绘制可经 content_origin_y() 统一对齐，避免各应用在 header/sidebar/content/HUD 里各自硬编码同一偏移量。 chrome 仍由应用作为 root 普通子控件加入（其自身以绝对坐标绘制于 y=0）； 本 API 仅登记其高度与指针（不拥有、不移动 chrome），供内容区消费。 |
+| `Widget* chrome() const` |  |
+| `float content_origin_y() const` | 内容区起始 y（= 顶部 chrome 占用高度，未注册时为 0） |
 | `size_t subscribe(ScenePhase phase, PhaseFn fn)` | 返回订阅 token（非 0），供 unsubscribe 单独摘除（页面级局部订阅切页时摘除，防悬空）。 |
 | `size_t on(ScenePhase phase, std::function<void(Scene&)> fn)` | 便捷重载：不关心 dt 的阶段/帧回调；同样返回 token |
 | `void unsubscribe(size_t token)` | 按 token 摘除单个阶段观察者；token 为 0 或不存在则无操作。 与 clear_observers() 不同：仅移除这一个订阅，不清其他（App 级）订阅。 |
@@ -3095,6 +3098,63 @@ parent->add_child(vb);
 | `float preferred_height() const` | 内容高度 = 子控件高度之和 + 间距 + 边距（供外层容器如 ScrollBox 计算） |
 | `void set_theme(const Theme* theme)` |  |
 | `void on_draw(Renderer& renderer) override` |  |
+
+
+### `ui/ui/window_frame.h`
+
+**调用示例**：
+```cpp
+// 窗口容器：内置自绘标题栏 + 下方内容区，内容子控件用容器相对坐标
+auto* wf = new ui::WindowFrame(0, 0, 500, 320);
+wf->set_font(&font);
+wf->set_theme(&theme);
+wf->set_title("窗口标题");
+wf->set_titlebar_height(30.f);                    // 标题栏高度（默认 30）
+wf->set_content_child(new ui::Panel(0, 0, 0, 0), 10.f, 10.f, 0.f, 0.f);  // 相对 titlebar 底缘
+wf->set_on_close([] { ui::log_info("关闭"); });
+parent->add_child(wf);
+```
+
+**依赖 include**：`ui/ui/widget.h`、`ui/core/math.h`、`functional`、`string`、`vector`
+
+**类 `WindowFrame`**
+（继承 `: Widget`）
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `WindowFrame(float w, float h)` |  |
+| `void set_head(Widget* head, float height)` | ---- 头部槽 ---- 通用头部：替换默认 TitleBar（任意外部构造的 Widget 作 head）；width 随本控件矩形自动铺满。 传 nullptr 表示无头部（内容区从 y=0 起）。 |
+| `void set_titlebar_height(float h)` | 标题栏高度（默认 30）：仅当 head 为内部默认 TitleBar 时同步内容区原点；自定义 head 请用 set_head 指定 |
+| `float titlebar_height() const` |  |
+| `float content_origin_y() const` | 内容区顶部（标题栏下方）的 y：等价 titlebar_height()，便于外部以之为单一来源派生子坐标 |
+| `void set_font(Font* f)` | ---- 默认 TitleBar 透传（仅当 head 为内部默认标题栏时生效）---- |
+| `void set_theme(const Theme* t)` |  |
+| `void set_title(const char* title)` |  |
+| `void set_icon(Font* font, uint32_t codepoint)` |  |
+| `void set_on_close(std::function<void()> cb)` |  |
+| `void set_on_minimize(std::function<void()> cb)` |  |
+| `void set_on_maximize(std::function<void()> cb)` |  |
+| `void set_minimize_visible(bool v)` |  |
+| `void set_maximize_visible(bool v)` |  |
+| `void set_close_visible(bool v)` |  |
+| `Widget* content() const` | ---- 内容区 ---- 返回内容容器：把内容子控件 add_child 到它上面 |
+| `void set_content_child(Widget* child, float x, float y, float w, float h)` | 以「容器相对坐标」定位内容子控件：(x,y) 相对内容区顶部（标题栏下方）。 记录相对矩形快照并于 on_layout 重基准为绝对坐标（相对 = 绝对 - 内容区原点）， 不会随拖动/缩放二次叠加。 |
+| `void set_head_child(Widget* child, float x, float y, float w, float h)` | 以「通用头部相对坐标」定位头部子控件：(x,y) 相对头部左上角（即本框架原点）。 仅对非默认 TitleBar 的通用 head 有意义（默认 TitleBar 自绘无子控件）； 记录相对矩形快照并于 on_layout 重基准为绝对坐标，与 set_content_child 对称。 |
+| `void on_layout() override` |  |
+
+**类 `Slot`**
+
+| 数据成员 | 说明 |
+| --- | --- |
+| `Widget* child;` |  |
+| `Rect rel;` | 相对所在区域（head 或 content）的矩形（x,y,w,h） |
+
+**自由函数**（命名空间 `ui` / `ui::layui`）：
+
+| 函数 | 功能说明 |
+| --- | --- |
+| `void set_slot(std::vector<Slot>& slots, Widget* child, float x, float y, float w, float h, float ox, float oy)` |  |
+| `void apply_slots(std::vector<Slot>& slots, Widget* owner, float ox, float oy)` |  |
 
 
 ## 6、ui_media（可选模块）（`ui/media`）

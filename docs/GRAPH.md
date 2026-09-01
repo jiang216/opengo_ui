@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 160（BUG 152 / DOC 6 / META 2）
-- 边: 356
+- 节点: 162（BUG 154 / DOC 6 / META 2）
+- 边: 358
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1080,6 +1080,18 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#内容区原点回归项：注册 `Scene::set_chrome(titlebar, h)` 后，header/sidebar/tabs/content/帧率 HUD 的 y 统一以 `Scene::content_origin_y()` 为单一来源派生（承接 UI-149/151），其余控件绘制于标题条下方、帧率 HUD 垂直居中于 Header 不与标题条重叠
 
+### BUG:UI-154 · UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-154-子树变更不标脏使长命容器首帧不重排新子控件在-00-闪一帧基类-addchildremovechildclearchildren-自报标脏2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#子树变更即重排（防 0,0 闪帧）：`Widget::add_child/remove_child/clear_children` 均自报 `mark_dirty()`——`layout()` 的帧级门控（`!dirty_ && !dirty_children_` 提前返回）下，长命容器（内容面板 ScrollBox/代码区/侧栏/VBox 等）被清空重建后下一帧必重排，新子控件同帧归位，不再残留在构造默认 `(0,0,0,0)` bounds 于左上角闪一帧；弹出面板（root 挂载、`sync_panel` 幂等重算）与 PanelWindow 既有行为不变
+
+### BUG:UI-155 · UI-155: 新增窗口容器 WindowFrame——自带自绘标题栏 + 内容区相对坐标 + 通用头部槽（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-155-新增窗口容器-windowframe自带自绘标题栏--内容区相对坐标--通用头部槽2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#窗口容器 `WindowFrame`（UI-155）：自带自绘顶部标题栏（默认系统风格 `TitleBar`，标题栏高参数化默认 30）+ 标题栏下方铺满内容区；内容子控件以**容器相对坐标** `set_content_child(child,x,y,w,h)` 定位（相对内容区顶部），控件内部以相对矩形快照为唯一事实源、`on_layout` 重基准为绝对坐标（不二次叠加）；通用头部 `set_head(widget,height)` 可换任意 Widget 作头（`set_head_child` 头部相对坐标），内容区随 head_h 整体下移
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1323,6 +1335,8 @@
 | `BUG:UI-150` | BUG | UI-150: 自绘 TitleBar 默认背景与下方 Header 同色导致"无缝融合、标题条不可区分"——改为独立更深灰（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-151` | BUG | UI-151: 修复主窗口顶部导航题条重叠的深层根因——Header 子项未随父 y 偏移（本库子控件 bounds 为绝对坐标）（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-153` | BUG | UI-153: 库级「顶部装帧内容区原点」——Scene::set_chrome/content_origin_y，其余控件统一绘制于标题栏下方 + 修复帧率 HUD 与标题条重叠（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-154` | BUG | UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-155` | BUG | UI-155: 新增窗口容器 WindowFrame——自带自绘标题栏 + 内容区相对坐标 + 通用头部槽（2026-09-01） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1567,6 +1581,8 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-150` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-151` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-153` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-154` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-155` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

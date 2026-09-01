@@ -45,7 +45,7 @@ UI_ORDER = [
     "panelwindow.h", "progress.h", "radiobutton.h", "radiogroup.h",
     "rate.h", "scrollbox.h", "slider.h", "switch.h", "table.h",
     "tabs.h", "textbox.h", "timeline.h", "titlebar.h", "transfer.h", "tree.h",
-    "upload.h", "vbox.h",
+    "upload.h", "vbox.h", "window_frame.h",
 ]
 
 # --------------------------------------------------------------------------
@@ -537,6 +537,18 @@ vb->set_spacing(8.f);
 vb->add_child(new ui::Button(0, 0, 0, 36, "上"));   // 子控件等宽填满
 vb->add_child(new ui::Button(0, 0, 0, 36, "下"));
 parent->add_child(vb);
+```""",
+    "ui/ui/window_frame.h":
+"""```cpp
+// 窗口容器：内置自绘标题栏 + 下方内容区，内容子控件用容器相对坐标
+auto* wf = new ui::WindowFrame(0, 0, 500, 320);
+wf->set_font(&font);
+wf->set_theme(&theme);
+wf->set_title("窗口标题");
+wf->set_titlebar_height(30.f);                    // 标题栏高度（默认 30）
+wf->set_content_child(new ui::Panel(0, 0, 0, 0), 10.f, 10.f, 0.f, 0.f);  // 相对 titlebar 底缘
+wf->set_on_close([] { ui::log_info("关闭"); });
+parent->add_child(wf);
 ```""",
     "ui/media/video_view.h":
 """```cpp

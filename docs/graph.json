@@ -1,11 +1,25 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-01T13:21:15+08:00",
+  "generatedAt": "2026-09-01T13:58:05+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-155": {
+      "id": "BUG:UI-155",
+      "type": "BUG",
+      "label": "UI-155: 新增窗口容器 WindowFrame——自带自绘标题栏 + 内容区相对坐标 + 通用头部槽（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-155-新增窗口容器-windowframe自带自绘标题栏--内容区相对坐标--通用头部槽2026-09-01"
+    },
+    "BUG:UI-154": {
+      "id": "BUG:UI-154",
+      "type": "BUG",
+      "label": "UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-154-子树变更不标脏使长命容器首帧不重排新子控件在-00-闪一帧基类-addchildremovechildclearchildren-自报标脏2026-09-01"
+    },
     "BUG:UI-153": {
       "id": "BUG:UI-153",
       "type": "BUG",
@@ -1770,6 +1784,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-154",
+      "kind": "checklist",
+      "context": "回归清单#子树变更即重排（防 0,0 闪帧）：`Widget::add_child/remove_child/clear_children` 均自报 `mark_dirty()`——`layout()` 的帧级门控（`!dirty_ && !dirty_children_` 提前返回）下，长命容器（内容面板 ScrollBox/代码区/侧栏/VBox 等）被清空重建后下一帧必重排，新子控件同帧归位，不再残留在构造默认 `(0,0,0,0)` bounds 于左上角闪一帧；弹出面板（root 挂载、`sync_panel` 幂等重算）与 PanelWindow 既有行为不变"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-146",
       "kind": "checklist",
       "context": "回归清单#Scene 生命周期四阶段：`ui::Scene(window, renderer)` 随窗口同步创建，构造广播 `ScenePhase::Ready`；`run()/run_for(秒)` 承载 poll+swap 完整循环与 `--smoke` 通用语义；`reset()/shutdown()` 随 `~Scene()` 自动收尾——禁止应用手写 poll/layout/dispatch/draw/swap 五段主循环"
@@ -1839,6 +1859,12 @@
       "to": "BUG:UI-150",
       "kind": "checklist",
       "context": "回归清单#自绘 TitleBar 独立配色回归项：标题条默认背景 `#262A2F` 与紧邻下方页头/导航栏底色（`#2F363C`）明度可区分，标题条作为导航栏上方独立深色条可见，不与其无缝融合"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-155",
+      "kind": "checklist",
+      "context": "回归清单#窗口容器 `WindowFrame`（UI-155）：自带自绘顶部标题栏（默认系统风格 `TitleBar`，标题栏高参数化默认 30）+ 标题栏下方铺满内容区；内容子控件以**容器相对坐标** `set_content_child(child,x,y,w,h)` 定位（相对内容区顶部），控件内部以相对矩形快照为唯一事实源、`on_layout` 重基准为绝对坐标（不二次叠加）；通用头部 `set_head(widget,height)` 可换任意 Widget 作头（`set_head_child` 头部相对坐标），内容区随 head_h 整体下移"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3240,13 +3266,13 @@
     },
     {
       "from": "META:CHANGELOG",
-      "to": "DOC:UI_API",
+      "to": "DOC:ARCHITECTURE",
       "kind": "mention",
       "context": ""
     },
     {
       "from": "META:CHANGELOG",
-      "to": "DOC:ARCHITECTURE",
+      "to": "DOC:UI_API",
       "kind": "mention",
       "context": ""
     },
@@ -3258,6 +3284,20 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-155": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#窗口容器 `WindowFrame`（UI-155）：自带自绘顶部标题栏（默认系统风格 `TitleBar`，标题栏高参数化默认 30）+ 标题栏下方铺满内容区；内容子控件以**容器相对坐标** `set_content_child(child,x,y,w,h)` 定位（相对内容区顶部），控件内部以相对矩形快照为唯一事实源、`on_layout` 重基准为绝对坐标（不二次叠加）；通用头部 `set_head(widget,height)` 可换任意 Widget 作头（`set_head_child` 头部相对坐标），内容区随 head_h 整体下移"
+      }
+    ],
+    "BUG:UI-154": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#子树变更即重排（防 0,0 闪帧）：`Widget::add_child/remove_child/clear_children` 均自报 `mark_dirty()`——`layout()` 的帧级门控（`!dirty_ && !dirty_children_` 提前返回）下，长命容器（内容面板 ScrollBox/代码区/侧栏/VBox 等）被清空重建后下一帧必重排，新子控件同帧归位，不再残留在构造默认 `(0,0,0,0)` bounds 于左上角闪一帧；弹出面板（root 挂载、`sync_panel` 幂等重算）与 PanelWindow 既有行为不变"
+      }
+    ],
     "BUG:UI-153": [
       {
         "from": "DOC:ARCHITECTURE",

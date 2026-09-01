@@ -77,3 +77,4 @@
 #include "ui/ui/tree.h"
 #include "ui/ui/upload.h"
 #include "ui/ui/vbox.h"
+#include "ui/ui/window_frame.h"

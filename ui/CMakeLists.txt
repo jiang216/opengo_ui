@@ -56,6 +56,7 @@ add_library(ui_ui STATIC
     src/laytpl.cpp
     src/ime.cpp
     src/titlebar.cpp
+    src/window_frame.cpp
 )
 
 target_include_directories(ui_ui PUBLIC

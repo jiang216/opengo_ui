@@ -3,6 +3,37 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-155: 新增窗口容器 WindowFrame——自带自绘标题栏 + 内容区相对坐标 + 通用头部槽（2026-09-01）
+- **类型**：功能新增（ui 库新增 `ui::WindowFrame` 可复用窗口容器控件）
+- **严重度**：中
+- **根因**：本库坐标模型为**绝对像素坐标**（`widget.h`），`TitleBar` 只是普通 Widget，库**没有「把内容自动置于标题栏下方并按容器相对坐标摆放」的整窗容器**——每个使用方都要自己为子控件叠加标题栏高度偏移，且多子控件用绝对坐标时易二次叠加。UI-153 已为 Scene 提供内容区原点（`content_origin_y`），但仍需使用方逐个子控件手动 `+head_h` 重算绝对坐标，缺少可复用的「容器即窗口」抽象。
+- **修复**（ui 库新增 `ui::WindowFrame`，`ui/include/ui/ui/window_frame.h` + `ui/src/window_frame.cpp`）：
+  - `WindowFrame(w,h)` 自带**顶部自绘标题栏**（默认系统风格 `ui::TitleBar`，标题栏高 `head_h_` 参数化默认 30）+ **内容区**在标题栏下方铺满剩余高度。
+  - 内容子控件用**容器相对坐标**定位：`frame.content()` 拿内容容器，`frame->set_content_child(child,x,y,w,h)` 的 `(x,y)` 相对内容区顶部（标题栏下方）；控件内部以**相对矩形快照**为唯一事实源，`on_layout` 按快照重基准为绝对坐标（绝对 = 框架原点 + 内容区原点 + 相对），**不会随拖动/缩放二次叠加**（区别于使用方手写 `+offset` 的绝对写死）。
+  - **通用头部槽**：`set_head(widget, height)` 可把**任意 Widget** 当头部（`set_head_child(child,x,y,w,h)` 以头部相对坐标摆放其子项，与 `set_content_child` 对称）；默认 TitleBar 由 `set_title/set_icon/set_on_close/on_minimize/on_maximize/set_*_visible` 透传（无子控件自绘，不受头部相对坐标影响）。
+  - 默认 TitleBar 自绘（`titlebar.cpp` 以 `bounds_` 直接绘制三键/图标/标题，无子控件），故通用头部相对坐标仅对非默认 head 生效。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. `WindowFrame` 顶部标题栏渲染为一条干净深色带（默认 `#262A2F` 等宽满宽），内容子控件全部绘制于标题栏**下方**，绝不与标题栏重叠。
+  2. 内容子控件以 `set_content_child` 容器相对坐标定位后，`on_layout` 重基准为绝对坐标，任意两次布局/拖动/缩放后相对位置不变（不二次叠加）。
+  3. 通用头部 `set_head` + `set_head_child`：头部子项相对头部左上角摆放，内容区随之整体下移 head_h。
+  4. 默认 TitleBar 透传（set_title/三键/关闭回调）及 UI-147/148/150/153 回归项全部保持。
+- **验证**（Windows cmake MSVC Release）：`ui_ui` 重编译通过、`layui_test` 重链通过（新增演示页「窗口容器」）。`layui_test --smoke 2` exit 0。截屏（`--shot-page 8`）像素采样：演示页两个 WindowFrame——默认头部框标题栏带（winy≈231..259）为干净深色 `rgb(38,42,47)` 满宽、内容区绘制于其下 (winy≈260 起)；通用头部框头部带（winy≈529..569）渲染为独立条带、内容区随之下移. 注：演示页用 `Panel::set_fill` 的「自定义面板色」实为既有 `Panel` 的 `a=-1` 哨兵→走主题色（`panel.cpp`），非 WindowFrame 问题。
+- **影响范围**：`ui/include/ui/ui/window_frame.h`、`ui/src/window_frame.cpp`、`ui/CMakeLists.txt`、`ui/include/ui/all.h`、`layui_test/src/pages/window_page.cpp`、`docs/ARCHITECTURE.md`、`docs/CHANGELOG.md`。
+
+## UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）
+- **类型**：缺陷修复（ui 库 `Widget` 布局门控与树变更标脏缺口的缺陷）
+- **严重度**：中（layui_test 每次切换子菜单内容面板其内容首帧在左上角 0,0 闪现一帧再归位）
+- **根因**：`Widget::layout()`（`widget.cpp`）带**帧级门控**——`on_layout()` 仅在 `dirty_ || dirty_children_` 时执行，否则提前返回不重排。但 `Widget::add_child/remove_child/clear_children` 只调 `on_children_changed()` 而**从不 `mark_dirty()`**；基类 `on_children_changed()` 为空，`ScrollBox` 覆写它仅置 `needs_layout_`（只抑制滚动条绘制），**不参与 layout 门控**。于是长命容器（内容面板 `preview`、`code`、`help`、`sidebar` 这些 ScrollBox）在切换子菜单时被 `clear_children()` + 重新 `add_child` 重建，但容器自身不脏 → 当帧 `root_.layout()` 递归进它却跳过 `on_layout()` → 新子控件保持构造默认 `(0,0,0,0)` bounds → 首帧绘制在窗口左上角 (0,0)，直到下一次标脏（如 UI-136 CJK 烘焙 `mark_dirty_all`）才触发重排归位。用户所见即「从左上角 0,0 闪一下再画到对应坐标」。新建的子容器（构造即 `dirty_=true`）无此问题，惟长命容器重建时暴露。
+- **修复**（ui 库 `Widget` 基类）：`add_child`/`remove_child`/`clear_children` 三处末尾各加 `mark_dirty()`，使任意子树变更即把容器及祖先置脏 → 下一 `root_.layout()` 必重排，新子控件**同帧**归位，消除 0,0 闪帧。`mark_dirty()` 幂等且沿父链短路，重复标脏无害。已排查全库：VBox/HBox/Grid/FlowBox/ScrollBox/ComboBox/Tabs/Table 子控件均由 `on_layout` 流式定位，标脏只让其「更该重排」正是目标；弹出面板（挂 root、位置由 `sync_panel`/`place_popup` 幂等重算）不在 add-child 路径，不受影响；`ScrollBox::add_pinned` 已自带 `mark_dirty` 冗余无害；`PanelWindow` 是唯一 on_layout 主动重定位所有子控件的容器，既有用法（子件构造 0,0 + on_layout 定位）无回归。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 任意**长命容器**（内容面板/代码区/帮助/侧栏/可复用的 VBox 等）`clear_children()`+`add_child` 重建后，下一帧子控件即绘制在正确坐标，**不再首帧在 (0,0) 闪一帧**。
+  2. 子控件在流式容器（VBox/HBox/Grid/FlowBox/ScrollBox/ComboBox/Table）内增删后布局随即更新，位置正确。
+  3. 弹出面板（ComboBox/下拉/date/overflow 挂 root）相对位置不受影响（`sync_panel` 幂等重算）。
+  4. `PanelWindow` 子控件随窗口拖拽/缩放仍正确重定位，相对偏移不变。
+  5. UI-135/136/140 返回项保持：帧级门控渲染完备、CJK 烘焙续帧重排、ScrollBox/Code 覆写 draw 清脏。
+- **验证**（Windows cmake MSVC Release）：`ui_ui` 重编译通过、`layui_test` 重链通过；`layui_test --smoke 2` exit 0。截屏/逐帧对比切换数据表格板块子菜单（anchor 页间切换，`place_content` 不改变 bounds 的场景），内容直接绘制在正确坐标、无 (0,0) 闪帧；`opengl_ui_demo` 弹出层页（PanelWindow）打开/拖拽/缩放子控件相对位置正确。
+- **影响范围**：`ui/src/widget.cpp`、`docs/ARCHITECTURE.md`、`docs/CHANGELOG.md`。
+
 ## UI-153: 库级「顶部装帧内容区原点」——Scene::set_chrome/content_origin_y，其余控件统一绘制于标题栏下方 + 修复帧率 HUD 与标题条重叠（2026-09-01）
 - **类型**：功能增强（ui 库 `ui::Scene`）+ 缺陷修复（测试程序 layui_test 帧率 HUD 直绘点位错误）
 - **严重度**：中

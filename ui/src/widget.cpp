@@ -120,6 +120,11 @@ void Widget::add_child(Widget* child) {
     child->parent_ = this;
     children_.push_back(child);
     on_children_changed();
+    // UI-154：子树变更即标脏本容器——layout() 的帧级门控（!dirty_ && !dirty_children_
+    // 提前返回）下，若不标脏，长命容器（如 ScrollBox 内容面板）被 clear_children()
+    // + 重建后本帧不重排、新子控件保持构造默认 (0,0,0,0) bounds 在窗口左上角闪一帧。
+    // 标脏使下一 root.layout() 必重排，新子控件同帧归位，消除 0,0 闪帧。
+    mark_dirty();
 }
 
 void Widget::remove_child(Widget* child) {
@@ -128,6 +133,7 @@ void Widget::remove_child(Widget* child) {
             (*it)->parent_ = nullptr;
             children_.erase(it);
             on_children_changed();
+            mark_dirty();
             return;
         }
     }
@@ -142,6 +148,7 @@ void Widget::clear_children() {
         delete k;
     }
     on_children_changed();
+    mark_dirty();
 }
 
 void Widget::destroy() {

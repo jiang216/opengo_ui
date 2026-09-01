@@ -16,6 +16,7 @@ core   ui_core 静态库（纯 C++：math/log/version，禁止 include GL/媒体
 
 | 功能 | 来源 |
 |------|------|
+| 子树变更即重排（防 0,0 闪帧）：`Widget::add_child/remove_child/clear_children` 均自报 `mark_dirty()`——`layout()` 的帧级门控（`!dirty_ && !dirty_children_` 提前返回）下，长命容器（内容面板 ScrollBox/代码区/侧栏/VBox 等）被清空重建后下一帧必重排，新子控件同帧归位，不再残留在构造默认 `(0,0,0,0)` bounds 于左上角闪一帧；弹出面板（root 挂载、`sync_panel` 幂等重算）与 PanelWindow 既有行为不变 | [UI-154](CHANGELOG.md#ui-154-子树变更不标脏使长命容器首帧不重排新子控件在-00-闪一帧基类-addchildremovechildclearchildren-自报标脏2026-09-01) |
 | Scene 生命周期四阶段：`ui::Scene(window, renderer)` 随窗口同步创建，构造广播 `ScenePhase::Ready`；`run()/run_for(秒)` 承载 poll+swap 完整循环与 `--smoke` 通用语义；`reset()/shutdown()` 随 `~Scene()` 自动收尾——禁止应用手写 poll/layout/dispatch/draw/swap 五段主循环 | [UI-146](CHANGELOG.md#ui-146-新增统一生命周期抽象-uiscene生产者分配者消费者清理重置2026-09-01) |
 | Scene 全量发布-订阅：`subscribe(ScenePhase, fn)` 阶段向量广播（一阶段多观察者，Phase 含 Ready/Reset/Frame/PostDraw/Cleanup/Shutdown）、`on(phase, fn)` 便捷重载、`set_event_hook(SceneEvent, hook)` 逐事件钩子（返回 true=消费，含 MouseMove/Down/Up/Scroll/Key/Char/Drop/Resized）；`subscribe/on` 返回**订阅 token**（非 0），`unsubscribe(token)` 按 token 单独摘除单个观察者（不清其他 App 级订阅）；`event_key()/event_scroll_dx/y()` 取随路数据 | [UI-146](CHANGELOG.md#ui-146-新增统一生命周期抽象-uiscene生产者分配者消费者清理重置2026-09-01) |
 | 页面级订阅生命周期（layui_test 展示 > 生命周期）：页面 build 内经 `host.scene` 挂的 PostDraw/Frame 等局部订阅，切页时必须在页面 `destroy` 钩子统一 `unsubscribe(token)`（在预览区 `clear_children` 之前）逐个摘除，**禁止** `clear_observers()` 清掉 App 级订阅，且不得持有已释放页面控件的闭包指针 | [UI-146](CHANGELOG.md#ui-146-新增统一生命周期抽象-uiscene生产者分配者消费者清理重置2026-09-01) |
@@ -28,6 +29,7 @@ core   ui_core 静态库（纯 C++：math/log/version，禁止 include GL/媒体
 | 顶部导航内容偏移回归项：Header 的 logo 图、导航文本、下拉、开关等子项须叠加父 `bounds_.y` 偏移（本库子控件 bounds 为绝对坐标），随 Header 外框整体下移到标题条下方，不与标题条重叠 | [UI-151](CHANGELOG.md#ui-151-修复主窗口顶部导航题条重叠的深层根因header-子项未随父-y-偏移本库子控件-bounds-为绝对坐标2026-09-01) |
 | 内容区原点回归项：注册 `Scene::set_chrome(titlebar, h)` 后，header/sidebar/tabs/content/帧率 HUD 的 y 统一以 `Scene::content_origin_y()` 为单一来源派生（承接 UI-149/151），其余控件绘制于标题条下方、帧率 HUD 垂直居中于 Header 不与标题条重叠 | [UI-153](CHANGELOG.md#ui-153-库级顶部装帧内容区原点scenesetchromecontent_origin_y其余控件统一绘制于标题栏下方--修复帧率-hud-与标题条重叠2026-09-01) |
 | 自绘 TitleBar 独立配色回归项：标题条默认背景 `#262A2F` 与紧邻下方页头/导航栏底色（`#2F363C`）明度可区分，标题条作为导航栏上方独立深色条可见，不与其无缝融合 | [UI-150](CHANGELOG.md#ui-150-自绘-titlebar-默认背景与下方-header-同色导致无缝融合标题条不可区分改为独立更深灰2026-09-01) |
+| 窗口容器 `WindowFrame`（UI-155）：自带自绘顶部标题栏（默认系统风格 `TitleBar`，标题栏高参数化默认 30）+ 标题栏下方铺满内容区；内容子控件以**容器相对坐标** `set_content_child(child,x,y,w,h)` 定位（相对内容区顶部），控件内部以相对矩形快照为唯一事实源、`on_layout` 重基准为绝对坐标（不二次叠加）；通用头部 `set_head(widget,height)` 可换任意 Widget 作头（`set_head_child` 头部相对坐标），内容区随 head_h 整体下移 | [UI-155](CHANGELOG.md#ui-155-新增窗口容器-windowframe自带自绘标题栏--内容区相对坐标--通用头部槽2026-09-01) |
 | core 层不得 include GL/OpenCV/FFmpeg 头文件（纯 C++，保证核心可移植、可单测） | UI-003 |
 | media 层仅反向依赖 ui/ui_gl/ui_core，且默认 OFF（纯 UI 构建不依赖媒体库） | UI-003 |
 | Demo 冒烟验证：GL 3.3 Core 上下文 + 清屏 + 色块矩形 + 垂直同步 + FPS 循环，运行正常 | UI-003 |
