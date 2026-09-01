@@ -16,21 +16,11 @@
 #include "ui/core/log.h"
 #include "ui/gl/renderer.h"
 #include "ui/gl/texture.h"
+#include "ui/ui/exe_dir.h"
 
-namespace ui {
-
-namespace {
-bool file_readable(const char* path) {
-    FILE* f = std::fopen(path, "rb");
-    if (f) {
-        std::fclose(f);
-        return true;
-    }
-    return false;
-}
-
-// 可执行文件所在目录（Windows）；非 Win32 或无路径时返回空串。
-std::string exe_directory() {
+// 可执行文件所在目录的集中实现（定义于 ui/src，声明见 ui/ui/exe_dir.h），
+// 供 carousel/navbar/titlebar 等按 exe 目录回退定位资产（UI-172 消除三处复制）。
+std::string ui::exe_directory() {
 #if defined(_WIN32)
     wchar_t buf[MAX_PATH];
     const DWORD n = GetModuleFileNameW(nullptr, buf, MAX_PATH);
@@ -45,6 +35,18 @@ std::string exe_directory() {
 #else
     return {};
 #endif
+}
+
+namespace ui {
+
+namespace {
+bool file_readable(const char* path) {
+    FILE* f = std::fopen(path, "rb");
+    if (f) {
+        std::fclose(f);
+        return true;
+    }
+    return false;
 }
 
 bool is_bare_filename(const char* path) {

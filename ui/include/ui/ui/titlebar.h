@@ -56,6 +56,7 @@ private:
     Font* font_ = nullptr;
     Font* icon_font_ = nullptr;
     uint32_t icon_cp_ = 0;
+    bool icon_font_tried_ = false;  // 已尝试懒装载 iconfont（防每帧重复失败重试，UI-172）
     const Theme* theme_ = nullptr;
     bool dragging_ = false;
     Btn pressed_ = Btn::None;   // 当前按住的窗口键（拖拽与按键互斥）

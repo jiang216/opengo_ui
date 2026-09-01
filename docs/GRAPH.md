@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 172（BUG 164 / DOC 6 / META 2）
-- 边: 371
+- 节点: 173（BUG 165 / DOC 6 / META 2）
+- 边: 372
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1054,7 +1054,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-148-titlebar-补齐-最小化最大化关闭-三键--左上角应用图标menu-分组头箭头改用-iconfont--可联动收起子菜单列2026-09-01`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），iconfont 未加载时回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列
 
 ### BUG:UI-149 · UI-149: 修复主窗口自绘标题条被顶部 Header 遮住——Header 构造默认 y=0 与 TitleBar 重叠，首帧标题条不可见（2026-09-01）
 
@@ -1150,7 +1150,13 @@
 
 - 路径: `docs/CHANGELOG.md#ui-171-标题栏窗口三键改用-iconfont-字形最小化减号--最大化全屏--还原退出全屏--关闭2026-09-01`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），iconfont 未加载时回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列
+
+### BUG:UI-172 · UI-172: 标题栏三键图标改为 ui 库自载 iconfont——未 set_icon/load_icon_font 的应用（arial 等）三键不再缺字形，且 exe_directory 集中化（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-172-标题栏三键图标改为-ui-库自载-iconfont未-seticonloadiconfont-的应用arial-等三键不再缺字形且-exedirectory-集中化2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -1410,6 +1416,7 @@
 | `BUG:UI-169` | BUG | UI-169: ScrollBox 内容滚动穿透标题栏/Header——退化矩形 push_scissor 空转 + pop 误弹父级裁剪（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-170` | BUG | UI-170: 分发消费安全加固——生命周期前置断言 + 接口导出补齐 + 示例/契约文档化（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-171` | BUG | UI-171: 标题栏窗口三键改用 iconfont 字形——最小化减号 + 最大化全屏 + 还原退出全屏 + 关闭（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-172` | BUG | UI-172: 标题栏三键图标改为 ui 库自载 iconfont——未 set_icon/load_icon_font 的应用（arial 等）三键不再缺字形，且 exe_directory 集中化（2026-09-01） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1666,6 +1673,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-169` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-170` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-171` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-172` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

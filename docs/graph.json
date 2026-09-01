@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-01T19:03:05+08:00",
+  "generatedAt": "2026-09-01T19:18:10+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-172": {
+      "id": "BUG:UI-172",
+      "type": "BUG",
+      "label": "UI-172: 标题栏三键图标改为 ui 库自载 iconfont——未 set_icon/load_icon_font 的应用（arial 等）三键不再缺字形，且 exe_directory 集中化（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-172-标题栏三键图标改为-ui-库自载-iconfont未-seticonloadiconfont-的应用arial-等三键不再缺字形且-exedirectory-集中化2026-09-01"
+    },
     "BUG:UI-171": {
       "id": "BUG:UI-171",
       "type": "BUG",
@@ -1952,13 +1959,19 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-148",
       "kind": "checklist",
-      "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），iconfont 未加载时回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
+      "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
     },
     {
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-171",
       "kind": "checklist",
-      "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），iconfont 未加载时回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
+      "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-172",
+      "kind": "checklist",
+      "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3432,11 +3445,18 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-172": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
+      }
+    ],
     "BUG:UI-171": [
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），iconfont 未加载时回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
+        "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
       }
     ],
     "BUG:UI-170": [
@@ -3548,7 +3568,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），iconfont 未加载时回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
+        "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
       }
     ],
     "BUG:UI-147": [

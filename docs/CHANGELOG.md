@@ -3,6 +3,21 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-172: 标题栏三键图标改为 ui 库自载 iconfont——未 set_icon/load_icon_font 的应用（arial 等）三键不再缺字形，且 exe_directory 集中化（2026-09-01）
+- **类型**：缺陷修复（ui 库 ui/src/titlebar.cpp + 公共工具收敛）
+- **严重度**：中（image_viewer / scene_multiwin / video_player 等仅 `titlebar().set_font`（arial.ttf）而不 `load_icon_font`/`set_icon` 的应用，标题条三键以 arial `draw_text` 画 `—/□/⧉/×`，而 **arial.ttf 缺 `□`(U+25A1)/`⧉`(U+29C9) 等字形** → 最大化/还原/关闭显示成空白豆腐块、观感损坏）
+- **背景/根因（归属 ui 库 UI-171 设计缺陷）**：UI-171 把三键图标改为 iconfont，但 `use_icon` 仅当 `icon_font_`（由 `set_icon` 显式注入）存在且已烘培时才生效；未调用 `set_icon` 的应用 `icon_font_` 为 null → 回退文本字形。由于依赖应用显式加载 iconfont，仅 demo/api_demo（自 `load_icon_font`+`set_icon`）正常，而 image_viewer/scene_multiwin/video_player（只 `set_font(&font)` arial）落入 arial 缺字形的文本回退 → 图标空白/错绘。按 AGENTS 属 **ui 库能力缺陷**，须由 ui 库自载 iconfont 治本，禁止在测试程序内打补丁。
+- **改动**：
+  1. **`ui/src/titlebar.cpp` 自载 iconfont**：`on_draw` 三键绘制前经 `resolve_icon_font` 懒装载内置 `iconfont.ttf`（优先级：应用 `set_icon` 注入的 `icon_font_` → 否则按 **exe 目录回退**尝试 `iconfont.ttf`/`assets/iconfont.ttf` 经 `font_->load_icon_font` 烘培到 `font_`）→ 三键用 `draw_icon` 减号/全屏/退出全屏/关闭；仍取不到 iconfont 才回退文本字形。新增成员 `icon_font_tried_` 防每帧重复失败重试。
+  2. **`exe_directory()` 集中化（消除三处复制）**：新增公共头 `ui/include/ui/ui/exe_dir.h` 声明 `ui::exe_directory()`，实现集中放 `ui/src/image.cpp`；`carousel.cpp`/`navbar.cpp` 删本地复制改 `#include "ui/ui/exe_dir.h"`，去掉各自 `windows.h` 仅作此用的包含段。行为不变，冗余消除。
+- **回归清单**（既有保证项核对 + 新增保证项）：
+  1. **新增**：仅 `set_font(&font)`（未 `load_icon_font`/`set_icon`）的容器（image_viewer/scene_multiwin/video_player）标题条三键渲染为 iconfont 减号/全屏/退出全屏/关闭，无 arial 豆腐块。
+  2. **新增**：`exe_directory()` 语义不变（Windows `GetModuleFileNameW`、UTF-8、非 Win32 空串），carousel/navbar 资产 exe 目录回退（UI-048）不回归。
+  3. UI-171 回归项：已 `load_icon_font`+`set_icon` 的应用三键仍 iconfont（`icon_font_` 优先）；未加载 iconfont 的环境回退文本字形；最大化↔还原 toggle、hover/按下红底、`hit_button` 命中区、`set_icon` 左上应用图标、标题裁剪均不变（undo UI-171 语义未破坏）。
+  4. `exe_directory()` 强化前与 demo/api_demo 无关；Menu/标签等其他 iconfont 使用不受影响。
+- **验证**：三配置（x64-all media ON Release / x64-debug media OFF Debug / layui_test Release）编译链接通过；6 exe + layui_test `--smoke 3` 全 exit 0；**image_viewer 运行 OCR 截图确认标题条右上渲染出减号(一)/全屏(8)/关闭(X) 矢量图标**（之前为空白豆腐块），图标问题修复；graphgen 重生成 + `--check` 0 错误 0 警告。
+- **影响范围**：`ui/src/titlebar.cpp`、`ui/include/ui/ui/titlebar.h`、`ui/src/image.cpp`、`ui/src/carousel.cpp`、`ui/src/navbar.cpp`、`ui/include/ui/ui/exe_dir.h`（新增）、`docs/CHANGELOG.md`。
+
 ## UI-171: 标题栏窗口三键改用 iconfont 字形——最小化减号 + 最大化全屏 + 还原退出全屏 + 关闭（2026-09-01）
 - **类型**：功能改进（ui 库 ui/src/titlebar.cpp；改用已有 iconfont 图标库，视觉与 layui 图标统一）
 - **严重度**：低（UI-148 的三键为纯文本字形 `—/□·⧉/×`，渲染随字体/平台不一致；改 iconfont 后视觉统一且可缩放清晰）

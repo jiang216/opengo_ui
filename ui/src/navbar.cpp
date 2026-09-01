@@ -3,19 +3,10 @@
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
 #include "ui/gl/texture.h"
+#include "ui/ui/exe_dir.h"
 #include "ui/ui/theme.h"
 
 #include <string>
-
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <windows.h>
-#endif
 
 namespace ui {
 
@@ -26,23 +17,6 @@ constexpr float kChildH = 36.f;
 constexpr float kImgSize = 24.f;
 constexpr float kDropdownMinW = 100.f;
 constexpr float kArrowSize = 8.f;
-
-std::string exe_directory() {
-#if defined(_WIN32)
-    wchar_t buf[MAX_PATH];
-    const DWORD n = GetModuleFileNameW(nullptr, buf, MAX_PATH);
-    if (n == 0 || n >= MAX_PATH) return {};
-    int len = WideCharToMultiByte(CP_UTF8, 0, buf, (int)n, nullptr, 0, nullptr, nullptr);
-    if (len <= 0) return {};
-    std::string p((size_t)len, '\0');
-    WideCharToMultiByte(CP_UTF8, 0, buf, (int)n, &p[0], len, nullptr, nullptr);
-    const size_t slash = p.find_last_of("/\\");
-    if (slash == std::string::npos) return {};
-    return p.substr(0, slash);
-#else
-    return {};
-#endif
-}
 
 bool file_readable(const char* path) {
     FILE* f = std::fopen(path, "rb");

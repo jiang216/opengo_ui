@@ -5,6 +5,7 @@
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
 #include "ui/gl/window.h"
+#include "ui/ui/exe_dir.h"
 #include "ui/ui/layui_icons.h"
 #include "ui/ui/theme.h"
 
@@ -121,10 +122,24 @@ void TitleBar::on_draw(Renderer& renderer) {
     const float bw = 28.f;
     const float line_h = font_ ? font_->line_height() : 14.f;
 
-    // 右侧三键：最小化 / 最大化(还原) / 关闭（从右往左排）。
-    // 图标优先用 iconfont 码点（减号/全屏/退出全屏/关闭）绘制，视觉统一；icon_font_ 未烘培
-    // iconfont 或无 iconfont 时优雅回退到文本字形（—/□/⧉/×），不中断（UI-171）。
-    const bool use_icon = icon_font_ && icon_font_->icon_loaded();
+    // 图标字体来源：优先应用显式注入的 icon_font_（set_icon）；否则懒装载内置 iconfont.ttf
+    // （exe 目录回退，UI-172）到 font_，使未调用 load_icon_font/set_icon 的应用（如仅 arial 的
+    // image_viewer/scene_multiwin/video_player）三键也能渲染矢量 iconfont，而非 arial 缺失字形的
+    // 文本豆腐块。均不可得时回退文本字形。
+    auto resolve_icon_font = [&]() -> Font* {
+        if (icon_font_ && icon_font_->icon_loaded()) return icon_font_;
+        if (!font_ || icon_font_tried_) return (font_ && font_->icon_loaded()) ? font_ : nullptr;
+        icon_font_tried_ = true;
+        const std::string d = exe_directory();
+        const char* cands[] = {"iconfont.ttf", "assets/iconfont.ttf"};
+        for (const char* c : cands) {
+            const std::string cand = d.empty() ? std::string(c) : d + "/" + c;
+            if (font_->load_icon_font(cand.c_str(), 20.f)) break;
+        }
+        return font_->icon_loaded() ? font_ : nullptr;
+    };
+    Font* icf = resolve_icon_font();
+    const bool use_icon = icf && icf->icon_loaded();
     auto draw_button = [&](bool visible, float bx01, Btn id, uint32_t icon_cp,
                            const char* text_glyph) {
         if (!visible || !font_) return;
@@ -137,8 +152,8 @@ void TitleBar::on_draw(Renderer& renderer) {
                                                             : Vec4{0.68f, 0.70f, 0.73f, 1.0f};
         if (use_icon && icon_cp) {
             const float isz = std::min(16.f, bounds_.h * 0.6f);
-            icon_font_->draw_icon(renderer, icon_cp, bx + bw * 0.5f,
-                                  bounds_.y + bounds_.h * 0.5f, isz, c);
+            icf->draw_icon(renderer, icon_cp, bx + bw * 0.5f,
+                           bounds_.y + bounds_.h * 0.5f, isz, c);
         } else {
             const float ty = bounds_.y + (bounds_.h - line_h) * 0.5f;
             font_->draw_text(renderer, text_glyph, bx + (bw - font_->measure_text(text_glyph)) * 0.5f,
