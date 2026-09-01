@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-01T19:42:07+08:00",
+  "generatedAt": "2026-09-01T19:59:19+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-174": {
+      "id": "BUG:UI-174",
+      "type": "BUG",
+      "label": "UI-174: 修复 opengl_ui_demo 左侧列卡片与顶栏重叠 + 无滚动（apps/main.cpp）（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-174-修复-opengluidemo-左侧列卡片与顶栏重叠--无滚动appsmaincpp2026-09-01"
+    },
     "BUG:UI-173": {
       "id": "BUG:UI-173",
       "type": "BUG",
@@ -3424,7 +3431,19 @@
       "from": "DOC:README",
       "to": "BUG:UI-003",
       "kind": "checklist",
-      "context": "回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译"
+      "context": "回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译；左侧列用 `ScrollBox`+`VBox` 流式堆叠：起始 y 让出内容区原点下方（标题条+菜单栏），整列可滚动、随窗口高度同步"
+    },
+    {
+      "from": "DOC:README",
+      "to": "BUG:UI-174",
+      "kind": "checklist",
+      "context": "回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译；左侧列用 `ScrollBox`+`VBox` 流式堆叠：起始 y 让出内容区原点下方（标题条+菜单栏），整列可滚动、随窗口高度同步"
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "DOC:ARCHITECTURE",
+      "kind": "mention",
+      "context": ""
     },
     {
       "from": "META:CHANGELOG",
@@ -3435,12 +3454,6 @@
     {
       "from": "META:CHANGELOG",
       "to": "DOC:API_REFERENCE",
-      "kind": "mention",
-      "context": ""
-    },
-    {
-      "from": "META:CHANGELOG",
-      "to": "DOC:ARCHITECTURE",
       "kind": "mention",
       "context": ""
     },
@@ -3458,6 +3471,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-174": [
+      {
+        "from": "DOC:README",
+        "kind": "checklist",
+        "context": "回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译；左侧列用 `ScrollBox`+`VBox` 流式堆叠：起始 y 让出内容区原点下方（标题条+菜单栏），整列可滚动、随窗口高度同步"
+      }
+    ],
     "BUG:UI-173": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -3877,7 +3897,7 @@
       {
         "from": "DOC:README",
         "kind": "checklist",
-        "context": "回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译"
+        "context": "回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译；左侧列用 `ScrollBox`+`VBox` 流式堆叠：起始 y 让出内容区原点下方（标题条+菜单栏），整列可滚动、随窗口高度同步"
       }
     ],
     "BUG:UI-004": [

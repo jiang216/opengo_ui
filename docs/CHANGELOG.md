@@ -3,6 +3,24 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-174: 修复 opengl_ui_demo 左侧列卡片与顶栏重叠 + 无滚动（apps/main.cpp）（2026-09-01）
+- **级别**：缺陷修复（apps 测试/示例程序，非 ui 库）。左侧列是示例程序的演示排布问题，按 AGENTS 归因改 `apps/main.cpp`，ui 库能力（ScrollBox/VBox、content_origin_y、Resized 钩子）已具备，无需改动 ui 库。
+- **根因**：`apps/main.cpp` 左列 4 个控件（`left` VBox、`layui_card`、`m17b_card`、`m17d_card`）用**硬编码绝对 y = 20/356/940** 直接挂 `root`，**未加 `container.content_origin_y()`**（标题条高 30）。于是：
+  1. 顶部首个卡片/`left`（y=20..60）**压在标题条(0..30)与菜单栏/工具栏(30..60)上**——菜单栏（`main.cpp` 后添加、z 序更高）盖住卡片头部，首个卡片标题（"M17a: layui components"）被遮挡、不可见。
+  2. 左列是固定直排、**无 `ScrollBox` 包裹**，窗口高度 < 内容高（或内容更高的卡片场景）时底部卡片超出可视区且**无法滚动查看**。
+- **修复**（`apps/main.cpp`）：
+  1. `content_origin_y()` 处新增 `kChromeTop`、`kLeftTop = kChromeTop + 30.f`（让出标题条 30 + 菜单栏 30），新增 `ui::ScrollBox left_scroll(40, kLeftTop, 360, window.height()-kLeftTop)` 挂 `root`；`left_scroll` 内嵌 `ui::VBox left_col`。
+  2. 4 个左列控件改为 `left_col.add_child(...)`，构造函数 y 归零（`(0,0,360,H)`），由 `left_col` 垂直堆叠（spacing 10）。各卡片内部子控件（m17d_box、upload 等）保持不变。
+  3. 新增 `SceneEvent::Resized` 钩子：`left_scroll.set_bounds(40, kLeftTop, 360, window.height()-kLeftTop)`，随窗口高自适应（镜像 `layui_test/app.cpp` 侧栏 resize 模式）。
+- **回归清单（逐项核对，防错误复发）**：
+  1. **不再重叠**：左列首个卡片/`left` 头部完整显示在菜单栏下方（y=60 起），标题条/菜单栏不再被盖住；左列与菜单栏无重叠。
+  2. **可滚动**：左列 `ScrollBox` 滚轮可滚动查看超出可视区的内容（M12/卡片间切换），spacing/padding 正常。
+  3. **Resize**：窗口缩放时 `left_scroll` 高度随 `window.height()` 同步（Resized 钩子），不残留旧高、不错位。
+  4. **其它左列/中央引用**：`m17b_card`/`m17d_card` 及其内部控件（m17d_box、upload、carousel、code 等）引用仍有效；central `box`/`menubar`/About 弹窗/媒体播放不受影响。
+  5. 6 exe（含 demo）`--smoke 3` 全 exit 0；Debug/Release 构建通过。
+- **验证**：构建 x64-all Release / x64-debug Debug 通过。实机 OCR 截图：滚动后左列顶部显示 M12（left/right、Grid 2x2）且 **"M17a: layui components" 标题完整可见**（此前被菜单栏遮挡读不出）；左列滚轮在卡片/M12 间滚动生效；菜单栏 "File View Help" 不被覆盖。6 exe `--smoke 3` all exit 0 + graphgen 生成 `--check` 0 错 0 警。
+- **影响范围**：`apps/main.cpp`、`docs/CHANGELOG.md`、`docs/ARCHITECTURE.md`。
+
 ## UI-173: 鼠标按下/抬起边沿被 Frame 订阅者抢先消费，Scene 控件树收不到 down/up → 标题栏三键（及其它控件点击）全部无响应；多窗口循环须两窗口都关才退出（2026-09-01）
 - **级别**：缺陷修复（ui 库 + apps）。根因有两处，分别归属 ui 库与测试程序，均按 AGENTS 框架修复。
 - **根因A（ui 库，主缺陷）**：`Scene::frame()` 在 `notify_phase(ScenePhase::Frame)`（scene.cpp 帧前派发媒体/动画/工具逻辑）**之后**才轮询 `window_.mouse_pressed(0)/mouse_released(0)` 来分发 down/up 给控件树。而 `mouse_pressed/released` 是**读一次即清除**的边沿（window.cpp）。image_viewer 的 Frame 订阅者（image_viewer.cpp 拖拽 `if (window.mouse_pressed(0) ...)`）每帧先于 Scene 读取并**消费**该边沿，导致 Scene 在 scene.cpp 分发处读到 false → `root_.dispatch_mouse_down/up` **永不被调用** → 标题栏三键（最大化/最小化/关闭）和所有 widget 的点击按下/抬起都收不到，用户见「hover 红底正常、点击无响应」。

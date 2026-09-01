@@ -9,7 +9,7 @@ C++ OpenGL UI 框架（CMake 多模块工程）。里程碑计划见 [PLAN.md](P
 | 文档图谱与 CHANGELOG 条目可被 `python tools\graphgen.py` 正常生成与校验 | UI-001 |
 | `scripts/build/*.ps1` 双架构 x64/x86 一键构建全部 3rdparty 依赖并安装到 `3rdparty/install/{x64,x86}` | UI-002 |
 | 顶层 CMake：C++17、media 开关默认 OFF、按架构推导 `OPENGUI_3RDPARTY` 前缀 | UI-003 |
-| Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译 | UI-003 |
+| Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译；左侧列用 `ScrollBox`+`VBox` 流式堆叠：起始 y 让出内容区原点下方（标题条+菜单栏），整列可滚动、随窗口高度同步 | UI-003 · [UI-174](CHANGELOG.md#ui-174-修复-opengluidemo-左侧列卡片与顶栏重叠--无滚动appsmaincpp2026-09-01) |
 
 ## 示例应用（M16 收官）
 

@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 174（BUG 166 / DOC 6 / META 2）
-- 边: 373
+- 节点: 175（BUG 167 / DOC 6 / META 2）
+- 边: 374
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -42,7 +42,7 @@
   - `DOC:BUILD` (checklist) — 回归清单#顶层 CMake 对 MSVC 全局加 `/utf-8`（源码含 UTF-8 中文注释，否则 C2447/C4819）
   - `DOC:BUILD` (checklist) — 回归清单#MSVC 下 GLAD `gl.c` 以 `LANGUAGE CXX` 编译（-TP），避免 C 代码告警
   - `DOC:README` (checklist) — 回归清单#顶层 CMake：C++17、media 开关默认 OFF、按架构推导 `OPENGUI_3RDPARTY` 前缀
-  - `DOC:README` (checklist) — 回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译
+  - `DOC:README` (checklist) — 回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译；左侧列用 `ScrollBox`+`VBox` 流式堆叠：起始 y 让出内容区原点下方（标题条+菜单栏），整列可滚动、随窗口高度同步
 
 ### BUG:UI-004 · UI-004: M1 渲染管线升级：圆角矩形 SDF + 纹理/字体 + 控件树（2026-08-09）
 
@@ -1164,6 +1164,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；三键点击须经控件树分发 `dispatch_mouse_down/up` 真正触发，若应用 Frame 订阅者先消费 `window.mouse_pressed` 边沿导致 Scene 控件树收不到按下/抬起，按钮会无响应（ui 库已用 Scene 分发前 peek 快照边沿修复）；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列
 
+### BUG:UI-174 · UI-174: 修复 opengl_ui_demo 左侧列卡片与顶栏重叠 + 无滚动（apps/main.cpp）（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-174-修复-opengluidemo-左侧列卡片与顶栏重叠--无滚动appsmaincpp2026-09-01`
+- 反链(1):
+  - `DOC:README` (checklist) — 回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译；左侧列用 `ScrollBox`+`VBox` 流式堆叠：起始 y 让出内容区原点下方（标题条+菜单栏），整列可滚动、随窗口高度同步
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1424,6 +1430,7 @@
 | `BUG:UI-171` | BUG | UI-171: 标题栏窗口三键改用 iconfont 字形——最小化减号 + 最大化全屏 + 还原退出全屏 + 关闭（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-172` | BUG | UI-172: 标题栏三键图标改为 ui 库自载 iconfont——未 set_icon/load_icon_font 的应用（arial 等）三键不再缺字形，且 exe_directory 集中化（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-173` | BUG | UI-173: 鼠标按下/抬起边沿被 Frame 订阅者抢先消费，Scene 控件树收不到 down/up → 标题栏三键（及其它控件点击）全部无响应；多窗口循环须两窗口都关才退出（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-174` | BUG | UI-174: 修复 opengl_ui_demo 左侧列卡片与顶栏重叠 + 无滚动（apps/main.cpp）（2026-09-01） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1702,6 +1709,7 @@
 | `DOC:README` | `BUG:UI-002` | checklist |
 | `DOC:README` | `BUG:UI-003` | checklist |
 | `DOC:README` | `BUG:UI-003` | checklist |
+| `DOC:README` | `BUG:UI-174` | checklist |
 | `DOC:README` | `DOC:ARCHITECTURE` | mention |
 | `DOC:README` | `DOC:BUILD` | mention |
 | `DOC:README` | `DOC:BUILD` | mention |

@@ -283,12 +283,25 @@ int main(int argc, char** argv) {
     hint.set_align(1);
     box.add_child(&hint);
 
+    // ---- 左侧可滚动列（UI-174）：让出标题条(30)+菜单栏(30)后整列可滚动，
+    // 不再盖住顶栏；超出可视区的高度通过滚轮查看。----
+    const float kChromeTop = container.content_origin_y();      // 标题条 30
+    const float kLeftTop = kChromeTop + 30.f;                   // + 菜单栏高 30
+    ui::ScrollBox left_scroll(40, kLeftTop, 360, window.height() - kLeftTop);
+    left_scroll.set_theme(&theme);
+    root.add_child(&left_scroll);
+    ui::VBox left_col(0, 0, 360, 0);
+    left_col.set_theme(&theme);
+    left_col.set_spacing(10.f);
+    left_col.set_padding(20.f);
+    left_scroll.add_child(&left_col);
+
     // M12：左侧独立卡片演示 HBox 横向 + Grid 网格布局
-    ui::VBox left(40, 20, 360, 300);
+    ui::VBox left(0, 0, 360, 300);
     left.set_theme(&theme);
     left.set_spacing(10.f);
     left.set_padding(20.f);
-    root.add_child(&left);
+    left_col.add_child(&left);
 
     ui::Label ltitle(0, 0, 320, 0, "M12: HBox / Grid");
     ltitle.set_font(&font);
@@ -340,11 +353,11 @@ int main(int argc, char** argv) {
     left.add_child(&grid);
 
     // ---- M17a：layui 轻量组件克隆（类名语法 + Theme::make_layui）----
-    ui::Card layui_card(40, 20, 360, 320);
+    ui::Card layui_card(0, 0, 360, 320);
     layui_card.set_font(&font);
     layui_card.set_theme(&theme);
     layui_card.set_header("M17a: layui components");
-    root.add_child(&layui_card);
+    left_col.add_child(&layui_card);
 
     ui::Breadcrumb crumb(0, 0, 330, 0);
     crumb.set_font(&font);
@@ -436,11 +449,11 @@ int main(int argc, char** argv) {
     }
 
     // ---- M17b：layui 按钮变体 + Switch 开关（克隆 layui.css）----
-    ui::Card m17b_card(40, 356, 360, 560);
+    ui::Card m17b_card(0, 0, 360, 560);
     m17b_card.set_font(&font);
     m17b_card.set_theme(&theme);
     m17b_card.set_header("M17b: layui buttons / switch");
-    root.add_child(&m17b_card);
+    left_col.add_child(&m17b_card);
 
     // 按钮变体行 1：默认 / normal / warm / danger
     ui::HBox btn_row1(0, 0, 330, 38);
@@ -733,11 +746,11 @@ int main(int argc, char** argv) {
 #endif
 
     // ---- M17d：图标 + 特殊组件（Icon / Carousel / Code / ColorPicker / Transfer / Laydate / Upload）----
-    ui::Card m17d_card(40, 940, 360, 320);
+    ui::Card m17d_card(0, 0, 360, 320);
     m17d_card.set_font(&font);
     m17d_card.set_theme(&theme);
     m17d_card.set_header("M17d: icon & special");
-    root.add_child(&m17d_card);
+    left_col.add_child(&m17d_card);
 
     ui::ScrollBox m17d_box(0, 0, 330, 260);
     m17d_box.set_theme(&theme);
@@ -908,6 +921,12 @@ int main(int argc, char** argv) {
     scene.set_event_hook(ui::SceneEvent::Scroll, [&](ui::Scene&) {
         count += (int)scene.event_scroll_dy();
         return false;
+    });
+
+    // 窗口尺寸变化：左侧可滚动列高度随窗口同步（Scene 已更新视口+root，UI-174）
+    scene.set_event_hook(ui::SceneEvent::Resized, [&](ui::Scene&) {
+        left_scroll.set_bounds(40, kLeftTop, 360, (float)window.height() - kLeftTop);
+        return true;
     });
 
     // 帧后：Tooltip + HUD 直绘（begin_frame+root.draw 之后）
