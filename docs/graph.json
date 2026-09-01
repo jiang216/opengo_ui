@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-01T15:19:23+08:00",
+  "generatedAt": "2026-09-01T15:40:36+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -1818,7 +1818,7 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-157",
       "kind": "checklist",
-      "context": "回归清单#事件阶段新建控件不闪 (0,0)：`Scene::frame()` 帧序「帧首 `root_.layout()` → 事件分发 → 绘制」下，鼠标点击在事件回调里 `new`+`add_child` 的控件同帧早先 layout 已过 → 会以 (0,0,0,0) 画一帧；故在 `root_.draw()` 前补一次 `root_.layout()`（带 `dirty_‖dirty_children_` 门控，无变更帧即时 no-op、幂等）；并在 `Widget::draw()` 入口再兜底一次同款门控 `if (dirty_‖dirty_children_) layout();`（覆盖绕过 Scene 裸调 `Widget::draw` 的库分发第三方），事件阶段新建即重排后再绘，消除 (0,0) 闪帧"
+      "context": "回归清单#事件阶段新建控件不闪 (0,0)：`Scene::frame()` 帧序「帧首 `root_.layout()` → 事件分发 → 绘制」下，鼠标点击在事件回调里 `new`+`add_child` 的控件同帧早先 layout 已过 → 会以 (0,0,0,0) 画一帧；故在 `root_.draw()` 前补一次 `root_.layout()`（带 `dirty_‖dirty_children_` 门控，无变更帧即时 no-op、幂等）；并在 `Widget::draw`/`ScrollBox::draw`/`Code::draw`（全库三处 draw 定义）**根节点入口**加同款门控 `if (!parent_ && (dirty_‖dirty_children_)) layout();`（仅根触发一次，根 layout 递归整棵可见子树，覆盖绕过 Scene 裸调 root/顶层控件绘制的库分发第三方；避免逐层各调一次造成脏帧内深树多遍布局）。事件阶段新建即重排后再绘，消除 (0,0) 闪帧"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3320,7 +3320,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#事件阶段新建控件不闪 (0,0)：`Scene::frame()` 帧序「帧首 `root_.layout()` → 事件分发 → 绘制」下，鼠标点击在事件回调里 `new`+`add_child` 的控件同帧早先 layout 已过 → 会以 (0,0,0,0) 画一帧；故在 `root_.draw()` 前补一次 `root_.layout()`（带 `dirty_‖dirty_children_` 门控，无变更帧即时 no-op、幂等）；并在 `Widget::draw()` 入口再兜底一次同款门控 `if (dirty_‖dirty_children_) layout();`（覆盖绕过 Scene 裸调 `Widget::draw` 的库分发第三方），事件阶段新建即重排后再绘，消除 (0,0) 闪帧"
+        "context": "回归清单#事件阶段新建控件不闪 (0,0)：`Scene::frame()` 帧序「帧首 `root_.layout()` → 事件分发 → 绘制」下，鼠标点击在事件回调里 `new`+`add_child` 的控件同帧早先 layout 已过 → 会以 (0,0,0,0) 画一帧；故在 `root_.draw()` 前补一次 `root_.layout()`（带 `dirty_‖dirty_children_` 门控，无变更帧即时 no-op、幂等）；并在 `Widget::draw`/`ScrollBox::draw`/`Code::draw`（全库三处 draw 定义）**根节点入口**加同款门控 `if (!parent_ && (dirty_‖dirty_children_)) layout();`（仅根触发一次，根 layout 递归整棵可见子树，覆盖绕过 Scene 裸调 root/顶层控件绘制的库分发第三方；避免逐层各调一次造成脏帧内深树多遍布局）。事件阶段新建即重排后再绘，消除 (0,0) 闪帧"
       }
     ],
     "BUG:UI-156": [

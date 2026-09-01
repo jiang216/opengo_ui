@@ -69,6 +69,9 @@ bool Code::on_mouse_scroll(float x, float y, float dx, float dy) {
 
 void Code::draw(Renderer& renderer) {
     if (!visible) return;
+    // UI-157：与基类 Widget::draw() 一致的绘制前兜底布局（仅根触发，见 widget.cpp 说明）——
+    // Code 可能作为独立根被绕过 Scene 裸调，此时先排位再画，杜绝子控件 (0,0) 闪帧。
+    if (!parent_ && (dirty_ || dirty_children_)) layout();
     on_draw(renderer);
     renderer.push_scissor(Rect{bounds_.x, bounds_.y + kHeaderH, bounds_.w, bounds_.h - kHeaderH});
     for (Widget* child : children_) {

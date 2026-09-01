@@ -249,6 +249,9 @@ void ScrollBox::on_draw(Renderer& renderer) {
 
 void ScrollBox::draw(Renderer& renderer) {
     if (!visible) return;
+    // UI-157：与基类 Widget::draw() 一致的绘制前兜底布局（仅根触发，见 widget.cpp 说明）——
+    // ScrollBox 可能作为独立根被绕过 Scene 裸调，此时先排位再画，杜绝其内容子控件 (0,0) 闪帧。
+    if (!parent_ && (dirty_ || dirty_children_)) layout();
     on_draw(renderer);  // 背景
     // 内容裁剪区：启用固定头部时从头部下方开始，头部恒为面板底色（固定留白不滚动）
     const Rect content_clip = {bounds_.x, bounds_.y + header_height_,

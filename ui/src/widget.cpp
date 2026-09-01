@@ -633,11 +633,14 @@ void Widget::advance(float dt) {
 // 帧级门控用（root.is_dirty() 决定整帧渲染或跳过），渲染帧内必须全树绘制。
 void Widget::draw(Renderer& renderer) {
     if (!visible) return;
-    // UI-157：绘制前兜底布局——若自身或子树仍脏（事件阶段新建/变更后未被 Scene::frame()
-    // 的补布局覆盖，比如绕过 Scene 裸调 Widget::draw 的第三方），先排位再画，杜绝 (0,0) 闪帧。
-    // layout() 自带 `dirty_ || dirty_children_` 门控：无变更即时返回（零开销），且 layout 不
-    // 调 draw（无递归）。Scene::frame() 已先布局，此处对标准路径是 no-op（双保险）。
-    if (dirty_ || dirty_children_) layout();
+    // UI-157：绘制前兜底布局——当 widget 以「根」（无父节点）身份被裸调 draw（绕过 Scene::frame())
+    // 且自身或子树仍脏时，先排位再画，杜绝 (0,0) 闪帧。layout() 自带 `dirty_||dirty_children_`
+    // 门控（无变更即时 no-op），且 layout 不调 draw（无递归），根 layout 会递归整棵可见子树——故
+    // 仅需在根触发一次，避免每个子节点 draw 入口再各 layout 一次造成深树多遍布局（布局不清 dirty，
+    // 去标在 draw 尾部 finish_draw_dirty；若逐节点触发则 dirty 帧内整树被反复递归）。
+    // 非根节点（Scene 路径下）的布局由根/Scene 帧内补布局覆盖，此处跳过（契约：裸调需从 root/
+    // 顶层控件开始 draw，与 UI-146 走 Scene 或不手写五段主循环一致）。
+    if (!parent_ && (dirty_ || dirty_children_)) layout();
     on_draw(renderer);
     for (Widget* child : children_) {
         if (child->visible) child->draw(renderer);
