@@ -4,6 +4,7 @@
 #include <glad/gl.h>
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <functional>
 
@@ -242,6 +243,9 @@ void Renderer::begin_frame(const Vec4& clear_color) {
     // UI-169 系统性加固：每帧重置 scissor 状态。任何未被配平 pop 收尾的裁剪区
     // （退化矩形 push 空转后父级被误弹 / 异常提前返回跳过 pop 等）若残留到下一帧，
     // 会带着过期 GL_SCISSOR_TEST 状态绘制后续内容。此处清栈 + 关闭，杜绝跨帧脏状态。
+    // Debug 前置断言：进入本帧时 scissor 栈应为空。若非空，说明上一帧存在未配平的
+    // pop_scissor（或本帧在 begin_frame 之前就 push 过）——正是 UI-169 类缺陷的症状，Debug 下立即暴露。
+    assert(scissor_stack_.empty() && "scissor stack not empty at begin_frame: unmatched push_scissor in previous frame/prologue");
     scissor_stack_.clear();
     glDisable(GL_SCISSOR_TEST);
     glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);

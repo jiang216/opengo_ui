@@ -3,6 +3,22 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-170: 分发消费安全加固——生命周期前置断言 + 接口导出补齐 + 示例/契约文档化（2026-09-01）
+- **类型**：加固/文档（ui 库 gl/ui + 分发文档；防下游消费/外部改库重引入历史 Bug）
+- **严重度**：低-中（纯加固，无功能逻辑改动；提升「打包后外部调用 / 外部改库」时对前置契约的暴露度）
+- **背景**：UI-167/168/169 修复后，分析发现库的「顺序/状态前置条件」均为文档口头契约 + Release 自愈式软修复，消费方按分发 README 裸 while-loop 或外部改库时**静默**复现历史 Bug（destroy 泄漏、scissor 穿透、chrome 错位、拖拽跳变）。本条目把这些契约固化为 Debug 断言 + 文档 + 导出接口补齐。
+- **改动**：
+  1. **Debug 前置断言（ui/gl）**：`ui/src/scene.cpp` `Scene::set_chrome()` 断言须在首帧 `frame()` 之前调用（`frame_began_` 标志）；`gl/src/renderer.cpp` `begin_frame()` 断言进入时 scissor 栈为空（上一帧未配平 pop / 本帧提前 push，即 UI-169 类症状）；`ui/src/widget.cpp` `flush_pending_destroys()` 断言非重入（`g_flushing`，防破坏「先摘除后删除」两遍语义，UI-167）。均 `<cassert>`，仅 Debug 生效。
+  2. **导出接口补齐（构建）**：`gl/CMakeLists.txt` 给 `ui_gl` 加 `target_compile_definitions(PUBLIC GLFW_INCLUDE_NONE)`——顶层目录级宏不随 install/export 传下游，PUBLIC 挂载后外部消费方在自身 TU 同时 include `<glad/gl.h>`+`<GLFW/glfw3.h>` 自动生效，避免系统 gl.h 冲突；`core/CMakeLists.txt` 给 `ui_core` 加 `target_compile_features(PUBLIC cxx_std_17)`——经接口传播强制下游 C++17（顶层层级 CMAKE_CXX_STANDARD 不导出）。
+  3. **分发 README 最小示例**：`docs/distribution/README.md` 由**裸 while-loop**（Window+Renderer+root，绕过 Scene，缺 advance/flush/滚动/输入）改为推荐 `ui::WindowContainer`+`Scene::run()` 安全路径，旧裸管留为「不推荐，需自履行的契约清单」旁注。
+  4. **API_REFERENCE 契约表**：`docs/distribution/API_REFERENCE.md` 新增「Lifecycle & Precondition Contract」——前置条件 × 强制 API × 违反后果表（begin_frame 顺序、scissor 配对、advance/flush 冲刷、set_chrome 时序、容器存活期、单上下文单 Renderer、init、drag 序列、resize 重排）+ Debug 断言列 + 下游链接/构建要求（C++17、GLFW_INCLUDE_NONE、静态库 LNK2038）。
+- **回归清单**（既有保证项核对均为纯加固，无行为变化）：
+  1. 标准 `Scene`/`WindowContainer` 路径：`set_chrome` 在构造/Ready 期调用，`begin_frame` 每帧首调、scissor 栈帧首为空，`flush_pending_destroys` 帧末一次——均通过新增断言（Debug api_demo 验证无 assert 触发）。
+  2. `begin_frame` 每帧清 scissor 栈语义（UI-169）、`flush_pending_destroys` 两遍语义（UI-167）、`set_chrome`/`content_origin_y`（UI-153/168）不被改动。
+  3. 打包后下游链接：`ui_core` 仍 PURE STATIC、`ui_gl` 宏导出不改变库自身编译（库内本就全局定义 GLFW_INCLUDE_NONE）；C++17 需求经 PUBLIC 传播不影响本仓库（已满足）。
+- **验证**：x64-debug（media OFF）Debug、x64-all（media ON）Release、layui_test Release 三配置编译链接通过；6 exe `--smoke 3` 全 exit 0（含 Debug 断言开启的 x64-debug api_demo，无 assert 触发）；graphgen 重生成 + `--check` 0 错误 0 警告。
+- **影响范围**：`ui/src/scene.cpp`、`ui/include/ui/ui/scene.h`、`ui/src/widget.cpp`、`gl/src/renderer.cpp`、`gl/CMakeLists.txt`、`core/CMakeLists.txt`、`docs/distribution/README.md`、`docs/distribution/API_REFERENCE.md`、`docs/CHANGELOG.md`。
+
 ## UI-169: ScrollBox 内容滚动穿透标题栏/Header——退化矩形 push_scissor 空转 + pop 误弹父级裁剪（2026-09-01）
 - **类型**：缺陷修复（ui 库 ui/gl 两层）
 - **严重度**：高（内容渲染越界覆盖 chrome，视觉错乱）

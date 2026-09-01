@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-01T18:18:54+08:00",
+  "generatedAt": "2026-09-01T18:33:27+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-170": {
+      "id": "BUG:UI-170",
+      "type": "BUG",
+      "label": "UI-170: 分发消费安全加固——生命周期前置断言 + 接口导出补齐 + 示例/契约文档化（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-170-分发消费安全加固生命周期前置断言--接口导出补齐--示例契约文档化2026-09-01"
+    },
     "BUG:UI-169": {
       "id": "BUG:UI-169",
       "type": "BUG",
@@ -1960,6 +1967,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-170",
+      "kind": "checklist",
+      "context": "回归清单#生命周期前置契约（防下游消费/外部改库静默重引入历史 Bug）：Debug 断言加固——`set_chrome` 须在首帧 `frame()` 前（UI-153/168）、`begin_frame` 进入时 scissor 栈须空（UI-169）、`flush_pending_destroys` 不可重入（UI-167）；接口导出补齐——`ui_gl` PUBLIC 导出 `GLFW_INCLUDE_NONE`、`ui_core` PUBLIC 导出 `cxx_std_17`（分发 README 推荐 `WindowContainer`+`Scene::run()` 安全路径；API_REFERENCE 前置条件表）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-150",
       "kind": "checklist",
       "context": "回归清单#自绘 TitleBar 独立配色回归项：标题条默认背景 `#262A2F` 与紧邻下方页头/导航栏底色（`#2F363C`）明度可区分，标题条作为导航栏上方独立深色条可见，不与其无缝融合"
@@ -3376,6 +3389,18 @@
     },
     {
       "from": "META:CHANGELOG",
+      "to": "DOC:README",
+      "kind": "mention",
+      "context": ""
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "DOC:API_REFERENCE",
+      "kind": "mention",
+      "context": ""
+    },
+    {
+      "from": "META:CHANGELOG",
       "to": "DOC:ARCHITECTURE",
       "kind": "mention",
       "context": ""
@@ -3394,6 +3419,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-170": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#生命周期前置契约（防下游消费/外部改库静默重引入历史 Bug）：Debug 断言加固——`set_chrome` 须在首帧 `frame()` 前（UI-153/168）、`begin_frame` 进入时 scissor 栈须空（UI-169）、`flush_pending_destroys` 不可重入（UI-167）；接口导出补齐——`ui_gl` PUBLIC 导出 `GLFW_INCLUDE_NONE`、`ui_core` PUBLIC 导出 `cxx_std_17`（分发 README 推荐 `WindowContainer`+`Scene::run()` 安全路径；API_REFERENCE 前置条件表）"
+      }
+    ],
     "BUG:UI-169": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -5556,7 +5588,13 @@
         "context": "OpenGL UI"
       }
     ],
-    "DOC:README": [],
+    "DOC:README": [
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": ""
+      }
+    ],
     "DOC:UI_API": [
       {
         "from": "META:CHANGELOG",
@@ -5564,7 +5602,13 @@
         "context": ""
       }
     ],
-    "DOC:API_REFERENCE": [],
+    "DOC:API_REFERENCE": [
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": ""
+      }
+    ],
     "META:AGENTS": []
   },
   "lint": {

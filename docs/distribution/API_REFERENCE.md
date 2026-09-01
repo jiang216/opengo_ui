@@ -1060,3 +1060,31 @@ target_link_libraries(my_app PRIVATE opengl_ui::ui_media_opencv)
 | `iconfont.ttf` | `install/share/opengl_ui/` | Demo apps using icons |
 | `avcodec-59.dll` etc. | `install/bin/` | FFmpeg module |
 | `opencv_world452.dll` | `install/bin/` | OpenCV module |
+
+## Lifecycle & Precondition Contract
+
+这些前置条件是**库的正确性依赖**。违反会在运行期**静默**复现历史 Bug，不报错（Debug 构建下部分有 `assert` 拦截，见文末）。推荐用 `ui::WindowContainer` + `Scene::run()/run_for()`——它们自动满足下表全部契约。
+
+| 前置条件 | 强制 API | 违反的后果 |
+|---|---|---|
+| 每帧在绘制前调用 `Renderer::begin_frame()` | `Renderer::begin_frame` | scissor 状态不重置，跨帧脏裁剪会把内容画到错误区域 → **滚动内容穿透标题栏/Header（UI-169）**；清屏不执行 |
+| `push_scissor`/`pop_scissor` 配对调用 | `Renderer::push_scissor` / `pop_scissor` | 未配平 pop 弹出父级裁剪区、过早关闭 `GL_SCISSOR_TEST` → 内容未裁剪绘制。退化矩形（w/h≤0）push 静默不入栈、pop 幂等，已实现自动防护 |
+| 帧末调用根节点 `advance(dt)` 或 `Widget::flush_pending_destroys()` | `Widget::advance`/`flush_pending_destroys` | `destroy()` 的控件**永不释放（内存泄漏）**，仍以「隐藏但未删」状态保留（UI-161/167）。`Scene::frame` 自动调用 |
+| `Scene::set_chrome()` 在**首帧 `frame()` 之前**调用（构造后 / Ready 阶段） | `Scene::set_chrome` | `content_origin_y()` 首帧后改值，已排布内容不会重排，顶部装帧层与内容区静默错位（UI-153/168） |
+| 窗口/渲染器存活期 ≥ 绑定它的 `Scene` | `Scene` 构造 | Scene 持引用；提前析构 Window/Renderer 则 `~Scene` 访问悬空引用 |
+| 同一 GL 上下文内**禁止**运行两个 `Renderer` | 所有 `Renderer` | 渲染器实例级缓存（active_program_/scissor_stack_）冲突（多窗口应每窗口独立 GL 上下文） |
+| `Renderer::init()` 需在 GL 上下文就绪后调用一次 | `Renderer::init` | 未 init 即 draw → GL 对象未创建/空程序 |
+| 拖拽须严格 `start→update→end` 序列 | `Window::start_drag/update_drag/end_drag` | 拖拽位移错误/跳变（UI-167: 非 Windows 分支 drag_off） |
+| 尺寸变化后重排：`resized()` → `set_viewport` + `root.set_bounds` + relayout | `Window::resized`/`Renderer::set_viewport` | 视口/投影矩阵与窗口不同步 → 内容歪斜或裁切。`Scene::frame` 已处理 |
+
+### Debug 断言（编译期仅在 Debug 断言开启，违反即 abort，用于尽早暴露下述契约被破坏）
+
+- `Scene::set_chrome` 在首帧后调用 → `assert` 触发；
+- `Renderer::begin_frame` 进入时 scissor 栈非空（上一帧未配平 pop，或本帧提前 push）→ `assert` 触发；
+- `Widget::flush_pending_destroys` 被重入（flush 进行中再次 flush）→ `assert` 触发。
+
+### 消费者侧链接/构建要求
+
+- **C++17 起**：库头为标准库 C++17 用法。`ui_core` 已通过 `target_compile_features(PUBLIC cxx_std_17)` 导出，链接后 CMake 会自动启用（手写编译命令需自理）。
+- **`GLFW_INCLUDE_NONE`**：已由 `ui_gl` 以 PUBLIC 编译定义导出，下游在自身 TU 同时 include `<glad/gl.h>` 与 `<GLFW/glfw3.h>` 时自动生效，避免系统 `<gl/gl.h>` 与 GLAD 冲突。
+- **静态库**：`ui_*` 均为静态库，链接时下游的运行时 / `_ITERATOR_DEBUG_LEVEL` / toolset 必须与库一致，否则 MSVC 报 `LNK2038 mismatch` 类错误（库自身无法校验）。

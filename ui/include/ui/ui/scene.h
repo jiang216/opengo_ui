@@ -149,6 +149,7 @@ private:
     std::array<EventHook, (size_t)SceneEvent::COUNT> hooks_;
     bool running_ = true;
     bool shut_down_ = false;  // shutdown() 幂等标志（与 running_ 独立，见 shutdown 注释）
+    bool frame_began_ = false;  // 首帧 frame() 已执行（Debug 前置断言用：set_chrome 须在首帧前）
 
     // 事件随路数据（供 Key/Scroll 钩子读取）
     int event_key_ = 0;

@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 170（BUG 162 / DOC 6 / META 2）
-- 边: 367
+- 节点: 171（BUG 163 / DOC 6 / META 2）
+- 边: 370
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1140,10 +1140,17 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）
 
+### BUG:UI-170 · UI-170: 分发消费安全加固——生命周期前置断言 + 接口导出补齐 + 示例/契约文档化（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-170-分发消费安全加固生命周期前置断言--接口导出补齐--示例契约文档化2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#生命周期前置契约（防下游消费/外部改库静默重引入历史 Bug）：Debug 断言加固——`set_chrome` 须在首帧 `frame()` 前（UI-153/168）、`begin_frame` 进入时 scissor 栈须空（UI-169）、`flush_pending_destroys` 不可重入（UI-167）；接口导出补齐——`ui_gl` PUBLIC 导出 `GLFW_INCLUDE_NONE`、`ui_core` PUBLIC 导出 `cxx_std_17`（分发 README 推荐 `WindowContainer`+`Scene::run()` 安全路径；API_REFERENCE 前置条件表）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
-- 反链: 无
+- 反链(1):
+  - `META:CHANGELOG` (mention)
 
 ### DOC:ARCHITECTURE · ARCHITECTURE
 
@@ -1185,7 +1192,8 @@
 ### DOC:README · README
 
 - 路径: `docs/README.md`
-- 反链: 无
+- 反链(1):
+  - `META:CHANGELOG` (mention)
 
 ### DOC:UI_API · UI_API
 
@@ -1394,6 +1402,7 @@
 | `BUG:UI-161` | BUG | UI-161: 延迟销毁宿主契约显式化——destroy 依赖 root.advance/flush 冲刷，自定义主循环须 advance 否则泄漏 + 僵尸模态（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-167` | BUG | UI-167: 全面审查修复批次——widget 销毁/弹窗生命周期、scene 生命周期、非 Windows 拖拽、utf8 解码越界、media 线程竞争、FFmpeg 返回值、Font 边界、log 线程安全（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-169` | BUG | UI-169: ScrollBox 内容滚动穿透标题栏/Header——退化矩形 push_scissor 空转 + pop 误弹父级裁剪（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-170` | BUG | UI-170: 分发消费安全加固——生命周期前置断言 + 接口导出补齐 + 示例/契约文档化（2026-09-01） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1648,6 +1657,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-161` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-167` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-169` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-170` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1739,6 +1749,7 @@
 | `META:CHANGELOG` | `BUG:UI-097` | ref |
 | `META:CHANGELOG` | `BUG:UI-098` | ref |
 | `META:CHANGELOG` | `BUG:UI-117` | ref |
+| `META:CHANGELOG` | `DOC:API_REFERENCE` | mention |
 | `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |
 | `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |
 | `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |
@@ -1753,6 +1764,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
+| `META:CHANGELOG` | `DOC:README` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

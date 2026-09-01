@@ -49,17 +49,12 @@ target_link_libraries(my_app PRIVATE ui_ui)
 
 ## Minimal Example
 
+The recommended entry point is `ui::WindowContainer`: it owns the window, renderer, self-drawn title bar (chromed), and `ui::Scene` (which drives the full lifecycle: layout + input dispatch + advance/`flush_pending_destroys` + draw). Using it avoids the lifecycle pitfalls listed after the example.
+
 ```cpp
 #include "ui/all.h"
 
 int main() {
-    ui::Window window(1280, 900, "My App");
-    if (!window.handle()) return 1;
-
-    ui::Renderer renderer;
-    if (!renderer.init()) return 1;
-    renderer.set_viewport(window.width(), window.height());
-
     ui::Font font;
     font.load_from_file("C:/Windows/Fonts/arial.ttf", 18.f);
     font.load_cjk_font_auto();
@@ -67,43 +62,42 @@ int main() {
 
     ui::Theme theme = ui::Theme::make_layui();
 
-    ui::Widget root;
-    root.set_bounds(0, 0, (float)window.width(), (float)window.height());
+    // 一个对象收敛「窗口 + 渲染器 + 自绘标题栏(chrome) + Scene」；创建即居中主屏。
+    ui::WindowContainer wc(1280, 800, "My App");
+    if (!wc.ok()) return 1;
+    wc.titlebar().set_font(&font);
+    wc.titlebar().set_theme(&theme);
+    wc.titlebar().set_icon(&font, ui::layui_icon::app);
+    wc.scene().set_root_background(theme.window_bg);
 
-    auto* btn = new ui::Button(0, 0, 120, 40, "Click Me");
+    // 内容控件以 content_origin_y()（=标题栏高）为单一原点派生，不硬编码偏移。
+    const float y = wc.content_origin_y();
+    auto* btn = new ui::Button(0.f, y, 120.f, 40.f, "Click Me");
     btn->set_font(&font);
     btn->set_theme(&theme);
     btn->add_class("layui-btn layui-btn-primary");
     btn->set_on_click([] { ui::log_info("Button clicked!"); });
-    root.add_child(btn);
+    wc.root().add_child(btn);
 
-    auto* label = new ui::Label(0, 0, 400, 30, "Hello, opengl_ui!");
+    auto* label = new ui::Label(160.f, y, 400.f, 30.f, "Hello, opengl_ui!");
     label->set_font(&font);
     label->set_theme(&theme);
-    root.add_child(label);
+    wc.root().add_child(label);
 
-    while (!window.should_close()) {
-        window.poll_events();
-        if (window.resized()) {
-            renderer.set_viewport(window.width(), window.height());
-            root.set_bounds(0, 0, (float)window.width(), (float)window.height());
-        }
-        root.layout();
-        root.dispatch_mouse_move(window.mouse_x(), window.mouse_y());
-        if (window.mouse_pressed(0))
-            root.dispatch_mouse_down(window.mouse_x(), window.mouse_y(), 0);
-        if (window.mouse_released(0))
-            root.dispatch_mouse_up(window.mouse_x(), window.mouse_y(), 0);
-        if (window.key_pressed(ui::KeyTab))
-            root.dispatch_key_down(ui::KeyTab, 0);
-
-        renderer.begin_frame(theme.window_bg);
-        root.draw(renderer);
-        window.swap_buffers();
-    }
+    // Scene::run() 内部完成 poll → frame（layout/输入/advance/绘制）→ swap 全流程，
+    // 并自动 flush destroy() 的控件、处理弹窗自动关闭与 CJK 字体续帧烘焙。
+    wc.run();
     return 0;
 }
 ```
+
+> **为什么不推荐手写 while 循环**：库的真实应用与 `WindowContainer` 都走 `Scene::run()/run_for()`。
+> 若确实需要裸 `Window + Renderer + root` 自绘管线，必须自行履行以下契约，违反会在运行期静默复现历史 Bug：
+> - 每帧调 `renderer.begin_frame()`（UI-169：内部清空/关闭 scissor，是跨帧裁剪状态干净的唯一保证）；
+> - 帧末调 `root.advance(dt)` 或 `ui::Widget::flush_pending_destroys()`，否则 `destroy()` 的控件**永不释放（内存泄漏）**，且 `root.draw()` 的入口兜底 layout 需要 advance 驱动（UI-157/161/167）；
+> - 自行处理 `dispatch_*`（鼠标/滚轮/字符/键盘）与滚动、输入法、弹窗自动关闭、CJK 续帧烘焙；
+> - 注册 chrome（`window.container` 标题条）时确保 `content_origin_y` 对齐，且尺寸变化后重排；
+> - 退出路径析构/收尾 `Scene`，否则 Cleanup/Shutdown 广播与销毁队列冲刷丢失（UI-167）。
 
 ## Widget Quick Reference
 

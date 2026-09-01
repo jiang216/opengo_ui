@@ -2,12 +2,18 @@
 
 #include "ui/gl/font.h"
 
+#include <cassert>
+
 namespace ui {
 
 namespace {
 // 延迟销毁队列（UI-072）：destroy() 标记待销毁，帧末由根节点统一冲刷。
 // 事件分发/遍历期间子树保持存活，避免悬空 this 与迭代器失效。
 std::vector<Widget*> g_pending_destroy;
+
+// Debug 前置断言标志：flush_pending_destroys 是否正在执行（防重入——flush 内若再触发
+// destroy()+flush 会重复处理，破坏「先摘除后删除」两遍语义，UI-167）。
+bool g_flushing = false;
 
 // 小缓冲快照：事件分发需在回调可改 children_ 的前提下安全遍历（UI-073），
 // 但顶层/容器常用子节点数少，逐事件 new vector 造成每帧堆分配。
@@ -184,6 +190,8 @@ void Widget::destroy() {
 }
 void Widget::flush_pending_destroys() {
     if (g_pending_destroy.empty()) return;
+    assert(!g_flushing && "flush_pending_destroys() called re-entrantly (during an ongoing flush)");
+    g_flushing = true;
     std::vector<Widget*> pending;
     pending.swap(g_pending_destroy);
 
@@ -233,6 +241,7 @@ void Widget::flush_pending_destroys() {
         w->clear_children();
         delete w;
     }
+    g_flushing = false;
 }
 
 void Widget::bring_to_front() {

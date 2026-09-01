@@ -20,6 +20,12 @@ target_include_directories(ui_gl PUBLIC
 
 target_link_libraries(ui_gl PUBLIC ui_core glfw OpenGL::GL)
 
+# 导出给下游：GLFW 默认（未定义 GLFW_INCLUDE_NONE）在含 GLFW 头时自动 include 系统
+# <GL/gl.h>，与本库公开的 <glad/gl.h> 在同一 TU 冲突（glad 会 #error "already included"）。
+# 顶层 add_compile_definitions 仅限本目录，不随 install/export 传给外部消费者；此处以
+# PUBLIC 挂在 ui_gl 上，使下游 find_package(opengl_ui) 链接后在自身 TU 含 GLFW 时也生效。
+target_compile_definitions(ui_gl PUBLIC GLFW_INCLUDE_NONE)
+
 if(OPENGUI_USE_PCH)
     # GLFW 解析重，纳入 PCH 显著降低 window.cpp/renderer 等 TU 的重复解析成本
     target_precompile_headers(ui_gl PRIVATE

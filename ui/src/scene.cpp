@@ -5,6 +5,7 @@
 #include "ui/gl/window.h"
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <vector>
 
@@ -17,6 +18,9 @@ Scene::Scene(ui::Window& window, ui::Renderer& renderer)
 }
 
 void Scene::set_chrome(Widget* chrome, float top) {
+    // Debug 前置断言：chrome 必须在首帧 layout() 之前注册（构造后/Ready 阶段），
+    // 否则 content_origin_y() 在首帧后改值，已按旧原点排布的内容不会重排，静默错位（UI-153/168）。
+    assert(!frame_began_ && "Scene::set_chrome() must be called before the first frame()");
     chrome_ = chrome;
     content_y_ = top < 0.f ? 0.f : top;
 }
@@ -75,6 +79,7 @@ void Scene::notify_phase(ScenePhase p, float dt) {
 // 单帧：分配（layout + 各输入 dispatch + advance）→ 消费（begin_frame + draw）。
 // 标准路径收敛各应用重复的主循环模板；按键/滚轮/鼠标明细开关见各 public bool。
 void Scene::frame(float dt) {
+    frame_began_ = true;  // 首帧起 set_chrome 前置断言生效（见 set_chrome）
     // 帧前派发：媒体推进/动画/工具逻辑（如 video.advance、carousel.advance）
     notify_phase(ScenePhase::Frame, dt);
     root_.advance(dt);
