@@ -68,8 +68,15 @@ public:
     // flush_pending_destroys() 执行。这样在事件分发（dispatch_mouse_*）或遍历
     // （advance/draw/children_ 迭代）期间销毁自身不会产生悬空 this 与失效迭代器
     // （如 footer 回调 cleanup_windows 在 dispatch_mouse_down 内自毁窗口）。
+    //
+    // 宿主契约：延迟销毁只在 flush_pending_destroys() 被调用时生效——它由根节点
+    // advance()（Scene::frame() 每帧自动走）及 Scene::reset()/shutdown() 统一触发。
+    // 若自定义渲染循环绕过 Scene 且不调 root_.advance()，则 destroy() 永不冲刷 →
+    // 内存泄漏 + 隐藏控件仍可能被模态引用造成「僵尸模态」永久拦截输入。此类宿主
+    // 必须每帧调用 advance()（或 Scene::frame），或主动调用静态 flush_pending_destroys()。
     void destroy();
-    // 帧末统一销毁被 destroy() 标记的控件（由根节点 advance 自动调用）
+    // 帧末统一销毁被 destroy() 标记的控件（由根节点 advance 自动调用；自定义主循环
+    // 宿主可主动显式调用冲刷）。全局单一队列，多 Scene 共存时共享（UI-146 已收敛单 Scene）。
     static void flush_pending_destroys();
     Widget* parent() const { return parent_; }
     const std::vector<Widget*>& children() const { return children_; }

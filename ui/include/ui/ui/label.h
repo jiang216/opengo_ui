@@ -48,11 +48,14 @@ public:
     void on_draw(Renderer& renderer) override;
 
 private:
-    // 按当前 bounds_.w 把 text_ 切分为多行（UTF-8 逐码点）
+    // 按当前 bounds_.w 把 text_ 切分为多行（UTF-8 逐码点）；结果缓存在 lines_。
+    // 缓存以换行相关输入的自洽键 lines_dep_ 为准（text/wrap/bounds.w/font/scale），
+    // 输入未变则复用 lines_，避免依赖 is_dirty 时序与重复真算（含 const 路径 preferred_height）。
     void recompute_lines();
 
     std::string text_;
     std::vector<std::string> lines_;
+    size_t lines_dep_ = 0;  // 上次生成 lines_ 时依赖输入的组合键
     bool wrap_ = false;
     Font* font_ = nullptr;
     const Theme* theme_ = nullptr;

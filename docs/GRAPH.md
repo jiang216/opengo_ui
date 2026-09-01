@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 164（BUG 156 / DOC 6 / META 2）
-- 边: 361
+- 节点: 168（BUG 160 / DOC 6 / META 2）
+- 边: 365
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1104,6 +1104,30 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#事件阶段新建控件不闪 (0,0)：`Scene::frame()` 帧序「帧首 `root_.layout()` → 事件分发 → 绘制」下，鼠标点击在事件回调里 `new`+`add_child` 的控件同帧早先 layout 已过 → 会以 (0,0,0,0) 画一帧；故在 `root_.draw()` 前补一次 `root_.layout()`（带 `dirty_‖dirty_children_` 门控，无变更帧即时 no-op、幂等）；并在 `Widget::draw`/`ScrollBox::draw`/`Code::draw`（全库三处 draw 定义）**根节点入口**加同款门控 `if (!parent_ && (dirty_‖dirty_children_)) layout();`（仅根触发一次，根 layout 递归整棵可见子树，覆盖绕过 Scene 裸调 root/顶层控件绘制的库分发第三方；避免逐层各调一次造成脏帧内深树多遍布局）。事件阶段新建即重排后再绘，消除 (0,0) 闪帧
 
+### BUG:UI-158 · UI-158: NavBar `add_item`/`add_child` 数据变更漏标脏——新增菜单项在帧级门控宿主下不显示（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-158-navbar-additemaddchild-数据变更漏标脏新增菜单项在帧级门控宿主下不显示2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#状态写自报（缺标脏补全）：`NavBar::add_item/add_child` 修改 `items_` 也 `mark_dirty()`（对齐 UI-156 自报原则）——帧级门控宿主停在 clean 帧时新增菜单项即时显示；`NavBar` 事件/on_draw 内 `layout_items()` 为幂等纯计算（只写 item.x0/x1、不改 bounds、不标脏），保持不动
+
+### BUG:UI-159 · UI-159: Label 换行缓存改按输入自洽键去重——preferred_height const_cast 顺序耦合收敛（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-159-label-换行缓存改按输入自洽键去重preferredheight-constcast-顺序耦合收敛2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#换行缓存自洽键去重：`Label::preferred_height()`（const，wrap 模式 `const_cast` 写 `lines_` 缓存）与 `on_draw` 统一走 `recompute_lines()`，其内部按输入组合键（text/wrap/bounds.w/font/scale + `Font::bake_epoch_sum()`）去重——输入未变即复用缓存，不依赖 `is_dirty` 时序、不再按脏重复真算；字形烘焙 epoch 变化强制重算折行（UI-136 保持）；契约：调用 `preferred_height` 前已确定 bounds_.w
+
+### BUG:UI-160 · UI-160: 帧级门控下 CountdownText 倒计时冻结——on_advance 按显示桶变化 mark_dirty（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-160-帧级门控下-countdowntext-倒计时冻结onadvance-按显示桶变化-markdirty2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#帧级门控下计时器续帧：`CountdownText` 覆写 `on_advance(float)`，据剩余秒 `%.1f` 显示桶（0.1s）与 `done_` 变化才 `mark_dirty()`（类比 `Carousel::on_advance` 先例）——advance 每帧执行不受门控，自定义门控宿主下倒计时正常推进到「时间到」，结束后桶不变即停标脏、恢复空闲停帧（UI-135/136）
+
+### BUG:UI-161 · UI-161: 延迟销毁宿主契约显式化——destroy 依赖 root.advance/flush 冲刷，自定义主循环须 advance 否则泄漏 + 僵尸模态（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-161-延迟销毁宿主契约显式化destroy-依赖-rootadvanceflush-冲刷自定义主循环须-advance-否则泄漏--僵尸模态2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#延迟销毁宿主契约：`Widget::destroy()` 只标记，实际释放依赖 `flush_pending_destroys()`（由根节点 `advance()` 及 `Scene::reset/shutdown()` 触发，`g_pending_destroy` 为全局单一队列）。自定义循环宿主若绕过 Scene 不调 `root_.advance()` → destroy 永不冲刷 → 泄漏 + 僵尸模态；契约已写入 `widget.h`，绕过者须自调 `Widget::flush_pending_destroys()`（public）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1352,6 +1376,10 @@
 | `BUG:UI-155` | BUG | UI-155: 新增窗口容器 WindowFrame——自带自绘标题栏 + 内容区相对坐标 + 通用头部槽（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-156` | BUG | UI-156: 标脏三态闭环「标记/去标/重标」——库级 set_visible 重标 + finish_draw_dirty 统一去标 + 清理死码 clear_dirty（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-157` | BUG | UI-157: 事件分发阶段新建控件同帧被绘在 (0,0) 闪一帧——Scene 帧循环「调度/绘制」间补一次幂等布局（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-158` | BUG | UI-158: NavBar `add_item`/`add_child` 数据变更漏标脏——新增菜单项在帧级门控宿主下不显示（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-159` | BUG | UI-159: Label 换行缓存改按输入自洽键去重——preferred_height const_cast 顺序耦合收敛（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-160` | BUG | UI-160: 帧级门控下 CountdownText 倒计时冻结——on_advance 按显示桶变化 mark_dirty（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-161` | BUG | UI-161: 延迟销毁宿主契约显式化——destroy 依赖 root.advance/flush 冲刷，自定义主循环须 advance 否则泄漏 + 僵尸模态（2026-09-01） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1600,6 +1628,10 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-155` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-156` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-157` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-158` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-159` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-160` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-161` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

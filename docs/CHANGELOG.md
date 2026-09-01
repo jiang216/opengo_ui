@@ -3,6 +3,56 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-161: 延迟销毁宿主契约显式化——destroy 依赖 root.advance/flush 冲刷，自定义主循环须 advance 否则泄漏 + 僵尸模态（2026-09-01）
+- **类型**：契约补充（ui 库生命周期文档化 + 注释强化；`flush_pending_destroys` 本就 public，无可见性改动）
+- **严重度**：低-中（仅影响**绕过 Scene**且不调 `root_.advance()` 的自定义渲染循环宿主；标准 `Scene::frame` 每帧 advance 自动冲刷，不受影响）
+- **根因**：`Widget::destroy()`（`widget.cpp`）只 `set_visible(false)` + 把自身推入**文件级全局** `g_pending_destroy`（widget.cpp:10）；真正的「摘除 popups/父引用 + 释放子树 + delete」只在 `flush_pending_destroys()`（widget.cpp:175，静态）执行，而它**仅由根节点 `advance()`（widget.cpp:627）及 `Scene::reset/shutdown()`（scene.cpp:208/219）调用**。宿主若绕过 Scene 又不调 `root_.advance()` → destroy 永不冲刷 → 内存泄漏 + 隐藏控件仍被 `modal_` 裸指针引用造成「僵尸模态」永久拦截输入（widget.cpp:489 注释已点名此坑）。
+- **修复**（ui 库文档/契约）：在 `widget.h` 的 `destroy()`/**`flush_pending_destroys()`** 注释处显式写明宿主契约——「自定义主循环必须每帧调 `advance()`（或 `Scene::frame`），或主动调静态 `flush_pending_destroys()`，否则延迟销毁不生效」；并注明 `g_pending_destroy` 为全局单一队列、多 Scene 共存时共享（UI-146 已收敛单 Scene）。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 标准 `Scene` 路径（`Scene::frame` 每帧 `root_advance → flush`）`destroy()` 当帧冲刷，无泄漏、无悬空（UI-072/133 保持）。
+  2. 自定义循环宿主若绕 Scene，须自行保证 advance/flush；契约已写入 `widget.h` 注释。
+  3. `flush_pending_destroys` 幂等（空队列即时返回）且 public，可被外部显式调用（before change 已是 public，行为未变）。
+- **验证**：`ui_ui` 重编译 + `layui_test` 重链通过；`--smoke 3`/`--smoke 8` exit 0。契约只涉及注释，无运行时行为变更。
+- **影响范围**：`ui/include/ui/ui/widget.h`、`docs/CHANGELOG.md`、`docs/ARCHITECTURE.md`。
+
+## UI-160: 帧级门控下 CountdownText 倒计时冻结——on_advance 按显示桶变化 mark_dirty（2026-09-01）
+- **类型**：缺陷修复（ui 库 `CountdownText` 在帧级门控宿主下漏标脏）
+- **严重度**：中（标准 `Scene::frame` 每帧无条件 draw 不受影响；仅影响用 `root.is_dirty()` 整帧跳帧的自定义宿主）
+- **根因**：`CountdownText::on_draw`（`countdown_text.cpp`）用 `steady_clock` 算剩余秒、推进 `done_`，但**从不 `mark_dirty()`**，也**不覆写 `on_advance`**。`advance()` 每帧无条件执行、不受门控；但**绘制**被自定义门控宿主按 `root.is_dirty()` 跳帧——clean 时 `on_draw` 不被调 → 倒计时停住、永不到「时间到」。`Carousel::on_advance`（carousel.cpp:133-146）转场每帧 `mark_dirty()` 是既有正确先例，CountdownText 缺此。
+- **修复**（ui 库）：为 `CountdownText` **覆写 `on_advance(float)`**——据当前剩余秒计算 `%.1f` 显示桶（0.1s 粒度）与 `done_`；仅当**桶变化或 done_ 翻转**时 `mark_dirty()`。`on_advance` 每帧执行（不受门控）→ 门控宿主也得以在文本变化时触发重绘；倒计时结束后桶不再变即停标脏、恢复空闲停帧。`on_draw` 的本地推进保留为兜底（兼容裸调 draw 不调 advance 的情形）。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 自定义帧级门控宿主下，倒计时到 0 正常显示「时间到」（状态变化经 `on_advance` 标脏触发重绘）。
+  2. 标准 `Scene` 路径倒计时行为不变（剩余秒实时刷新、0.1s 粒度）。
+  3. 结束后不再每帧标脏，不破坏帧级门控空闲停帧（UI-135/136）。
+  4. `Carousel`/其他 `on_advance` 动画的既有行为不回退。
+- **验证**：`ui_ui` 重编译 + `layui_test` 重链通过；`--smoke 3`/`--smoke 8` exit 0（util 页倒计时走 Scene 路径不受门控，回归项 1/2 兜底）。
+- **影响范围**：`ui/src/countdown_text.cpp`、`ui/include/ui/ui/countdown_text.h`、`docs/CHANGELOG.md`、`docs/ARCHITECTURE.md`。
+
+## UI-159: Label 换行缓存改按输入自洽键去重——preferred_height const_cast 顺序耦合收敛（2026-09-01）
+- **类型**：重构优化（ui 库 `Label` 换行缓存；无功能 bug，消重复计算 + 缓解宽依赖顺序耦合）
+- **严重度**：低-中
+- **根因**：`Label::preferred_height()`（`label.cpp`）是 **const**，wrap 模式用 `const_cast` 调 `recompute_lines()` 改写 `lines_` 缓存，且**依赖当前 `bounds_.w`**（宽依赖顺序耦合）；`on_draw` 又 `if(is_dirty()) recompute_lines()`。`lines_` 无独立失效键 → 每次 `is_dirty()`（含每次 setter/烘焙 epoch）都全量重算，粗粒度。累积缺陷是 code smell + 重复真算，无实际视觉 bug（同帧 `on_draw` 会用最终宽再算一次，视觉自纠）。
+- **修复**（ui 库，轻量版）：`recompute_lines()` 增加**输入自洽键** `lines_dep_`（FNV-1a 组合 text/wrap/bounds.w/font/scale + `Font::bake_epoch_sum()`，覆盖 UI-136 字形 xadvance 变化）——键未变即复用 `lines_` 返回，不再依赖 `is_dirty` 时序；`preferred_height()` 与 `on_draw` 统一 `recompute_lines()`（键去重使其 const 路径也廉价正确）。保留 const 签名与 const_cast（`fieldset.cpp:31` 在 `const Widget*` 上调用），但在注释写明「调用前需已确定 bounds_.w」契约。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 换行 Label（wrap）在各宽度下折行正确；preferred_height 反映最终行数高度。
+  2. 字形逐帧烘焙（UI-136）期间，epoch 变化强制换键重算，折行随真实 xadvance 更新（回归项不退化）。
+  3. `set_text/set_wrap/set_font/set_text_scale/set_bounds` 后折行即时更新（输入变化→键变化→重算）。
+  4. `on_draw` 与 `preferred_height` 结果一致（复用同一缓存）。
+- **验证**：`ui_ui` 重编译 + `layui_test` 重链通过；`--smoke 3`/`--smoke 8` exit 0（含 VBox/HBox/Grid/ScrollBox 多处换行 Label 排布无回归）。
+- **影响范围**：`ui/src/label.cpp`、`ui/include/ui/ui/label.h`、`docs/CHANGELOG.md`。
+
+## UI-158: NavBar `add_item`/`add_child` 数据变更漏标脏——新增菜单项在帧级门控宿主下不显示（2026-09-01）
+- **类型**：缺陷修复（ui 库 `NavBar` 状态写自报缺口）
+- **严重度**：低-中
+- **根因**：`NavBar::add_item`/`add_child`（`navbar.cpp`）修改 `items_` 但**不 `mark_dirty()`**；同文件 `set_active/set_badge/set_dot_badge/set_image/set_bg_color/set_bar_disabled` 都已标脏。宿主停在 clean 帧（无鼠标、无其他标脏）时，新增 item 不触发 `root.is_dirty()` → 帧级门控跳过渲染 → **新菜单项不显示**，违反 UI-156「状态写自报显式标脏」原则。审计中提到的「事件内裸调 `layout_items()`」（navbar.cpp:156/214/260）为**纯计算**（只写 item.x0/x1、不改 bounds、不标脏），且 `on_draw`(260) 本就重算，幂等廉价，非正确性问题，本次不动。
+- **修复**（ui 库）：`add_item`/`add_child` 开头补 `mark_dirty()`（与同文件其它 setter 一致，对齐 UI-156 自报原则）。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 运行中向 NavBar `add_item`/`add_child` 后，帧级门控宿主下新项即时显示（数据变更标脏触发重绘）。
+  2. 既有 setter（active/badge/dot/image/bg/disabled）标脏行为不变。
+  3. `on_mouse_down/move`/`on_draw` 内幂等 `layout_items()` 重算不受影响（保持纯计算、不标脏）。
+- **验证**：`ui_ui` 重编译 + `layui_test` 重链通过；`--smoke 3`/`--smoke 8` exit 0（navbar 页含静态布局不回归）。
+- **影响范围**：`ui/src/navbar.cpp`、`docs/CHANGELOG.md`。
+
 ## UI-157: 事件分发阶段新建控件同帧被绘在 (0,0) 闪一帧——Scene 帧循环「调度/绘制」间补一次幂等布局（2026-09-01）
 - **类型**：缺陷修复（ui 库 `Scene` 帧序缺陷——事件阶段动态创建控件会在 (0,0) 闪现一帧）
 - **严重度**：中（运行时鼠标点击新建的控件先以 (0,0,0,0) 画一帧再归位；smoke/预建路径因有事件循环缓冲不触发，故此前未见）

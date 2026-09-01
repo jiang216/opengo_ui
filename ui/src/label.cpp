@@ -4,9 +4,31 @@
 #include "ui/gl/renderer.h"
 #include "ui/ui/theme.h"
 
+#include <cstdint>
+#include <cstring>
+
 namespace ui {
 
 namespace {
+// 换行依赖输入的 FNV-1a 组合键：任一影响 lines_ 的输入变化即换键重算。
+// 用 bits 混合（text 内容、focus 无关），避免依赖 is_dirty 时序导致 const 路径
+// preferred_height 与 on_draw 按旧 boundsw 重复真算；输入未变则复用缓存。
+size_t lines_dep_of(const std::string& text, bool wrap, float w, const Font* font, float scale) {
+    auto fbits = [](float f) {
+        uint32_t b; std::memcpy(&b, &f, sizeof b); return b;
+    };
+    const unsigned char* p = (const unsigned char*)text.data();
+    const size_t n = text.size();
+    size_t h = 1469598103934665603ull;
+    for (size_t i = 0; i < n; ++i) { h ^= p[i]; h *= 1099511628211ull; }
+    h ^= (size_t)(wrap ? 1 : 0) << 0;
+    h ^= (size_t)fbits(w) << 1;
+    h ^= (size_t)reinterpret_cast<uintptr_t>(font) << 2;
+    h ^= (size_t)fbits(scale) << 3;
+    // 字形烘焙推进会改变实际 xadvance（UI-136），即使字体指针未变也要重算换行
+    h ^= (size_t)Font::bake_epoch_sum() << 4;
+    return h ? h : 1;
+}
 
 // UTF-8 解码：返回本码点占用的字节数（0 表示无效首字节）
 int utf8_decode(const char* s, unsigned int& out) {
@@ -55,11 +77,16 @@ void Label::set_wrap(bool wrap) {
 float Label::preferred_height() const {
     if (!font_) return bounds_.h;
     if (!wrap_) return font_->line_height() * text_scale_;
-    if (is_dirty()) const_cast<Label*>(this)->recompute_lines();  // 宽度依赖当前 bounds_.w
+    // const 路径按宽度换行：recompute_lines 自带依赖键去重（输入未变即时返回），
+    // 不依赖 is_dirty 时序。契约：调用前需已确定 bounds_.w（preferred_height 由父容器在设宽后查询）。
+    const_cast<Label*>(this)->recompute_lines();
     return std::max(1, (int)lines_.size()) * font_->line_height() * text_scale_;
 }
 
 void Label::recompute_lines() {
+    const size_t dep = lines_dep_of(text_, wrap_, bounds_.w, font_, text_scale_);
+    if (dep == lines_dep_) return;  // 换行依赖输入未变 → 复用缓存 lines_
+    lines_dep_ = dep;
     lines_.clear();
     if (!font_ || text_.empty()) {
         lines_.push_back("");
@@ -96,7 +123,7 @@ void Label::recompute_lines() {
 
 void Label::on_draw(Renderer& renderer) {
     if (!font_ || text_.empty()) return;
-    if (is_dirty()) recompute_lines();
+    recompute_lines();  // 依赖键去重：输入未变即时返回复用 lines_，不再依赖 is_dirty
     static const Theme kDefaultTheme;
     const Theme* t = theme_ ? theme_ : &kDefaultTheme;
     const Vec4 color = color_set_ ? color_ : t->text;

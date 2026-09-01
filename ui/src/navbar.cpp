@@ -85,11 +85,13 @@ NavBar::~NavBar() {
 }
 
 void NavBar::add_item(const char* text, std::function<void()> cb) {
+    mark_dirty();  // 数据变更自报：使新增项能触发 root 门控重绘，不因宿主停在 clean 帧而漏显
     items_.push_back({text ? text : "", std::move(cb), {}, false, "", false, false, "", nullptr, 0.f, 0.f});
 }
 
 void NavBar::add_child(const char* text, std::function<void()> cb) {
     if (items_.empty()) return;
+    mark_dirty();  // 同上：子项数据变更自报标脏
     items_.back().children.push_back({text ? text : "", std::move(cb), 0.f, 0.f});
 }
 

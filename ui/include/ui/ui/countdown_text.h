@@ -22,9 +22,12 @@ public:
     void restart();
 
     float preferred_height() const override;
+    void on_advance(float dt) override;
     void on_draw(Renderer& renderer) override;
 
 private:
+    // 剩余秒显示为 %.1f，每 0.1s 才变化一次；记录上一显示桶以判定变化是否需要重绘
+    int tick_ = 0;
     Font* font_ = nullptr;
     const Theme* theme_ = nullptr;
     float total_ = 60.f;
