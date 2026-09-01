@@ -3,6 +3,23 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-171: 标题栏窗口三键改用 iconfont 字形——最小化减号 + 最大化全屏 + 还原退出全屏 + 关闭（2026-09-01）
+- **类型**：功能改进（ui 库 ui/src/titlebar.cpp；改用已有 iconfont 图标库，视觉与 layui 图标统一）
+- **严重度**：低（UI-148 的三键为纯文本字形 `—/□·⧉/×`，渲染随字体/平台不一致；改 iconfont 后视觉统一且可缩放清晰）
+- **背景/需求**：已有容器（`WindowContainer`/`WindowFrame` 复用的 `TitleBar`，见 UI-155/148）的最小化/最大化/关闭三键原本用 `Font::draw_text` 画 Unicode 文本字形；用户要求三键改用 layui iconfont 图标库（「通用>图标」演示同源 iconfont.ttf），且为 ui 库能力（改动入 ui 库，测试程序不做绕过）。
+- **改动**（`ui/src/titlebar.cpp` `on_draw` 的 `draw_button` lambda + 三个按钮调用点）：
+  1. 三键绘制优先走 iconfont：`icon_font_->draw_icon(renderer, cp, cx, cy, isz, color)` 按按钮矩形中心居中绘制，码点取 `layui_icons.h`——最小化 `layui_icon::subtraction`(0xE67E 减号)、最大化 `layui_icon::screen_full`(0xE622 全屏)、还原（最大化时）`layui_icon::screen_restore`(0xE758 退出全屏)、关闭 `layui_icon::close`(0x1006)。最大化↔还原随 `window_->is_maximized()` 切换（沿用 UI-148 文本 toggle 语义）。
+  2. 图标尺寸 `isz = min(16, bounds_.h*0.6)`；hover/按下红底 `draw_quad` 与命中区（`hit_button`）不变。
+  3. **优雅降级**：仅在 `icon_font_` 存在且 `icon_font_->icon_loaded()`（已烘培 iconfont）时走图标；否则回退原文本字形 `—/□/⧉/×`，不中断不报错——无 iconfont 的应用（未调 `load_icon_font`/`set_icon`）行为与 UI-148 完全一致。
+  4. 头文件加 `<algorithm>`（`std::min`）与 `ui/ui/layui_icons.h`。
+- **回归清单**（既有保证项核对 + 新增保证项）：
+  1. **新增**：已加载 iconfont 的容器（`apps` 的 `main.cpp`/`api_demo.cpp` 均 `load_icon_font`+`titlebar().set_icon`）标题条三键渲染为 iconfont 减号/全屏/退出全屏/关闭；最大化窗口态下为退出全屏、还原态下为全屏（toggle 保留）。
+  2. **新增**：未加载 iconfont 的应用三键仍渲染 UI-148 文本字形 `—/□/⧉/×`，无回归。
+  3. UI-148 三键命中区域/ hover/按下红底反馈（`hit_button`、`draw_quad`）、`set_icon` 左上角应用图标、标题文字右裁剪逻辑均不变。
+  4. `WindowContainer`/`WindowFrame`（UI-155）复用 TitleBar，无需改透传；菜单/标签等其他 iconfont 使用（UI-148）不受影响。
+- **验证**：x64-debug（media OFF）Debug、x64-all（media ON）Release、layui_test Release 三配置编译链接通过；6 exe `--smoke 3` 全 exit 0（含 Debug api_demo，其日志 `icon=1` 确认 iconfont 已烘培、图标路径生效）；layui_test `--smoke 3` exit 0；graphgen 重生成 + `--check` 0 错误 0 警告。
+- **影响范围**：`ui/src/titlebar.cpp`、`docs/CHANGELOG.md`。
+
 ## UI-170: 分发消费安全加固——生命周期前置断言 + 接口导出补齐 + 示例/契约文档化（2026-09-01）
 - **类型**：加固/文档（ui 库 gl/ui + 分发文档；防下游消费/外部改库重引入历史 Bug）
 - **严重度**：低-中（纯加固，无功能逻辑改动；提升「打包后外部调用 / 外部改库」时对前置契约的暴露度）

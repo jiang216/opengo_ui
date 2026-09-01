@@ -1,8 +1,11 @@
 #include "ui/ui/titlebar.h"
 
+#include <algorithm>
+
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
 #include "ui/gl/window.h"
+#include "ui/ui/layui_icons.h"
 #include "ui/ui/theme.h"
 
 namespace ui {
@@ -118,8 +121,12 @@ void TitleBar::on_draw(Renderer& renderer) {
     const float bw = 28.f;
     const float line_h = font_ ? font_->line_height() : 14.f;
 
-    // 右侧三键：最小化 / 最大化(还原) / 关闭（从右往左排）
-    auto draw_button = [&](bool visible, float bx01, Btn id, const char* glyph) {
+    // 右侧三键：最小化 / 最大化(还原) / 关闭（从右往左排）。
+    // 图标优先用 iconfont 码点（减号/全屏/退出全屏/关闭）绘制，视觉统一；icon_font_ 未烘培
+    // iconfont 或无 iconfont 时优雅回退到文本字形（—/□/⧉/×），不中断（UI-171）。
+    const bool use_icon = icon_font_ && icon_font_->icon_loaded();
+    auto draw_button = [&](bool visible, float bx01, Btn id, uint32_t icon_cp,
+                           const char* text_glyph) {
         if (!visible || !font_) return;
         const float bx = right - bx01 * bw;
         if (pressed_ == id || hover_btn_ == id) {
@@ -128,15 +135,25 @@ void TitleBar::on_draw(Renderer& renderer) {
         }
         const Vec4 c = (pressed_ == id || hover_btn_ == id) ? Vec4{1, 1, 1, 1}
                                                             : Vec4{0.68f, 0.70f, 0.73f, 1.0f};
-        const float ty = bounds_.y + (bounds_.h - line_h) * 0.5f;
-        font_->draw_text(renderer, glyph, bx + (bw - font_->measure_text(glyph)) * 0.5f, ty, c);
+        if (use_icon && icon_cp) {
+            const float isz = std::min(16.f, bounds_.h * 0.6f);
+            icon_font_->draw_icon(renderer, icon_cp, bx + bw * 0.5f,
+                                  bounds_.y + bounds_.h * 0.5f, isz, c);
+        } else {
+            const float ty = bounds_.y + (bounds_.h - line_h) * 0.5f;
+            font_->draw_text(renderer, text_glyph, bx + (bw - font_->measure_text(text_glyph)) * 0.5f,
+                             ty, c);
+        }
     };
     // close 在最右
-    draw_button(close_button_, 1.f, Btn::Close, "×");
-    // 还原/最大化图标随窗口态切换
+    draw_button(close_button_, 1.f, Btn::Close, layui_icon::close, "×");
+    // 还原/最大化图标随窗口态切换（全屏 ↔ 退出全屏）
+    const uint32_t max_cp = (window_ && window_->is_maximized()) ? layui_icon::screen_restore
+                                                                 : layui_icon::screen_full;
     const char* max_glyph = (window_ && window_->is_maximized()) ? "⧉" : "□";
-    draw_button(maximize_button_, 2.f, Btn::Maximize, max_glyph);
-    draw_button(minimize_button_, 3.f, Btn::Minimize, "—");
+    draw_button(maximize_button_, 2.f, Btn::Maximize, max_cp, max_glyph);
+    // 最小化=减号
+    draw_button(minimize_button_, 3.f, Btn::Minimize, layui_icon::subtraction, "—");
 
     // 左上角应用图标（需外部 set_icon 提供 iconfont 码点）+ 标题文字
     float tx = bounds_.x + 10.f;
