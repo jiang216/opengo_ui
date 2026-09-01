@@ -1,5 +1,6 @@
 #include "ui/ui/table.h"
 
+#include "ui/core/utf8.h"
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
 #include "ui/ui/combobox.h"
@@ -17,13 +18,8 @@
 namespace ui {
 
 namespace {
-// 下一个 UTF-8 字符起始下标（跳过后续续字节）
-size_t next_cp(const std::string& s, size_t i) {
-    if (i >= s.size()) return s.size();
-    size_t j = i + 1;
-    while (j < s.size() && ((unsigned char)s[j] & 0xC0) == 0x80) ++j;
-    return j;
-}
+// 下一个 UTF-8 字符起始下标（跳过后续续字节）——统一到 core/ui/core/utf8.h
+size_t next_cp(const std::string& s, size_t i) { return utf8::next_index(s, i); }
 
 // layui-table 颜色（layui.css 提取）
 constexpr Vec4 kThBg{0.980f, 0.980f, 0.980f, 1.0f};  // #FAFAFA 表头/奇数行灰底
@@ -412,13 +408,20 @@ void Table::reset_scroll() {
         if (body_) body_->reset_scroll();
 }
 
-// UI-127：预热表头/可见行/尾注全部文本字形，消除流加载续灌与表格首次显示
-// 瞬间的 UI-125 配额限流渐进补齐闪烁。prebake_text 内部跳过 ASCII（已在图集）、
-// 图标与已烘焙码点，重复调用仅余字符串遍历开销。
+// UI-127：预热表头/可见行/尾注/操作按钮/下拉选项全部文本字形，消除流加载续灌与
+// 表格首次显示瞬间的 UI-125 配额限流渐进补齐闪烁。prebake_text 内部跳过 ASCII
+// （已在图集）、图标与已烘焙码点，重复调用仅余字符串遍历开销。
+// UI-157：操作按钮列（btn_labels_，如「测试/卸载」）与下拉单元格选项
+// （combo_options_，如「中文/英语」）此前从未预烘焙——按钮/下拉文字在首次显示
+// 时仍走 12/16ms 配额限流烘焙，首帧留白 + bake_epoch 全树重排导致 X 漂移叠字。
+// 统一在此覆盖，宽度从首帧即稳定。
 void Table::prebake_visible_text() {
     mark_dirty();
-        if (!font_) return;
+    if (!font_) return;
     for (const auto& c : cols_) font_->prebake_text(c.title.c_str());
+    for (const auto& lbl : btn_labels_) font_->prebake_text(lbl.c_str());
+    for (const auto& opts : combo_options_)
+        for (const auto& o : opts) font_->prebake_text(o.c_str());
     for (int r : visible_rows_) {
         if (r < 0 || r >= static_cast<int>(rows_.size())) continue;
         for (const auto& cell : rows_[r]) font_->prebake_text(cell.c_str());
@@ -705,6 +708,12 @@ void Table::rebuild_rows() {
     // 一屏所需批次数为界（有限收敛）；数据耗尽方停止 append 即断链。
     // 注意：必须在尾注追加之后调用（先定稿内容再判触底）。
     if (!paginated_ && on_load_more_ && body_) body_->rearm_bottom();
+    // UI-157：重建后自动预热全部可见字形。此前仅市场表显式调用 prebake_visible_text，
+    // 详情窗口配置表（plugin_detail_window buildConfigTable）未调用 → 首帧走配额限流
+    // 烘焙，按钮/下拉文字留白并因 bake_epoch 重排发生 X 漂移叠字。统一在此兜底，
+    // 使所有 Table（含配置表）从首帧即完成未配额预烘焙、宽度稳定。prebake 幂等，
+    // 显式调用方（市场表）保留无副作用。
+    prebake_visible_text();
 }
 
 void Table::truncate_rows() {
