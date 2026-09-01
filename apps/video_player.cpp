@@ -17,6 +17,7 @@
 #include "ui/ui/button.h"
 #include "ui/ui/checkbox.h"
 #include "ui/ui/label.h"
+#include "ui/ui/scene.h"
 #include "ui/ui/slider.h"
 
 #include <chrono>
@@ -57,7 +58,6 @@ int main(int argc, char** argv) {
         if (std::strcmp(argv[i], "--smoke") == 0 && i + 1 < argc) smoke_seconds = std::atof(argv[++i]);
         else if (argv[i][0] != '-' && file_arg.empty()) file_arg = argv[i];
     }
-    const auto smoke_start = std::chrono::steady_clock::now();
 
     ui::log_info("opengl_ui %s video_player", ui::version_string());
 
@@ -71,8 +71,13 @@ int main(int argc, char** argv) {
     font.load_from_file("C:/Windows/Fonts/arial.ttf", 18.f);
     font.load_cjk_font_auto();
 
-    ui::Widget root;
-    root.set_bounds(0, 0, (float)window.width(), (float)window.height());
+    // ui::Scene：统一驱动生命周期；video_player 迁移前无标准键分发（仅 Space 自定义 + Ctrl+O）
+    ui::Scene scene(window, renderer);
+    scene.set_root_background(ui::Vec4{0.16f, 0.17f, 0.19f, 1.f});
+    scene.dispatch_nav_keys = false;
+    scene.dispatch_text = false;
+
+    ui::Widget& root = scene.root();
 
     // 顶部工具条
     ui::Button open_btn(8, 8, 90, 30, "Open...");
@@ -163,18 +168,9 @@ int main(int argc, char** argv) {
 
     if (!file_arg.empty()) open_by_path(file_arg.c_str());
 
-    auto last = std::chrono::steady_clock::now();
-    while (!window.should_close()) {
-        window.poll_events();
-        const float dt = std::chrono::duration<float>(std::chrono::steady_clock::now() - last).count();
-        last = std::chrono::steady_clock::now();
-        if (smoke_seconds > 0.0 &&
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - smoke_start).count() >=
-                smoke_seconds) {
-            ui::log_info("smoke: exiting after %.1fs", smoke_seconds);
-            break;
-        }
-
+    // ---- Scene 生命周期订阅 ----
+    // 帧前：视频推进 + 状态文本同步
+    scene.subscribe(ui::ScenePhase::Frame, [&](ui::Scene&, float dt) {
         video.advance(dt);
         if (video.has_video()) {
             const float dur = (float)video.duration();
@@ -191,35 +187,24 @@ int main(int argc, char** argv) {
             vol_lb.set_text(vbuf);
             loop_cb.set_checked(video.loop());
         }
+    });
 
-        if (window.key_pressed(ui::KeyO) && window.key_down(ui::KeyLeftControl)) {
-            std::wstring w;
-            if (open_file_dialog(w)) open_by_path(utf8_from_wchar(w).c_str());
-        }
+    // 窗口尺寸变化：Scene 已更新视口+root；此处重排各控件（与旧主循环一致）
+    scene.set_event_hook(ui::SceneEvent::Resized, [&](ui::Scene&) {
+        video.set_bounds(0, 46, (float)window.width(), (float)window.height() - 46.f - 150.f);
+        toggle.set_bounds(8, (float)window.height() - 140, 90, 30);
+        loop_cb.set_bounds(110, (float)window.height() - 136, 140, 24);
+        seek.set_bounds(8, (float)window.height() - 108, 944, 24);
+        time_lb.set_bounds(8, (float)window.height() - 80, 300, 20);
+        speed_lb.set_bounds(320, (float)window.height() - 80, 200, 20);
+        speed.set_bounds(8, (float)window.height() - 56, 470, 20);
+        vol_lb.set_bounds(480, (float)window.height() - 80, 200, 20);
+        vol.set_bounds(480, (float)window.height() - 56, 472, 20);
+        return true;
+    });
 
-        if (window.resized()) {
-            renderer.set_viewport(window.width(), window.height());
-            root.set_bounds(0, 0, (float)window.width(), (float)window.height());
-            video.set_bounds(0, 46, (float)window.width(), (float)window.height() - 46.f - 150.f);
-            toggle.set_bounds(8, (float)window.height() - 140, 90, 30);
-            loop_cb.set_bounds(110, (float)window.height() - 136, 140, 24);
-            seek.set_bounds(8, (float)window.height() - 108, 944, 24);
-            time_lb.set_bounds(8, (float)window.height() - 80, 300, 20);
-            speed_lb.set_bounds(320, (float)window.height() - 80, 200, 20);
-            speed.set_bounds(8, (float)window.height() - 56, 470, 20);
-            vol_lb.set_bounds(480, (float)window.height() - 80, 200, 20);
-            vol.set_bounds(480, (float)window.height() - 56, 472, 20);
-        }
-
-        root.layout();
-        root.dispatch_mouse_move(window.mouse_x(), window.mouse_y());
-        if (window.mouse_pressed(0)) root.dispatch_mouse_down(window.mouse_x(), window.mouse_y(), 0);
-        if (window.mouse_released(0)) root.dispatch_mouse_up(window.mouse_x(), window.mouse_y(), 0);
-        const float sdx = window.scroll_dx();
-        const float sdy = window.scroll_dy();
-        if (sdx != 0.f || sdy != 0.f)
-            root.dispatch_mouse_scroll(window.mouse_x(), window.mouse_y(), sdx, sdy);
-        // 空格：播放/暂停
+    // 按键：Space=播放/暂停（自定义，消费）；Ctrl+O=打开
+    scene.set_event_hook(ui::SceneEvent::Key, [&](ui::Scene&) {
         if (window.key_pressed(ui::KeySpace)) {
             if (video.has_video()) {
                 if (video.playing()) {
@@ -230,11 +215,21 @@ int main(int argc, char** argv) {
                     toggle.set_text("Pause");
                 }
             }
+            return true;
         }
+        if (window.key_pressed(ui::KeyO) && window.key_down(ui::KeyLeftControl)) {
+            std::wstring w;
+            if (open_file_dialog(w)) open_by_path(utf8_from_wchar(w).c_str());
+            return true;
+        }
+        return true;
+    });
 
-        renderer.begin_frame(ui::Vec4{0.16f, 0.17f, 0.19f, 1.0f});
-        root.draw(renderer);
-        window.swap_buffers();
+    // 运行：--smoke 指定秒自动退出，否则直至窗口关闭
+    if (smoke_seconds > 0.0) {
+        scene.run_for(smoke_seconds);
+    } else {
+        scene.run();
     }
     return 0;
 }

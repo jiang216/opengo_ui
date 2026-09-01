@@ -17,6 +17,7 @@
 #include "ui/gl/window.h"
 #include "ui/ui/button.h"
 #include "ui/ui/label.h"
+#include "ui/ui/scene.h"
 
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -93,9 +94,7 @@ int main(int argc, char** argv) {
         else if (argv[i][0] != '-' && open_path.empty())
             open_path = std::wstring(argv[i], argv[i] + std::strlen(argv[i]));
     }
-    const auto smoke_start = std::chrono::steady_clock::now();
-
-    ui::log_info("opengl_ui %s image_viewer", ui::version_string());
+    ui::log_info("image_viewer %s", ui::version_string());
 
     ui::Window window(960, 720, "image viewer (M16)");
     if (!window.handle()) return 1;
@@ -107,8 +106,14 @@ int main(int argc, char** argv) {
     font.load_from_file("C:/Windows/Fonts/arial.ttf", 18.f);
     font.load_cjk_font_auto();
 
-    ui::Widget root;
-    root.set_bounds(0, 0, (float)window.width(), (float)window.height());
+    // ui::Scene：统一驱动生命周期；image_viewer 迁移前无标准键/字符分发，仅鼠标+滚轮(Ctrl+O 走 Key 钩子)
+    ui::Scene scene(window, renderer);
+    scene.set_root_background(ui::Vec4{0.16f, 0.17f, 0.19f, 1.f});
+    scene.dispatch_nav_keys = false;
+    scene.dispatch_text = false;
+    scene.dispatch_scroll = false;  // 滚轮仅用于缩放，不外发到树
+
+    ui::Widget& root = scene.root();
 
     // 顶部工具条：打开按钮 + 状态文本
     ui::Button open_btn(8, 8, 90, 30, "Open...");
@@ -144,20 +149,9 @@ int main(int argc, char** argv) {
 
     if (!open_path.empty()) open_by_wpath(open_path);
 
-    auto last = std::chrono::steady_clock::now();
-    while (!window.should_close()) {
-        window.poll_events();
-        const float dt =
-            std::chrono::duration<float>(std::chrono::steady_clock::now() - last).count();
-        last = std::chrono::steady_clock::now();
-        (void)dt;
-        if (smoke_seconds > 0.0 &&
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - smoke_start).count() >=
-                smoke_seconds) {
-            ui::log_info("smoke: exiting after %.1fs", smoke_seconds);
-            break;
-        }
-
+    // ---- Scene 生命周期订阅 ----
+    // 帧前：滚轮缩放 / 拖拽平移 / Ctrl+O 与状态更新（读 window 原始状态，与旧主循环一致）
+    scene.subscribe(ui::ScenePhase::Frame, [&](ui::Scene&, float) {
         // 滚轮缩放（以鼠标为锚点）
         const float sdy = window.scroll_dy();
         if (has_image && sdy != 0.f) {
@@ -179,8 +173,7 @@ int main(int argc, char** argv) {
             const double now = std::chrono::duration<double>(
                                    std::chrono::steady_clock::now().time_since_epoch())
                                    .count();
-            if (dragging && now - last_click < 0.3 &&
-                std::abs(window.mouse_x() - drag_x0) < 6 &&
+            if (dragging && now - last_click < 0.3 && std::abs(window.mouse_x() - drag_x0) < 6 &&
                 std::abs(window.mouse_y() - drag_y0) < 6) {
                 // 双击复位
                 zoom = 1.f;
@@ -193,32 +186,23 @@ int main(int argc, char** argv) {
             pan_x = pan_x0 + (window.mouse_x() - drag_x0);
             pan_y = pan_y0 + (window.mouse_y() - drag_y0);
         }
-        // Ctrl+O 打开
+    });
+
+    // Ctrl+O 打开（非标准键集 → Key 事件钩子，未消费返回 false 不阻塞其它）
+    scene.set_event_hook(ui::SceneEvent::Key, [&](ui::Scene&) {
         if (window.key_pressed(ui::KeyO) && window.key_down(ui::KeyLeftControl)) {
             std::wstring w;
             if (open_file_dialog(w)) open_by_wpath(w);
         }
+        return false;
+    });
 
-        if (window.resized()) {
-            renderer.set_viewport(window.width(), window.height());
-            root.set_bounds(0, 0, (float)window.width(), (float)window.height());
-        }
-
-        // 输入分发到控件树（按钮）
-        root.layout();
-        root.dispatch_mouse_move(window.mouse_x(), window.mouse_y());
-        if (window.mouse_pressed(0)) root.dispatch_mouse_down(window.mouse_x(), window.mouse_y(), 0);
-        if (window.mouse_released(0)) root.dispatch_mouse_up(window.mouse_x(), window.mouse_y(), 0);
-
-        renderer.begin_frame(ui::Vec4{0.16f, 0.17f, 0.19f, 1.0f});
-        root.draw(renderer);
-
-        // 图像：自适应居中 + 缩放/平移
+    // 帧后：绘制图像 + 状态文本
+    scene.on(ui::ScenePhase::PostDraw, [&](ui::Scene&) {
         if (has_image && tex.width() > 0 && tex.height() > 0) {
             const float iw = (float)tex.width(), ih = (float)tex.height();
             const float view_x = 0.f, view_y = 40.f, view_w = (float)window.width(),
                         view_h = (float)window.height() - 40.f;
-            // 适配矩形（保持宽高比）
             const float base_scale = std::min(view_w / iw, view_h / ih);
             const float disp_w = iw * base_scale * zoom;
             const float disp_h = ih * base_scale * zoom;
@@ -226,8 +210,7 @@ int main(int argc, char** argv) {
             const float cy = view_y + view_h / 2.f + pan_y;
             const ui::Rect r{cx - disp_w / 2.f, cy - disp_h / 2.f, disp_w, disp_h};
             renderer.push_scissor(ui::Rect{view_x, view_y, view_w, view_h});
-            renderer.draw_textured_quad(r, tex.id(), ui::Rect{0, 0, 1, 1},
-                                        ui::Vec4{1, 1, 1, 1});
+            renderer.draw_textured_quad(r, tex.id(), ui::Rect{0, 0, 1, 1}, ui::Vec4{1, 1, 1, 1});
             renderer.pop_scissor();
 
             char sbuf[256];
@@ -237,8 +220,13 @@ int main(int argc, char** argv) {
         } else {
             status.set_text("Ctrl+O: open | wheel: zoom | drag: pan | double-click: fit");
         }
+    });
 
-        window.swap_buffers();
+    // 运行：--smoke 指定秒自动退出，否则直至窗口关闭
+    if (smoke_seconds > 0.0) {
+        scene.run_for(smoke_seconds);
+    } else {
+        scene.run();
     }
     return 0;
 }

@@ -9,6 +9,7 @@ class Font;
 struct Theme;
 class ScrollBox;
 class Code;
+class Scene;
 }  // namespace ui
 
 // 页面宿主：向内容区（ScrollBox）添加本页控件；切页时框架释放旧页全部控件
@@ -18,6 +19,7 @@ struct PageHost {
     ui::ScrollBox* help = nullptr;     // "帮助" tab（页面写入 API 说明）
     ui::Font* font = nullptr;
     const ui::Theme* theme = nullptr;
+    ui::Scene* scene = nullptr;  // 框架级 Scene：页面可订阅 PostDraw/Frame 等（切页须 unsubscribe）
     void* owner = nullptr;  // 框架上下文（存储应用级状态，如 carousel/upload 推进列表）
 };
 

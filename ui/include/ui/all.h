@@ -28,6 +28,7 @@
 #include "ui/ui/widget.h"
 #include "ui/ui/theme.h"
 #include "ui/ui/ime.h"
+#include "ui/ui/scene.h"
 #include "ui/ui/layui_style.h"
 #include "ui/ui/layui_icons.h"
 #include "ui/ui/badge.h"

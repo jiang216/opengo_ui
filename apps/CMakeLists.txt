@@ -6,6 +6,10 @@ target_link_libraries(opengl_ui_demo PRIVATE ui_ui)
 add_executable(opengl_ui_api_demo ${CMAKE_CURRENT_SOURCE_DIR}/api_demo.cpp)
 target_link_libraries(opengl_ui_api_demo PRIVATE ui_ui)
 
+# 多窗口（每窗口独立 GL 上下文）Scene 演示（UI-146）
+add_executable(opengl_ui_scene_multiwin ${CMAKE_CURRENT_SOURCE_DIR}/scene_multiwin.cpp)
+target_link_libraries(opengl_ui_scene_multiwin PRIVATE ui_ui)
+
 # 素材加载测试工具（真实图片/音频/视频逐个加载验证；中文路径经 wmain 宽入口转 UTF-8）
 # 依赖 FFmpeg + OpenCV 双库，故仅在两者都开启时构建
 if(OPENGUI_MEDIA_FFMPEG AND OPENGUI_MEDIA_OPENCV)
@@ -43,7 +47,7 @@ endif()
 # 拷贝依赖 DLL 便于 VS 调试/直接运行（glfw3.dll；media ON 时含 FFmpeg/OpenCV DLL）
 add_executable(opengl_ui_edit_test ${CMAKE_CURRENT_SOURCE_DIR}/edit_test.cpp)
 target_link_libraries(opengl_ui_edit_test PRIVATE ui_ui)
-set(_APP_TARGETS opengl_ui_demo opengl_ui_api_demo opengl_ui_edit_test)
+set(_APP_TARGETS opengl_ui_demo opengl_ui_api_demo opengl_ui_edit_test opengl_ui_scene_multiwin)
 if(OPENGUI_MEDIA_FFMPEG)
     list(APPEND _APP_TARGETS opengl_ui_video_player)
 endif()

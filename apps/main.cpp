@@ -38,6 +38,7 @@
 #include "ui/ui/tree.h"
 #include "ui/ui/upload.h"
 #include "ui/ui/laydate.h"
+#include "ui/ui/scene.h"
 #include "ui/ui/vbox.h"
 #include "ui/ui/widget.h"
 
@@ -82,8 +83,6 @@ int main(int argc, char** argv) {
         else if (std::strcmp(argv[i], "--file") == 0 && i + 1 < argc)
             media_file = argv[++i];
     }
-    const auto smoke_start = std::chrono::steady_clock::now();
-
     ui::log_info("opengl_ui %s starting", ui::version_string());
 
     ui::Window window(1280, 1280, "opengl_ui demo (M17d)");
@@ -116,9 +115,12 @@ int main(int argc, char** argv) {
 
     ui::Theme theme;
 
+    // ui::Scene：随窗口同步创建，统一驱动 生产者(Window)→分配者(frame)→消费者(draw)→清理重置
+    ui::Scene scene(window, renderer);
+    scene.set_root_background(theme.window_bg);
+
     // 控件树：root -> VBox(居中) -> [Label 标题, TextBox, Label 回显, Button x3, Label 提示]
-    ui::Widget root;
-    root.set_bounds(0, 0, (float)window.width(), (float)window.height());
+    ui::Widget& root = scene.root();
 
     ui::VBox box(440, 20, 400, 920);
     box.set_theme(&theme);
@@ -842,10 +844,9 @@ int main(int argc, char** argv) {
     about_win.add_child(&about_box);
     about_ok.set_on_click(close_about);
 
-    bool demo_exit = false;
     menubar.add_menu("File");
     menubar.add_item("Open...", []() { ui::log_info("menu: Open (not implemented)"); });
-    menubar.add_item("Exit", [&]() { demo_exit = true; });
+    menubar.add_item("Exit", [&]() { scene.request_exit(); });
     menubar.add_menu("View");
     menubar.add_item("Theme: Light", [&]() { theme = ui::Theme::make_light(); });
     menubar.add_item("Theme: Dark", [&]() { theme = ui::Theme::make_dark(); });
@@ -866,23 +867,14 @@ int main(int argc, char** argv) {
     hb_b.set_tooltip("count += 10");
     grid.set_tooltip("2x2 grid buttons");
 
-    auto last = std::chrono::steady_clock::now();
-    auto prev = last;
-    int frames = 0;
-    while (!window.should_close()) {
-        window.poll_events();
-        if (demo_exit) break;
-        const float dt = std::chrono::duration<float>(std::chrono::steady_clock::now() - prev).count();
-        prev = std::chrono::steady_clock::now();
-        if (smoke_seconds > 0.0 &&
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - smoke_start).count() >=
-                smoke_seconds) {
-            ui::log_info("smoke: exiting after %.1fs", smoke_seconds);
-            break;
-        }
+    // ---- Scene 生命周期订阅 ----
+    // 帧前：媒体推进 + 轮播/上传动画（dt 由 frame 内算出）
+    scene.subscribe(ui::ScenePhase::Frame, [&](ui::Scene&, float dt) {
+        // 主题切换实时反映到清屏色（旧主循环逐帧读 theme.window_bg）
+        scene.set_root_background(theme.window_bg);
 #if defined(OPENGUI_MEDIA_FFMPEG)
-        video_view.advance(dt);        if (video_view.has_video()) {
-            // 进度同步：拖动中不覆盖手柄位置（避免与用户输入打架）
+        video_view.advance(dt);
+        if (video_view.has_video()) {
             const float dur = (float)video_view.duration();
             const float pos = video_view.position();
             if (!vid_seek.dragging())
@@ -899,50 +891,24 @@ int main(int argc, char** argv) {
             vid_vol_lb.set_text(vbuf);
         }
 #endif
-
+#if defined(OPENGUI_MEDIA_OPENCV)
+        (void)0;
+#endif
         // M17d：轮播自动播放 + 上传进度推进
         carousel.advance(dt);
         upload.advance(dt);
+    });
 
-        // 窗口尺寸变化 -> 更新视口与 root
-        if (window.resized()) {
-            renderer.set_viewport(window.width(), window.height());
-            root.set_bounds(0, 0, (float)window.width(), (float)window.height());
-        }
+    // 滚轮：旧逻辑 count += sdy；其后照常分发到树（钩子返回 false 不消费）
+    scene.set_event_hook(ui::SceneEvent::Scroll, [&](ui::Scene&) {
+        count += (int)scene.event_scroll_dy();
+        return false;
+    });
 
-        // 输入分发到控件树
-        root.layout();
-        root.dispatch_mouse_move(window.mouse_x(), window.mouse_y());
-        if (window.mouse_pressed(0)) root.dispatch_mouse_down(window.mouse_x(), window.mouse_y(), 0);
-        if (window.mouse_released(0)) root.dispatch_mouse_up(window.mouse_x(), window.mouse_y(), 0);
-        const float sdx = window.scroll_dx();
-        const float sdy = window.scroll_dy();
-        if (sdx != 0.f || sdy != 0.f) {
-            count += (int)sdy;
-            root.dispatch_mouse_scroll(window.mouse_x(), window.mouse_y(), sdx, sdy);
-        }
-        // 键盘：Tab/方向键切换焦点；Enter/Space 激活聚焦控件
-        const int nav_keys[] = {ui::KeyTab, ui::KeyUp, ui::KeyDown, ui::KeyLeft, ui::KeyRight};
-        for (int nav : nav_keys) {
-            if (window.key_pressed(nav))
-                root.dispatch_key_down(nav, window.key_down(ui::KeyLeftShift) ? ui::ModShift : 0);
-        }
-        if (window.key_pressed(ui::KeyEnter)) root.dispatch_key_down(ui::KeyEnter, 0);
-        if (window.key_pressed(ui::KeySpace)) root.dispatch_key_down(ui::KeySpace, 0);
-        if (window.key_pressed(ui::KeyBackspace))
-            root.dispatch_key_down(ui::KeyBackspace, 0);
-        if (window.key_pressed(ui::KeyDelete)) root.dispatch_key_down(ui::KeyDelete, 0);
-        if (window.key_pressed(ui::KeyHome)) root.dispatch_key_down(ui::KeyHome, 0);
-        if (window.key_pressed(ui::KeyEnd)) root.dispatch_key_down(ui::KeyEnd, 0);
-        // 文本输入：本轮收到的字符队列转发给焦点控件
-        const int nchar = window.char_pressed_count();
-        for (int i = 0; i < nchar; ++i) root.dispatch_char(window.char_pressed_at(i));
-        window.clear_chars();
-
-        renderer.begin_frame(theme.window_bg);
-        root.draw(renderer);
-
-        // Tooltip（M14）：悬停控件带提示文本时在鼠标旁绘制小面板
+    // 帧后：Tooltip + HUD 直绘（begin_frame+root.draw 之后）
+    int frames = 0;
+    auto last = std::chrono::steady_clock::now();
+    scene.on(ui::ScenePhase::PostDraw, [&](ui::Scene&) {
         if (ui::Widget* tt = find_tooltip_widget(&root)) {
             const std::string& s = tt->tooltip();
             const float tw = font.measure_text(s.c_str()) + 18.f;
@@ -953,8 +919,6 @@ int main(int argc, char** argv) {
                                        ui::Vec4{0.05f, 0.05f, 0.06f, 0.95f});
             font.draw_text(renderer, s.c_str(), tx + 8.f, ty + 4.f, theme.text);
         }
-
-        // HUD：右上角 FPS + 计数
         ++frames;
         auto now = std::chrono::steady_clock::now();
         char hud[128];
@@ -967,8 +931,13 @@ int main(int argc, char** argv) {
             std::snprintf(hud, sizeof(hud), "count %d", count);
         }
         font.draw_text(renderer, hud, 1000.f, 24.f, theme.text_dim);
+    });
 
-        window.swap_buffers();
+    // 运行：--smoke 指定秒自动退出，否则直至窗口关闭
+    if (smoke_seconds > 0.0) {
+        scene.run_for(smoke_seconds);
+    } else {
+        scene.run();
     }
     return 0;
 }

@@ -89,6 +89,9 @@ bool Window::should_close() const { return window_ ? glfwWindowShouldClose(windo
 void Window::poll_events() { glfwPollEvents(); }
 void Window::wait_events_timeout(double timeout) { glfwWaitEventsTimeout(timeout); }
 void Window::swap_buffers() { glfwSwapBuffers(window_); }
+void Window::make_current() {
+    if (window_) glfwMakeContextCurrent(window_);
+}
 void Window::set_vsync(int interval) { glfwSwapInterval(interval); }
 
 bool Window::resized() {

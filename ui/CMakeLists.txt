@@ -1,6 +1,7 @@
 # ---------- ui: 控件树/布局/样式，依赖 ui_gl + ui_core ----------
 add_library(ui_ui STATIC
     src/widget.cpp
+    src/scene.cpp
     src/theme.cpp
     src/button.cpp
     src/button_group.cpp

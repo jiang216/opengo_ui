@@ -96,8 +96,6 @@ int main(int argc, char** argv) {
         else if (std::strcmp(argv[i], "--file") == 0 && i + 1 < argc)
             media_file = argv[++i];
     }
-    const auto smoke_start = std::chrono::steady_clock::now();
-
     exercise_core();
 
     ui::Window window(1280, 1280, "opengl_ui api_demo");
@@ -131,8 +129,24 @@ int main(int argc, char** argv) {
 
     ui::Theme theme;
 
-    ui::Widget root;
-    root.set_bounds(0, 0, (float)window.width(), (float)window.height());
+    // ui::Scene：统一驱动生命周期（生产者→分配者→消费者→清理重置）
+    ui::Scene scene(window, renderer);
+    scene.set_root_background(theme.window_bg);
+
+    // 严格不回归：api_demo 迁移前仅 Tab/方向+Enter+Backspace+chars，无 Space/Delete/Home/End
+    scene.dispatch_nav_keys = false;
+    scene.set_event_hook(ui::SceneEvent::Key, [&](ui::Scene& s) {
+        ui::Widget& r = s.root();
+        const int k = s.event_key();
+        if (k == ui::KeyTab || k == ui::KeyUp || k == ui::KeyDown || k == ui::KeyLeft ||
+            k == ui::KeyRight)
+            r.dispatch_key_down(k, window.key_down(ui::KeyLeftShift) ? ui::ModShift : 0);
+        else if (k == ui::KeyEnter || k == ui::KeyBackspace)
+            r.dispatch_key_down(k, 0);
+        return true;  // 已消费（模板关闭，仅此钩子驱动原始键集）
+    });
+
+    ui::Widget& root = scene.root();
 
     ui::ScrollBox scroller(0, 0, 1024, (float)window.height());
     scroller.set_theme(&theme);
@@ -698,54 +712,26 @@ int main(int argc, char** argv) {
     font_info->set_theme(&theme);
     box->add_child(font_info);
 
-    auto last = std::chrono::steady_clock::now();
-    auto prev = last;
-    int frames = 0;
-    while (!window.should_close()) {
-        window.poll_events();
-        const float dt = std::chrono::duration<float>(std::chrono::steady_clock::now() - prev).count();
-        prev = std::chrono::steady_clock::now();
-        if (smoke_seconds > 0.0 &&
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - smoke_start).count() >=
-                smoke_seconds) {
-            ui::log_info("api_demo: smoke exit after %.1fs", smoke_seconds);
-            break;
-        }
+    // ---- Scene 生命周期订阅 ----
+    // 帧前：媒体/轮播/上传推进 + 主题清屏色同步
+    scene.subscribe(ui::ScenePhase::Frame, [&](ui::Scene&, float dt) {
+        scene.set_root_background(theme.window_bg);
 #if defined(OPENGUI_MEDIA_FFMPEG)
         if (video && video->has_video()) video->advance(dt);
 #endif
         if (carousel) carousel->advance(dt);
         if (upload) upload->advance(dt);
+    });
 
-        if (window.resized()) {
-            renderer.set_viewport(window.width(), window.height());
-            root.set_bounds(0, 0, (float)window.width(), (float)window.height());
-        }
-
-        root.layout();
-        root.dispatch_mouse_move(window.mouse_x(), window.mouse_y());
-        if (window.mouse_pressed(0)) root.dispatch_mouse_down(window.mouse_x(), window.mouse_y(), 0);
-        if (window.mouse_released(0)) root.dispatch_mouse_up(window.mouse_x(), window.mouse_y(), 0);
-        const float sdx = window.scroll_dx();
-        const float sdy = window.scroll_dy();
-        if (sdx != 0.f || sdy != 0.f)
-            root.dispatch_mouse_scroll(window.mouse_x(), window.mouse_y(), sdx, sdy);
-        const int nav_keys[] = {ui::KeyTab, ui::KeyUp, ui::KeyDown, ui::KeyLeft, ui::KeyRight};
-        for (int nav : nav_keys)
-            if (window.key_pressed(nav))
-                root.dispatch_key_down(nav, window.key_down(ui::KeyLeftShift) ? ui::ModShift : 0);
-        if (window.key_pressed(ui::KeyEnter)) root.dispatch_key_down(ui::KeyEnter, 0);
-        if (window.key_pressed(ui::KeyBackspace)) root.dispatch_key_down(ui::KeyBackspace, 0);
-        const int nchar = window.char_pressed_count();
-        for (int i = 0; i < nchar; ++i) root.dispatch_char(window.char_pressed_at(i));
-        window.clear_chars();
-
-        const float t = std::chrono::duration<float>(std::chrono::steady_clock::now().time_since_epoch()).count();
-        renderer.begin_frame(theme.window_bg);
-        root.draw(renderer);
+    // 帧后：GL 直绘样例 + HUD + 图标（begin_frame+root.draw 之后）
+    auto last = std::chrono::steady_clock::now();
+    int frames = 0;
+    scene.on(ui::ScenePhase::PostDraw, [&](ui::Scene&) {
+        const float t = std::chrono::duration<float>(
+                            std::chrono::steady_clock::now().time_since_epoch())
+                            .count();
         draw_gl_samples(renderer, tex, theme, t);
 
-        // HUD：FPS + Font API 直绘
         ++frames;
         auto now = std::chrono::steady_clock::now();
         char hud[160];
@@ -760,8 +746,13 @@ int main(int argc, char** argv) {
         font.draw_text(renderer, hud, 24.f, 24.f, theme.text_dim);
         if (font.icon_loaded()) font.draw_icon(renderer, ui::layui_icon::star, 1200.f, 40.f, 20.f,
                                                ui::Vec4{1.f, 0.85f, 0.3f, 1.f});
+    });
 
-        window.swap_buffers();
+    // 运行：--smoke 指定秒自动退出，否则直至窗口关闭
+    if (smoke_seconds > 0.0) {
+        scene.run_for(smoke_seconds);
+    } else {
+        scene.run();
     }
 
     // Font 释放前调用（GL 上下文存续期间）
