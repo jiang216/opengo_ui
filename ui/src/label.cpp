@@ -132,9 +132,13 @@ void Label::on_draw(Renderer& renderer) {
     const float total_h = (float)lines_.size() * line_h;
     float y = bounds_.y + (bounds_.h - total_h) * 0.5f;
 
-    // 裁剪到 label bounds，防止换行文本溢出到相邻控件（滚动条等）
+    // 裁剪到 label bounds，防止换行文本溢出到相邻控件（滚动条等）。
+    // UI-169：仅当 clip 为非退化矩形时 push——push_scissor 对退化矩形(w/h<=0)不入栈，
+    // 若此处无条件 pop 会误弹父级裁剪区（如 ScrollBox 的 content_clip）→ GL_SCISSOR_TEST
+    // 过早关闭，后续子控件在未裁剪下绘制，滚动内容穿透到标题栏/Header 之上。
     const Rect clip{bounds_.x, bounds_.y, bounds_.w, bounds_.h};
-    renderer.push_scissor(clip);
+    const bool clip_active = clip.w > 0.f && clip.h > 0.f;
+    if (clip_active) renderer.push_scissor(clip);
 
     for (const std::string& line : lines_) {
         if (!line.empty()) {
@@ -152,7 +156,7 @@ void Label::on_draw(Renderer& renderer) {
         y += line_h;
     }
 
-    renderer.pop_scissor();
+    if (clip_active) renderer.pop_scissor();
 }
 
 }  // namespace ui

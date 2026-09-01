@@ -19,6 +19,7 @@
 #include "ui/ui/grid.h"
 #include "ui/ui/hbox.h"
 #include "ui/ui/label.h"
+#include "ui/ui/layui_icons.h"
 #include "ui/ui/laypage.h"
 #include "ui/ui/menubar.h"
 #include "ui/ui/navmenu.h"
@@ -41,6 +42,7 @@
 #include "ui/ui/scene.h"
 #include "ui/ui/vbox.h"
 #include "ui/ui/widget.h"
+#include "ui/ui/window_container.h"
 
 #if defined(OPENGUI_MEDIA_FFMPEG)
 #include "ui/media/video_view.h"
@@ -85,18 +87,12 @@ int main(int argc, char** argv) {
     }
     ui::log_info("opengl_ui %s starting", ui::version_string());
 
-    ui::Window window(1280, 1280, "opengl_ui demo (M17d)");
-    if (!window.handle()) {
-        ui::log_error("no GL context");
+    // 带自绘标题栏的窗口容器：居中 + 可拖动/最小化/最大化/关闭（UI-168）
+    ui::WindowContainer container(1280, 1280, "opengl_ui demo (M17d)");
+    if (!container.ok()) {
+        ui::log_error("window container init failed");
         return 1;
     }
-
-    ui::Renderer renderer;
-    if (!renderer.init()) {
-        ui::log_error("renderer init failed");
-        return 1;
-    }
-    renderer.set_viewport(window.width(), window.height());
 
     // 字体（系统 Arial，像素高度 20）
     ui::Font font;
@@ -114,15 +110,24 @@ int main(int argc, char** argv) {
     }
 
     ui::Theme theme;
+    // 标题条样式注入：容器已注册 titlebar 为 chrome（content_origin_y 已生效），
+    // 字体/主题/应用图标由应用注入（UI-168）
+    container.titlebar().set_font(&font);
+    container.titlebar().set_theme(&theme);
+    container.titlebar().set_icon(&font, ui::layui_icon::app);
+
+    ui::Window& window = container.window();
+    ui::Renderer& renderer = container.renderer();
+    ui::Scene& scene = container.scene();
 
     // ui::Scene：随窗口同步创建，统一驱动 生产者(Window)→分配者(frame)→消费者(draw)→清理重置
-    ui::Scene scene(window, renderer);
     scene.set_root_background(theme.window_bg);
 
     // 控件树：root -> VBox(居中) -> [Label 标题, TextBox, Label 回显, Button x3, Label 提示]
     ui::Widget& root = scene.root();
 
-    ui::VBox box(440, 20, 400, 920);
+    // 内容区起始 y（= 标题条高）：VBox 整体下移、让出标题条（UI-168）
+    ui::VBox box(440, container.content_origin_y() + 20.f, 400, 920);
     box.set_theme(&theme);
     box.set_spacing(10.f);
     box.set_padding(20.f);
@@ -811,7 +816,7 @@ int main(int argc, char** argv) {
     upload.add_file("assets/test.mp4", 1024 * 2048);
 
     // ---- M14：菜单栏（横向菜单 + 下拉）+ Tooltip + 可移动/缩放窗口（模态）----
-    ui::MenuBar menubar(0, 0, 1280, 30);
+    ui::MenuBar menubar(0, container.content_origin_y(), 1280, 30);
     menubar.set_font(&font);
     menubar.set_theme(&theme);
     root.add_child(&menubar);

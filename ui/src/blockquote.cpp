@@ -36,7 +36,10 @@ float BlockQuote::preferred_height() const {
 }
 
 void BlockQuote::on_layout() {
-    label_->set_bounds(bounds_.x + 15.f, bounds_.y + 15.f, bounds_.w - 30.f, 0.f);
+    // UI-169：内部 Label 高度取实际行高（而非 0）——为 0 时 Label::on_draw 产生退化
+    // clip 矩形（w/h<=0），与 push/pop 配对损坏父级 scissor，导致内容穿透标题栏/Header。
+    label_->set_bounds(bounds_.x + 15.f, bounds_.y + 15.f, bounds_.w - 30.f,
+                       label_->preferred_height());
 }
 
 void BlockQuote::on_draw(Renderer& renderer) {

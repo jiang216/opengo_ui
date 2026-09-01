@@ -19,6 +19,7 @@
 #include "ui/ui/label.h"
 #include "ui/ui/scene.h"
 #include "ui/ui/slider.h"
+#include "ui/ui/window_container.h"
 
 #include <chrono>
 #include <cstdio>
@@ -61,34 +62,37 @@ int main(int argc, char** argv) {
 
     ui::log_info("opengl_ui %s video_player", ui::version_string());
 
-    ui::Window window(960, 700, "video player (M16)");
-    if (!window.handle()) return 1;
-    ui::Renderer renderer;
-    if (!renderer.init()) return 1;
-    renderer.set_viewport(window.width(), window.height());
+    // 带自绘标题栏的窗口容器（UI-168）：居中 + 可拖动/最小化/最大化/关闭
+    ui::WindowContainer container(960, 700, "video player (M16)");
+    if (!container.ok()) return 1;
+    ui::Window& window = container.window();
+    ui::Renderer& renderer = container.renderer();
+    ui::Scene& scene = container.scene();
 
     ui::Font font;
     font.load_from_file("C:/Windows/Fonts/arial.ttf", 18.f);
     font.load_cjk_font_auto();
+    container.titlebar().set_font(&font);
 
     // ui::Scene：统一驱动生命周期；video_player 迁移前无标准键分发（仅 Space 自定义 + Ctrl+O）
-    ui::Scene scene(window, renderer);
     scene.set_root_background(ui::Vec4{0.16f, 0.17f, 0.19f, 1.f});
     scene.dispatch_nav_keys = false;
     scene.dispatch_text = false;
 
     ui::Widget& root = scene.root();
 
+    // 内容区起始 y（= 标题条高）：顶部工具条/视频区整体下移让出标题条（UI-168）
+    const float top = container.content_origin_y();
     // 顶部工具条
-    ui::Button open_btn(8, 8, 90, 30, "Open...");
+    ui::Button open_btn(8, top + 8, 90, 30, "Open...");
     open_btn.set_font(&font);
     root.add_child(&open_btn);
-    ui::Label status(110, 10, 840, 24, "Ctrl+O: open | play/pause | seek | volume | speed");
+    ui::Label status(110, top + 10, 840, 24, "Ctrl+O: open | play/pause | seek | volume | speed");
     status.set_font(&font);
     root.add_child(&status);
 
     ui::VideoView video;
-    video.set_bounds(0, 46, (float)window.width(), (float)window.height() - 46.f - 150.f);
+    video.set_bounds(0, top + 46, (float)window.width(), (float)window.height() - (top + 46.f) - 150.f);
     root.add_child(&video);
 
     // 控制条：播放切换 / 循环 / 进度 / 时间 / 倍速 / 音量
@@ -191,7 +195,7 @@ int main(int argc, char** argv) {
 
     // 窗口尺寸变化：Scene 已更新视口+root；此处重排各控件（与旧主循环一致）
     scene.set_event_hook(ui::SceneEvent::Resized, [&](ui::Scene&) {
-        video.set_bounds(0, 46, (float)window.width(), (float)window.height() - 46.f - 150.f);
+        video.set_bounds(0, top + 46, (float)window.width(), (float)window.height() - (top + 46.f) - 150.f);
         toggle.set_bounds(8, (float)window.height() - 140, 90, 30);
         loop_cb.set_bounds(110, (float)window.height() - 136, 140, 24);
         seek.set_bounds(8, (float)window.height() - 108, 944, 24);

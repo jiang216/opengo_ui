@@ -47,8 +47,18 @@ void Widget::set_visible(bool on) {
 
 void Widget::set_enabled(bool en) {
     if (enabled == en) return;
+    if (!en) {
+        // 清除交互残留：按下/悬停不随禁用回落会导致「禁用仍高亮」假象；
+        // 若本控件正持有鼠标捕获，从根节点摘除捕获引用，防止其继续独占事件流
+        pressed_ = false;
+        hovered_ = false;
+        if (Widget* r = root(); r) {
+            if (r->capture_ == this) r->capture_ = nullptr;
+            if (r->modal_ == this) r->modal_ = nullptr;
+        }
+        blur();
+    }
     enabled = en;
-    if (!en) blur();
     mark_dirty();
 }
 
@@ -176,23 +186,51 @@ void Widget::flush_pending_destroys() {
     if (g_pending_destroy.empty()) return;
     std::vector<Widget*> pending;
     pending.swap(g_pending_destroy);
+
+    // 第一遍：从父节点摘除 + 清除根节点 modal_/capture_/popups_ 引用。
+    // 必须先统一摘除再统一删除——若父 P 和子 C 同帧 destroy()，遍历先 delete C（含
+    // clear_children），后遍历到 P 时 P 的 clear_children 会再次 delete C（double-free）。
+    // 统一摘除后每棵 pending 子树的 children_ 仅含非 pending 成员，后续 clear_children
+    // 只释放未被单独 destroy 的后代，消除双重释放风险。
     for (Widget* w : pending) {
-        // 摘除根节点 popups_ 中的自身（UI-071 语义）与模态/捕获引用，防止下一帧遍历到悬空指针
         Widget* r = w->root();
         if (r) {
             if (r->modal_ == w) r->modal_ = nullptr;
             if (r->capture_ == w) r->capture_ = nullptr;
+            // UI-071：从弹窗列表中移除自身；额外检查 owner：owner 销毁时 popup 面板
+            // 也应关闭（隐藏）否则 prune_popups 访问已释放 owner 导致 UAF
             if (!r->popups_.empty()) {
                 std::vector<Popup> kept;
                 kept.reserve(r->popups_.size());
                 for (const Popup& p : r->popups_) {
-                    if (p.popup != w) kept.push_back(p);
+                    if (p.popup == w) continue;
+                    if (p.owner == w) {
+                        p.popup->set_visible(false);
+                        continue;
+                    }
+                    kept.push_back(p);
                 }
                 if (kept.size() != r->popups_.size()) r->popups_.swap(kept);
             }
         }
-        if (w->parent_) w->parent_->remove_child(w);
-        w->clear_children();  // 递归释放 w 的整个子树
+        // 从父节点摘除（不递归 clear_children，保留子树供后续统一释放）
+        if (w->parent_) {
+            for (auto it = w->parent_->children_.begin(); it != w->parent_->children_.end();
+                 ++it) {
+                if (*it == w) {
+                    w->parent_->children_.erase(it);
+                    w->parent_->on_children_changed();
+                    break;
+                }
+            }
+            w->parent_ = nullptr;
+        }
+    }
+
+    // 第二遍：逐个 clear_children + delete。此时每棵 pending 子树已从父节点摘除，
+    // 其 children_ 仅含非 pending 后代（pending 后代也已被第一遍摘除），不会 double-free。
+    for (Widget* w : pending) {
+        w->clear_children();
         delete w;
     }
 }
@@ -696,6 +734,8 @@ void Widget::prune_popups(float x, float y) {
         const bool inside_owner = it->owner && it->owner->contains(x, y);
         if (!inside_popup && !inside_owner) {
             it->popup->set_visible(false);  // UI-156
+            // UI-071：同 close_popups，从父节点摘除，避免残留不可见面板堆叠
+            if (it->popup->parent()) it->popup->parent()->remove_child(it->popup);
             it = r->popups_.erase(it);
         } else {
             ++it;

@@ -124,7 +124,10 @@ public:
     // 关弹窗 + 排空延迟销毁队列 + 广播 Reset→Ready（重跑新一轮生命周期；先订阅 Reset/Ready 再调用）
     // 不删子树（子节点可能为栈对象，见类注释）
     void reset();
-    // 广播 Cleanup/Shutdown + flush_pending_destroys（析构自动调用；可手动提前）
+    // 广播 Cleanup/Shutdown + flush_pending_destroys（析构自动调用；可手动提前）。
+    // 与 running_ 独立：request_exit() 只停 run 循环，shutdown() 仍会完整广播
+    // Cleanup/Shutdown 阶段（此前 以 !running_ 提前 return 会吞掉收尾通知）。
+    // 幂等：多次调用只广播一次。
     void shutdown();
 
 private:
@@ -145,6 +148,7 @@ private:
     size_t next_token_ = 1;  // 0 保留作「无有效 token」
     std::array<EventHook, (size_t)SceneEvent::COUNT> hooks_;
     bool running_ = true;
+    bool shut_down_ = false;  // shutdown() 幂等标志（与 running_ 独立，见 shutdown 注释）
 
     // 事件随路数据（供 Key/Scroll 钩子读取）
     int event_key_ = 0;

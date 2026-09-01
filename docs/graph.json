@@ -1,11 +1,25 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-01T16:01:51+08:00",
+  "generatedAt": "2026-09-01T18:18:54+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-169": {
+      "id": "BUG:UI-169",
+      "type": "BUG",
+      "label": "UI-169: ScrollBox 内容滚动穿透标题栏/Header——退化矩形 push_scissor 空转 + pop 误弹父级裁剪（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-169-scrollbox-内容滚动穿透标题栏header退化矩形-pushscissor-空转--pop-误弹父级裁剪2026-09-01"
+    },
+    "BUG:UI-167": {
+      "id": "BUG:UI-167",
+      "type": "BUG",
+      "label": "UI-167: 全面审查修复批次——widget 销毁/弹窗生命周期、scene 生命周期、非 Windows 拖拽、utf8 解码越界、media 线程竞争、FFmpeg 返回值、Font 边界、log 线程安全（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-167-全面审查修复批次widget-销毁弹窗生命周期scene-生命周期非-windows-拖拽utf8-解码越界media-线程竞争ffmpeg-返回值font-边界log-线程安全2026-09-01"
+    },
     "BUG:UI-161": {
       "id": "BUG:UI-161",
       "type": "BUG",
@@ -1832,6 +1846,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-167",
+      "kind": "checklist",
+      "context": "回归清单#全面审查批量修复保持：① `flush_pending_destroys` 两遍式（先统一摘除父/根引用再删除）彻底消除父+子同帧 destroy 的 double-free，且 order-free；② popup owner 销毁同步摘除/隐藏弹窗（关 `prune_popups` 访问已释放 owner 的 UAF），`prune_popups` 摘除面板同 `close_popups`；③ `Scene::shutdown` 与 `running_` 解耦（独立 `shut_down_`），request_exit 后析构仍完整广播 Cleanup/Shutdown + 冲刷销毁队列；④ 非 Windows 窗口拖拽记录按下偏移（`start_* + (mouse−drag_off)`），Windows 分支 `GetCursorPos` 防 6px 振荡不变；⑤ `decode_cp` 边界守卫 + 续字节校验，截断串降级单字节不越界读；⑥ media `audio_ctx_` 先于解码线程初始化、`fps_` 原子化、`avcodec_send_packet` EAGAIN 排空后重送（视频回外层 drain、音频 3 次内腾位）、`sws_getContext` 失败跳过本帧；⑦ `set_enabled(false)` 清 pressed/hovered 并摘 root `capture_/modal_` 引用；⑧ Font 空文件直接失败、max_len 走 `decode_utf8_bounded` 有界解码；⑨ `log_print` mutex 串行化"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-158",
       "kind": "checklist",
       "context": "回归清单#状态写自报（缺标脏补全）：`NavBar::add_item/add_child` 修改 `items_` 也 `mark_dirty()`（对齐 UI-156 自报原则）——帧级门控宿主停在 clean 帧时新增菜单项即时显示；`NavBar` 事件/on_draw 内 `layout_items()` 为幂等纯计算（只写 item.x0/x1、不改 bounds、不标脏），保持不动"
@@ -2164,13 +2184,19 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-008",
       "kind": "checklist",
-      "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形"
+      "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）"
     },
     {
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-057",
       "kind": "checklist",
-      "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形"
+      "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-169",
+      "kind": "checklist",
+      "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3368,6 +3394,20 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-169": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）"
+      }
+    ],
+    "BUG:UI-167": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#全面审查批量修复保持：① `flush_pending_destroys` 两遍式（先统一摘除父/根引用再删除）彻底消除父+子同帧 destroy 的 double-free，且 order-free；② popup owner 销毁同步摘除/隐藏弹窗（关 `prune_popups` 访问已释放 owner 的 UAF），`prune_popups` 摘除面板同 `close_popups`；③ `Scene::shutdown` 与 `running_` 解耦（独立 `shut_down_`），request_exit 后析构仍完整广播 Cleanup/Shutdown + 冲刷销毁队列；④ 非 Windows 窗口拖拽记录按下偏移（`start_* + (mouse−drag_off)`），Windows 分支 `GetCursorPos` 防 6px 振荡不变；⑤ `decode_cp` 边界守卫 + 续字节校验，截断串降级单字节不越界读；⑥ media `audio_ctx_` 先于解码线程初始化、`fps_` 原子化、`avcodec_send_packet` EAGAIN 排空后重送（视频回外层 drain、音频 3 次内腾位）、`sws_getContext` 失败跳过本帧；⑦ `set_enabled(false)` 清 pressed/hovered 并摘 root `capture_/modal_` 引用；⑧ Font 空文件直接失败、max_len 走 `decode_utf8_bounded` 有界解码；⑨ `log_print` mutex 串行化"
+      }
+    ],
     "BUG:UI-161": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -3860,7 +3900,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形"
+        "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）"
       }
     ],
     "BUG:UI-009": [
@@ -4683,7 +4723,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形"
+        "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）"
       }
     ],
     "BUG:UI-058": [

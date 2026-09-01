@@ -3,10 +3,15 @@
 #include <cstdarg>
 #include <cstdio>
 #include <ctime>
+#include <mutex>
 
 namespace ui {
 namespace detail {
+// 加锁串行化：解码线程（media）与主线程并发写日志时，避免 vfprintf 交错
+// 产生碎裂行/数据竞争（stderr 缓冲非线程安全）
+static std::mutex g_log_mutex;
 static void log_print(const char* level, const char* fmt, va_list args) {
+    std::lock_guard<std::mutex> lk(g_log_mutex);
     std::time_t t = std::time(nullptr);
     std::tm tm{};
 #if defined(_WIN32)

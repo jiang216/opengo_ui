@@ -407,7 +407,7 @@ void Window::get_video_mode(GLFWmonitor* monitor, void*& mode) {
 // 避免 GLFW cursor_pos_cb（窗口相对坐标）在 glfwSetWindowPos 后因原点偏移
 // 导致回调值与 glfwGetCursorPos 不一致，产生 6px 振荡（见 [DRAG] 调试日志）。
 
-void Window::start_drag(float /*mouse_x*/, float /*mouse_y*/) {
+void Window::start_drag(float mouse_x, float mouse_y) {
     if (!window_) return;
     glfwGetWindowPos(window_, &start_wx_, &start_wy_);
 #if defined(_WIN32)
@@ -415,6 +415,13 @@ void Window::start_drag(float /*mouse_x*/, float /*mouse_y*/) {
     GetCursorPos(&pt);
     drag_screen_x_ = pt.x;
     drag_screen_y_ = pt.y;
+#else
+    // 非 Windows 回退：GLFW cursor_pos_cb 给出窗口相对坐标。记录按下时鼠标相对
+    // 窗口原点的偏移，update_drag 用「当前鼠标 − 按下时鼠标」的增量平移窗口：
+    // 新位置 = 起始窗口位置 + (mouse − drag_off)。此前 drag_off_* 从未被赋值
+    // 恒为 0，dx=mouse_x 直接当绝对坐标用，窗口跳到 (start_wx_+mouse_x,...) 错误。
+    drag_off_x_ = mouse_x;
+    drag_off_y_ = mouse_y;
 #endif
     dragging_ = true;
 }

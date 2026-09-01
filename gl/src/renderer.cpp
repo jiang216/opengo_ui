@@ -239,6 +239,11 @@ bool Renderer::create_polygon_pipeline() {
 }
 
 void Renderer::begin_frame(const Vec4& clear_color) {
+    // UI-169 系统性加固：每帧重置 scissor 状态。任何未被配平 pop 收尾的裁剪区
+    // （退化矩形 push 空转后父级被误弹 / 异常提前返回跳过 pop 等）若残留到下一帧，
+    // 会带着过期 GL_SCISSOR_TEST 状态绘制后续内容。此处清栈 + 关闭，杜绝跨帧脏状态。
+    scissor_stack_.clear();
+    glDisable(GL_SCISSOR_TEST);
     glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
     glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -457,6 +462,9 @@ void Renderer::draw_polygon(const Vec2* points, int count, const Vec4& color) {
 }
 
 void Renderer::pop_scissor() {
+    // UI-169：栈空时直接 return——任何 push 遇退化矩形(w/h<=0)不入栈的调用点，
+    // 若配套 pop 仍执行会误弹**父级**裁剪区并过早关闭 GL_SCISSOR_TEST（滚动内容穿透
+    // 标题栏/Header 的根因）。幂等空吞使 push/pop 配对在退化输入下安全。
     if (scissor_stack_.empty()) return;
     scissor_stack_.pop_back();
     if (scissor_stack_.empty()) {

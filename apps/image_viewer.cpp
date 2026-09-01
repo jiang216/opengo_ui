@@ -18,6 +18,7 @@
 #include "ui/ui/button.h"
 #include "ui/ui/label.h"
 #include "ui/ui/scene.h"
+#include "ui/ui/window_container.h"
 
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -96,18 +97,19 @@ int main(int argc, char** argv) {
     }
     ui::log_info("image_viewer %s", ui::version_string());
 
-    ui::Window window(960, 720, "image viewer (M16)");
-    if (!window.handle()) return 1;
-    ui::Renderer renderer;
-    if (!renderer.init()) return 1;
-    renderer.set_viewport(window.width(), window.height());
+    // 带自绘标题栏的窗口容器（UI-168）：居中 + 可拖动/最小化/最大化/关闭
+    ui::WindowContainer container(960, 720, "image viewer (M16)");
+    if (!container.ok()) return 1;
+    ui::Window& window = container.window();
+    ui::Renderer& renderer = container.renderer();
+    ui::Scene& scene = container.scene();
 
     ui::Font font;
     font.load_from_file("C:/Windows/Fonts/arial.ttf", 18.f);
     font.load_cjk_font_auto();
+    container.titlebar().set_font(&font);
 
     // ui::Scene：统一驱动生命周期；image_viewer 迁移前无标准键/字符分发，仅鼠标+滚轮(Ctrl+O 走 Key 钩子)
-    ui::Scene scene(window, renderer);
     scene.set_root_background(ui::Vec4{0.16f, 0.17f, 0.19f, 1.f});
     scene.dispatch_nav_keys = false;
     scene.dispatch_text = false;
@@ -115,11 +117,13 @@ int main(int argc, char** argv) {
 
     ui::Widget& root = scene.root();
 
+    // 内容区起始 y（= 标题条高）：顶部工具条下移让出标题条（UI-168）
+    const float top = container.content_origin_y();
     // 顶部工具条：打开按钮 + 状态文本
-    ui::Button open_btn(8, 8, 90, 30, "Open...");
+    ui::Button open_btn(8, top + 8, 90, 30, "Open...");
     open_btn.set_font(&font);
     root.add_child(&open_btn);
-    ui::Label status(110, 10, 840, 24, "Ctrl+O: open | wheel: zoom | drag: pan | double-click: fit");
+    ui::Label status(110, top + 10, 840, 24, "Ctrl+O: open | wheel: zoom | drag: pan | double-click: fit");
     status.set_font(&font);
     root.add_child(&status);
 
@@ -201,8 +205,8 @@ int main(int argc, char** argv) {
     scene.on(ui::ScenePhase::PostDraw, [&](ui::Scene&) {
         if (has_image && tex.width() > 0 && tex.height() > 0) {
             const float iw = (float)tex.width(), ih = (float)tex.height();
-            const float view_x = 0.f, view_y = 40.f, view_w = (float)window.width(),
-                        view_h = (float)window.height() - 40.f;
+            const float view_x = 0.f, view_y = top + 40.f, view_w = (float)window.width(),
+                        view_h = (float)window.height() - (top + 40.f);
             const float base_scale = std::min(view_w / iw, view_h / ih);
             const float disp_w = iw * base_scale * zoom;
             const float disp_h = ih * base_scale * zoom;

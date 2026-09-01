@@ -78,3 +78,4 @@
 #include "ui/ui/upload.h"
 #include "ui/ui/vbox.h"
 #include "ui/ui/window_frame.h"
+#include "ui/ui/window_container.h"

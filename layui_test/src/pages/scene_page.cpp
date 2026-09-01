@@ -121,6 +121,7 @@ static void open_child(ui::Scene& main) {
         g.main_scene = nullptr;
         return;
     }
+    g.child->center_on_primary_monitor();  // 同主窗口：居中且带自绘标题条（UI-147/168）
     g.child->make_current();  // 子窗口上下文置为当前（第二独立 GL 上下文）
     g.child_renderer = new ui::Renderer();
     g.child_renderer->init();

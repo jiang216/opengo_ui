@@ -213,7 +213,11 @@ void Scene::reset() {
 }
 
 void Scene::shutdown() {
-    if (!running_) return;  // 幂等：已 shutdown
+    // 幂等：已 shutdown。注意不能以 !running_ 判断——request_exit() 已把 running_ 置 false，
+    // 此时 shutdown()（尤其 ~Scene() 于析构路径调用）仍必须完整广播 Cleanup/Shutdown、
+    // 冲刷延迟销毁队列并关弹窗，否则 cleanup 观察者收不到通知、销毁队列残留（泄漏）。
+    if (shut_down_) return;
+    shut_down_ = true;
     notify_phase(ScenePhase::Cleanup, 0.f);
     // 同 reset：只清理库内自管对象（延迟销毁队列 + 弹窗），不删子树（子节点可能为栈对象）
     ui::Widget::flush_pending_destroys();

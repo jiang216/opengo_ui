@@ -85,7 +85,7 @@ private:
     std::vector<unsigned char> decoded_rgba_;   // 解码线程专用（open 时 resize 一次）
 
     float play_time_ = 0.f;
-    double fps_ = 25.0;
+    std::atomic<double> fps_{25.0};  // 主线程 open_source 写、解码线程 decode_loop 读（UI-158 数据竞争）
     double duration_ = 0.0;
 };
 

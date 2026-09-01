@@ -18,6 +18,7 @@
 #include "ui/ui/titlebar.h"
 #include "ui/ui/widget.h"
 #include "ui/ui/scene.h"
+#include "ui/ui/window_container.h"
 
 #include <algorithm>
 #include <chrono>
@@ -40,7 +41,6 @@
 namespace {
 
 constexpr float kHeaderH = 60.f;
-constexpr float kTitleBarH = 30.f;   // 自绘系统风格标题条高（顶部可拖动条）
 constexpr float kSidebarW = 240.f;  // 新镜像 docs/2 侧栏宽（ws-menu 240）
 constexpr float kChildSidebarW = 160.f;  // 第二列子菜单宽（镜像 side-child 160）
 constexpr float kTabTitleH = 40.f;
@@ -245,18 +245,15 @@ int main(int argc, char** argv) {
     ui::log_info("layui_test %s starting (%d pages)", ui::version_string(),
                  (int)page::all_pages().size());
 
-    ui::Window window(1280, 900, "layui_test: clone of layui demo site");
-    if (!window.handle()) {
-        ui::log_error("no GL context");
+    // 带自绘标题栏的窗口容器：居中 + 可拖动/最小化/最大化/关闭（UI-168）
+    ui::WindowContainer container(1280, 900, "layui_test: clone of layui demo site");
+    if (!container.ok()) {
+        ui::log_error("window container init failed");
         return 1;
     }
-    window.center_on_primary_monitor();  // 无边框窗口默认常落 0,0 → 居中到主显示器工作区
-    ui::Renderer renderer;
-    if (!renderer.init()) {
-        ui::log_error("renderer init failed");
-        return 1;
-    }
-    renderer.set_viewport(window.width(), window.height());
+    ui::Window& window = container.window();
+    ui::Renderer& renderer = container.renderer();
+    ui::Scene& scene = container.scene();
 
     ui::Font font;
     if (!font.load_from_file("C:/Windows/Fonts/arial.ttf", 18.f))
@@ -281,8 +278,13 @@ int main(int argc, char** argv) {
 
     ui::Theme theme = ui::Theme::make_layui();
 
+    // 标题条样式注入：容器已注册 titlebar 为 chrome（content_origin_y 已生效），
+    // 字体/主题/应用图标由应用注入（UI-168，keep UI-147/148 回归项）
+    container.titlebar().set_font(&font);
+    container.titlebar().set_theme(&theme);
+    container.titlebar().set_icon(&font, ui::layui_icon::app);
+
     // ui::Scene：统一驱动生命周期（生产者→分配者→消费者→清理重置）
-    ui::Scene scene(window, renderer);
     scene.set_root_background(theme.window_bg);
 
     ui::Widget& root = scene.root();
@@ -290,19 +292,9 @@ int main(int argc, char** argv) {
     // 第二列子菜单可见态：选中数据表格板块时为 true，内容区右移 kChildSidebarW
     bool child_visible = false;
 
-    // ---- 顶部自绘标题条（无边框窗口可拖动 + 最小化/最大化/关闭三键 + 左上角应用图标）----
-    ui::TitleBar titlebar((float)window.width(), kTitleBarH, "layui_test", &window);
-    titlebar.set_font(&font);
-    titlebar.set_theme(&theme);
-    titlebar.set_icon(&font, ui::layui_icon::app);  // iconfont 已烘焙（见 load_system_icon）左侧应用图标
-    titlebar.set_on_close([&window]() { window.set_should_close(true); });
-    root.add_child(&titlebar);
-
-    // 库级顶部装帧：注册标题条为 chrome，Scene 掌握内容区起始 y（content_origin_y）。
-    // 以下所有内容坐标（header/sidebar/tabs/content/HUD）均以该原点为单一来源派生，
-    // 不再各自硬编码 kTitleBarH，保证"除标题栏外其余控件绘制在其下方"由库统一保证（UI-153）。
-    scene.set_chrome(&titlebar, kTitleBarH);
-    const float kChromeTop = scene.content_origin_y();
+    // 库级顶部装帧：容器已注册标题条为 chrome，内容区起始 y 由库统一掌握（UI-153/168）。
+    // 以下所有内容坐标（header/sidebar/tabs/content/HUD）均以该原点为单一来源派生。
+    const float kChromeTop = container.content_origin_y();
     const float kTopH = kChromeTop + kHeaderH;            // 内容区起始 y（标题条 + 头部）
     const float content_y = kChromeTop + kHeaderH + kTabTitleH;
 
@@ -611,9 +603,9 @@ int main(int argc, char** argv) {
         }
     });
 
-    // 窗口尺寸变化：Scene 已更新视口+root；此处重排顶部/侧栏 + 内容
+    // 窗口尺寸变化：Scene 已更新视口+root；标题条宽度由容器随 Frame 自同步（UI-168）；
+    // 此处仅重排顶部/侧栏 + 内容
     scene.set_event_hook(ui::SceneEvent::Resized, [&](ui::Scene&) {
-        titlebar.set_bounds(0, 0, (float)window.width(), kTitleBarH);
         header.set_bounds(0, kChromeTop, (float)window.width(), kHeaderH);
         sidebar.set_bounds(0, kTopH, kSidebarW, (float)window.height() - kTopH);
         nav.set_bounds(0, 0, kSidebarW, (float)window.height() - kTopH);

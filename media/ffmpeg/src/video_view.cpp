@@ -166,7 +166,11 @@ bool VideoView::open_source(const char* path) {
         close_source();
         return false;
     }
-    avcodec_parameters_to_context(ctx_->codec, ctx_->fmt->streams[ctx_->stream]->codecpar);
+    if (avcodec_parameters_to_context(ctx_->codec, ctx_->fmt->streams[ctx_->stream]->codecpar) < 0) {
+        log_error("VideoView: copy codec parameters failed");
+        close_source();
+        return false;
+    }
     ctx_->codec->thread_count = 1;  // 多线程解码在精简版 DLL 上与 seek/flush 有死锁风险，固定单线程
     if (avcodec_open2(ctx_->codec, dec, nullptr) < 0) {
         log_error("VideoView: open codec failed");
@@ -182,7 +186,7 @@ bool VideoView::open_source(const char* path) {
     const AVRational fr = ctx_->fmt->streams[ctx_->stream]->avg_frame_rate;
     if (fr.num > 0 && fr.den > 0) ctx_->fps = av_q2d(fr);
     if (ctx_->fps <= 0.0) ctx_->fps = 25.0;
-    fps_ = ctx_->fps;
+    fps_.store(ctx_->fps);
 
     if (ctx_->fmt->duration > 0)
         duration_ = (double)ctx_->fmt->duration / (double)AV_TIME_BASE;
@@ -208,15 +212,19 @@ bool VideoView::open_source(const char* path) {
     eof_.store(false);
 
     running_.store(true);
-    decode_thread_ = std::thread(&VideoView::decode_loop, this);
 
-    // 音频初始化（M14 遗留修复）：失败仅静音，不影响视频
+    // 音频初始化（M14 遗留修复）：失败仅静音，不影响视频。
+    // 必须在启动解码线程前完成——decode_loop/decode_one_frame/handle_audio_packet
+    // 会读取 audio_ctx_，线程启动对启动前的写入构成 happens-before；
+    // 此前在 start 之后才赋值，解码线程可能读到未初始化/旧值（数据竞争）。
     audio_ctx_ = new AudioContext;
     if (!audio_init_ctx(audio_ctx_, ctx_->fmt)) {
         audio_free_ctx(audio_ctx_);
         audio_ctx_ = nullptr;
         log_info("VideoView: no audio stream, muted");
     }
+
+    decode_thread_ = std::thread(&VideoView::decode_loop, this);
 
     log_info("VideoView: opened %s (%dx%d @ %.2ffps, %.2fs)", path ? path : "", ctx_->width,
              ctx_->height, ctx_->fps, duration_);
@@ -235,6 +243,10 @@ bool VideoView::decode_one_frame() {
                                            ctx_->height, AV_PIX_FMT_RGBA, SWS_BILINEAR, nullptr,
                                            nullptr, nullptr);
                 ctx_->sws_src = (AVPixelFormat)ctx_->frame->format;
+                if (!ctx_->sws) {  // 转换器创建失败：跳过本帧，不崩溃
+                    log_error("VideoView: sws_getContext failed, skip frame");
+                    return false;
+                }
             }
             uint8_t* dst[4] = {decoded_rgba_.data(), nullptr, nullptr, nullptr};
             int dst_linesize[4] = {ctx_->width * 4, 0, 0, 0};
@@ -259,12 +271,23 @@ bool VideoView::decode_one_frame() {
         int pr = av_read_frame(ctx_->fmt, ctx_->pkt);
         if (pr < 0) {
             // 文件读完：冲刷解码器以吐尽缓冲帧
-            avcodec_send_packet(ctx_->codec, nullptr);
+            if (int sret = avcodec_send_packet(ctx_->codec, nullptr); sret < 0 &&
+                                                                       sret != AVERROR(EAGAIN))
+                log_error("VideoView: flush send_packet failed %d", sret);
             av_packet_unref(ctx_->pkt);
             continue;
         }
         if (ctx_->pkt->stream_index == ctx_->stream) {
-            avcodec_send_packet(ctx_->codec, ctx_->pkt);
+            // avcodec_send_packet 返回 EAGAIN 表示解码器缓冲已满：必须等
+            // avcodec_receive_frame 腾出空间后再送，否则本包静默丢弃会造成
+            // 画面丢帧/花屏。此处收到 EAGAIN 时直接回外层循环（外层已先
+            // receive_frame 再 read_frame），先取一帧出队再送本包。
+            int sret = avcodec_send_packet(ctx_->codec, ctx_->pkt);
+            if (sret == AVERROR(EAGAIN)) {
+                av_packet_unref(ctx_->pkt);
+                continue;  // 外层已收帧，下一轮再送同一流后续包
+            }
+            if (sret < 0) log_error("VideoView: video send_packet failed %d", sret);
         } else if (audio_ctx_ && ctx_->pkt->stream_index == audio_ctx_->stream)
             handle_audio_packet(ctx_->pkt);
         av_packet_unref(ctx_->pkt);
@@ -276,7 +299,38 @@ void VideoView::handle_audio_packet(void* pkt_ptr) {
     AudioContext* a = audio_ctx_;
     if (!a || !a->codec || !a->swr) return;
     AVPacket* pkt = static_cast<AVPacket*>(pkt_ptr);
-    avcodec_send_packet(a->codec, pkt);
+    // avcodec_send_packet 可能返回 EAGAIN（解码器缓冲满）：
+    // 先 avcodec_receive_frame 把已解码帧消费（写 winmm 队列）出腾位，
+    // 再重送本包，否则音频帧静默丢弃会出现短暂爆音/卡顿。
+    for (int attempt = 0; attempt < 3; ++attempt) {
+        int sret = avcodec_send_packet(a->codec, pkt);
+        if (sret != AVERROR(EAGAIN)) {
+            if (sret < 0) log_error("VideoView: audio send_packet failed %d", sret);
+            break;
+        }
+        // 腾空：消费缓冲内已解码帧
+        while (true) {
+            int ret = avcodec_receive_frame(a->codec, a->frame);
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF || ret < 0) break;
+            int out_n = swr_convert(a->swr, &a->pcm_buf, a->pcm_cap,
+                                    (const uint8_t**)a->frame->extended_data,
+                                    a->frame->nb_samples);
+            if (out_n <= 0) continue;
+            const int total = out_n * a->out_channels;
+            int16_t* s = (int16_t*)a->pcm_buf;
+            const float g = volume_.load();
+            if (g < 1.f) {
+                for (int i = 0; i < total; ++i) s[i] = (int16_t)((float)s[i] * g);
+            }
+            const int chunk = 4096;
+            int off = 0;
+            while (off < total) {
+                const int n = (total - off) > chunk ? chunk : (total - off);
+                a->out.write(s + off, n);
+                off += n;
+            }
+        }
+    }
     for (;;) {
         int ret = avcodec_receive_frame(a->codec, a->frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF || ret < 0) break;
@@ -379,7 +433,7 @@ void VideoView::decode_loop() {
             pending_frame_ = decoded_rgba_;
         }
         const float speed = speed_.load();
-        next_push += std::chrono::microseconds((std::int64_t)(1e6 / (fps_ * speed)));
+        next_push += std::chrono::microseconds((std::int64_t)(1e6 / (fps_.load() * speed)));
         std::this_thread::sleep_until(next_push);
     }
     log_info("VideoView: decode thread exit");
@@ -447,8 +501,9 @@ bool VideoView::advance(float dt) {
     const float speed = speed_.load();
     if (speed <= 0.f) return false;
     play_time_ += dt;
-    if (play_time_ < 1.0f / (float)(fps_ * speed)) return false;
-    play_time_ -= 1.0f / (float)(fps_ * speed);
+    const double fps = fps_.load();
+    if (play_time_ < 1.0f / (float)(fps * speed)) return false;
+    play_time_ -= 1.0f / (float)(fps * speed);
     std::vector<unsigned char> frame;
     {
         std::lock_guard<std::mutex> lk(frame_mutex_);

@@ -3,6 +3,52 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-169: ScrollBox 内容滚动穿透标题栏/Header——退化矩形 push_scissor 空转 + pop 误弹父级裁剪（2026-09-01）
+- **类型**：缺陷修复（ui 库 ui/gl 两层）
+- **严重度**：高（内容渲染越界覆盖 chrome，视觉错乱）
+- **现象**：layui_test 的栅格（Grid）/颜色（Color）等预览面板在内容区向下滚动到一定程度后，内部绘制的组件/控件（网格色块、颜色色块）「穿透」了本应用顶部导航（Header）与自绘窗口标题栏，绘制在其顶层，覆盖标题栏/导航。
+- **根因（归属 ui 库裁剪机制缺陷，非测试程序）**：
+  1. `gl/src/renderer.cpp:418` `Renderer::push_scissor()` 对**退化矩形**（`w<=0 || h<=0`）静默直接 `return`、**不入栈**；
+  2. `ui/src/label.cpp` `Label::on_draw()` 无条件 `push_scissor(clip)` 之后**无条件** `pop_scissor()` —— 当 clip 退化（push 空转未入栈）时，pop 会把**父级**裁剪区（ScrollBox 的 `content_clip`）弹出栈；
+  3. `ui/src/blockquote.cpp:39` `BlockQuote::on_layout()` 把内部 Label 高度设为 `0.f` → 该 Label 的 clip 高度为 0、恒退化 —— 栅格/颜色页首个 `quote(...)` 即触发；
+  4. 于是 ScrollBox（preview 内容面板）绘制其剩余子控件时 `GL_SCISSOR_TEST` 已过早关闭，滚动后色块以真实滚动坐标绘制到 y=0..130，覆盖已先绘制的标题栏/Header。与 UI-057（pop 不恢复上级矩形）属同一「push 与 pop 不配对」系缺陷的另一变形（push 静默空转 vs pop 仍照常弹父级）。
+- **修复**：
+  1. `ui/src/label.cpp`：`on_draw` 仅当 clip 为非退化矩形（`w>0 && h>0`）才 push/draw/pop；退化时跳过裁剪直接绘制文本。
+  2. `ui/src/blockquote.cpp`：`on_layout` 将内部 Label 高度设为实际行高（`label_->preferred_height()`），不再制造 h=0 退化矩形。
+  3. `gl/src/renderer.cpp`（系统性加固，防同类复发）：`begin_frame()` 每帧开头 `scissor_stack_.clear()` + `glDisable(GL_SCISSOR_TEST)`，杜绝任何跨帧残留脏裁剪状态（异常/未配平 pop 残留的栈或过期 GL scissor 状态）。
+- **回归清单**（既有保证项核对 + 新增保证项）：
+  1. **新增**：ScrollBox 内容滚动越界**不得**绘制到其可视区（标题栏/Header）之上——内容严格裁剪于自身 viewport。
+  2. **新增**：Label/任一裁剪控件在退化矩形（w/h<=0）绘制时不得破坏/弹出父级裁剪区。
+  3. UI-057 嵌套 scissor pop 恢复上级矩形语义保持成立；push 与栈顶求交、pop 恢复新栈顶、栈空才关 GL_SCISSOR_TEST 不变。
+  4. 既有各页（栅格/颜色/表单/表格等）滚动裁剪、滚动条、文本裁剪（TextBox/TextArea/Table/Transfer/Rate/Code/Carousel）行为不回归。
+- **验证**：`layui_test --shot-page 7 --shot-scroll 1200` 与 `--shot-page 9 --shot-scroll 800` 截图扫描 0..126 条带**无饱和内容色**（栅格绿 #79C48C=121,196,140 与颜色色块全部消失，残留仅标题栏/Header 的暗灰与主题开关/导航中性灰/青）；x64-all（media ON）Release、x64-debug（media OFF）Debug、layui_test Release 三配置编译链接通过；6 exe `--smoke 3` 全部 exit 0。
+- **影响范围**：`ui/src/label.cpp`、`ui/src/blockquote.cpp`、`gl/src/renderer.cpp`、`docs/CHANGELOG.md`。
+
+## UI-167: 全面审查修复批次——widget 销毁/弹窗生命周期、scene 生命周期、非 Windows 拖拽、utf8 解码越界、media 线程竞争、FFmpeg 返回值、Font 边界、log 线程安全（2026-09-01）
+- **类型**：批量缺陷修复（ui 库 core/gl/ui/media 四层，含 5 个 HIGH + 若干 MEDIUM/LOW）
+- **严重度**：高（含双重释放、UAF、跨线程数据竞争、缓冲越界读）
+- **根因/修复**（逐项）：
+  1. **pending destroy 双重释放（HIGH）**：`flush_pending_destroys`（widget.cpp:185）单遍遍历中 `w->clear_children() + delete w`。父 P 与子 C **同帧 destroy()** 时若顺序为 [P, C]，先处理 P 的 `clear_children()` 已 delete C，随后处理 C 再一次 `delete C` → double-free（顺序为 [C, P] 时侥幸避开）。修复：改为**两遍**——第一遍统一从父节点摘除（含 `parent_ = nullptr`）+ 清除根节点 `modal_/capture_/popups_` 引用，第二遍才逐个 `clear_children() + delete`。摘除后各 pending 子树的 `children_` 仅含**非 pending** 后代，彻底消除顺序依赖。
+  2. **popup owner UAF（HIGH）**：flush 第一遍只清理 `p.popup == w`，owner 为 w 的 popup 仍留在 `popups_`，`prune_popups`（widget.cpp:730）随后访问 `it->owner->contains()` 读已释放内存。修复：flush 时对 `p.owner == w` 的 popup 一并 `set_visible(false)` + 从列表摘除；`prune_popups` 移除弹窗时补 `parent()->remove_child()` 摘除不可见面板（与 `close_popups` 一致，防残留堆叠）。
+  3. **Scene::shutdown 生命周期吞通知（HIGH）**：`shutdown()`（scene.cpp:215）入口 `if (!running_) return;`，而 `request_exit()` 已把 `running_` 置 false → `~Scene()` 析构路径调 shutdown() 时 Cleanup/Shutdown 阶段永不广播、销毁队列残留。修复：改用独立 `shut_down_` 幂等标志，与 `running_` 解耦。
+  4. **非 Windows 窗口拖拽跳变（HIGH）**：`start_drag`（window.cpp:410）非 Windows 分支从未给 `drag_off_x_/drag_off_y_` 赋值（恒 0），`update_drag` 用 `mouse_x - 0` 把窗口相对坐标当绝对坐标平移到 `(start_wx_+mouse_x,...)`。修复：非 Windows 分支记录 `drag_off_* = mouse_x/mouse_y`（GLFW cursor_pos 为窗口相对坐标），update 用增量 `start_* + (mouse - drag_off)`。Windows 分支保留 Win32 `GetCursorPos` 防 6px 振荡不动。
+  5. **decode_cp 越界读（HIGH）**：`utf8.h` `decode_cp` 无边界检查，`s[i+1..i+3]` 无条件读，截断串越界；`c>=0xF8` 非法前缀落入 4 字节分支。修复：补 `s.size()` 边界守卫 + 续字节合法性校验，截断/畸形序列降级为单字节直读。另为 `next_index/prev_index` 补前置断言（Debug 暴露非法 i）。
+  6. **media 跨线程竞争 + FFmpeg 返回值忽略（MEDIUM-HIGH）**：① `audio_ctx_`（video_view.h:67）在**解码线程启动之后**才赋值（数据竞争，解码线程可能读未初始化值）——重排为先初始化音频再 `std::thread` 启动（线程启动对启动前写入构成 happens-before）；② `fps_` 主线程写/解码线程读无双原子——改 `std::atomic<double>`（读用 `.load()`）；③ `avcodec_send_packet`/`avcodec_parameters_to_context` 返回值原样忽略，EAGAIN 时视频/音频包静默丢弃——视频 `decode_one_frame` 遇 EAGAIN 回外层 drain 再送出，音频 `handle_audio_packet` 遇 EAGAIN 先收帧腾位重送（限 3 次）；④ `sws_getContext` 失败后 `sws_scale(NULL,...)` 崩溃——补空指针守卫跳过该帧。
+  7. **set_enabled 交互残留（MEDIUM）**：`set_enabled(false)` 不清 `pressed_/hovered_`，且仍持有 `modal_/capture_` 引用 → 禁用控件继续高亮/拦截事件。修复：禁用时清交互态并从根节点摘除 modal/capture 引用。
+  8. **Font 空文件/越界（MEDIUM）**：`load_from_file`/`load_icon_font` 空文件（size<=0）仍喂给 stbtt 烘焙（读随机内存）；`draw_text(max_len=...)` 路径 `decode_utf8` 读 `in[2]/in[3]` 可越过 `max_len` 边界（堆越界读）。修复：空文件直接失败；新增 `decode_utf8_bounded(in, end)` 使 max_len 重载有界解码。
+  9. **log 线程安全（LOW）**：`log_print`（log.cpp:9）`stderr` 非线程安全，media 解码线程 + 主线程并发写日志碎裂/数据竞争。修复：文件级 `std::mutex` 加锁串行化。
+- **回归清单**（既有保证项，批量核对保持成立）：
+  1. 标准 `Scene` 路径 `destroy()` 当帧冲刷、无泄漏无悬空（UI-072/133/161 保持）；`flush_pending_destroys` 幂等（空队列即时返回）。
+  2. `prune_popups` 点外关弹窗语义不变（UI-071/156：点外隐藏 + 后续帧重排）；`close_popups` 一致摘除。
+  3. `reset()`/`shutdown()` 生命周期时序不变：Cleanup/Shutdown 广播、延迟销毁队列冲刷、关弹窗，不删子树（栈对象安全，UI-146）。
+  4. Windows 拖拽 6px 防振荡不回归；窗口拖拽、弹窗跟随行为不变（window._windows_）。
+  5. 文本输入/光标移动（textbox/textarea/table 用 utf8 next/prev/decode）行为不变：合法 UTF-8 解码结果与原实现逐位等价。
+  6. 视频播放：解码/seek/step/loop/音量行为不变；音频同步与 winmm 输出不回退；media OFF 构建不受影响。
+  7. `set_enabled` 禁用后 `on_draw` 灰化、`blur()` 聚焦丢失行为保持；事件路由（modal/capture）语义不变。
+  8. 字体加载（中文字体/图标字体/CJK 懒烘培）正常；`draw_text` 无 max_len 与有 max_len 宽度度量一致、非 CJK 绘制不回退（UI-046/055/128/136 保持）。
+- **验证**：x64-all（media ON, ffmpeg/opencv）Release 编译链接通过（video_player/image_viewer/api_demo 三 exe 产出）；x64-debug（media OFF）Debug 编译链接通过 + `opengl_ui_api_demo --smoke 3` exit 0。x64-all Debug 配置残留 O2+RTC1 冲突（D8016，工具链/缓存预置，非本批引入）。
+- **影响范围**：`ui/src/widget.cpp`、`ui/include/ui/ui/widget.h`、`ui/src/scene.cpp`、`ui/include/ui/ui/scene.h`、`gl/src/window.cpp`、`core/include/ui/core/utf8.h`、`core/src/log.cpp`、`gl/src/font.cpp`、`media/ffmpeg/src/video_view.cpp`、`media/ffmpeg/include/ui/media/video_view.h`、`docs/CHANGELOG.md`。
+
 ## UI-161: 延迟销毁宿主契约显式化——destroy 依赖 root.advance/flush 冲刷，自定义主循环须 advance 否则泄漏 + 僵尸模态（2026-09-01）
 - **类型**：契约补充（ui 库生命周期文档化 + 注释强化；`flush_pending_destroys` 本就 public，无可见性改动）
 - **严重度**：低-中（仅影响**绕过 Scene**且不调 `root_.advance()` 的自定义渲染循环宿主；标准 `Scene::frame` 每帧 advance 自动冲刷，不受影响）

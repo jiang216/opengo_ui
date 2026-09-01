@@ -16,6 +16,7 @@
 #include "ui/ui/label.h"
 #include "ui/ui/scene.h"
 #include "ui/ui/theme.h"
+#include "ui/ui/window_container.h"
 
 #include <chrono>
 #include <cstdio>
@@ -32,19 +33,18 @@ int main(int argc, char** argv) {
 
     ui::log_info("opengl_ui %s scene_multiwin", ui::version_string());
 
-    // ---- 窗口 A：主窗口（独立上下文）----
-    ui::Window winA(480, 360, "scene_multiwin: A");
-    if (!winA.handle()) return 1;
-    ui::Renderer renderA;
-    if (!renderA.init()) return 1;
-    renderA.set_viewport(winA.width(), winA.height());
+    // ---- 窗口 A：主窗口（独立上下文；带自绘标题栏容器 UI-168）----
+    ui::WindowContainer containerA(480, 360, "scene_multiwin: A");
+    if (!containerA.ok()) return 1;
     ui::Font fontA;
     fontA.load_from_file("C:/Windows/Fonts/arial.ttf", 18.f);
     ui::Theme themeA = ui::Theme::make_dark();
-    ui::Scene sceneA(winA, renderA);
+    containerA.titlebar().set_font(&fontA);
+    containerA.titlebar().set_theme(&themeA);
+    ui::Scene& sceneA = containerA.scene();
     sceneA.set_root_background(themeA.window_bg);
     sceneA.dispatch_nav_keys = false;  // 仅鼠标；保持简单
-    ui::Widget& rootA = sceneA.root();
+    ui::Widget& rootA = containerA.root();
     {
         ui::Button btn(120, 150, 240, 48, "Window A button");
         btn.set_font(&fontA);
@@ -54,24 +54,26 @@ int main(int argc, char** argv) {
     }
 
     // ---- 窗口 B：第二个窗口（独立上下文；创建即切到 B 上下文）----
-    ui::Window winB(420, 320, "scene_multiwin: B");
-    if (!winB.handle()) return 1;
-    ui::Renderer renderB;
-    if (!renderB.init()) return 1;
-    renderB.set_viewport(winB.width(), winB.height());
+    ui::WindowContainer containerB(420, 320, "scene_multiwin: B");
+    if (!containerB.ok()) return 1;
     ui::Font fontB;
     fontB.load_from_file("C:/Windows/Fonts/arial.ttf", 18.f);
     ui::Theme themeB = ui::Theme::make_layui();
-    ui::Scene sceneB(winB, renderB);
+    containerB.titlebar().set_font(&fontB);
+    containerB.titlebar().set_theme(&themeB);
+    ui::Scene& sceneB = containerB.scene();
     sceneB.set_root_background(themeB.window_bg);
     sceneB.dispatch_nav_keys = false;
-    ui::Widget& rootB = sceneB.root();
+    ui::Widget& rootB = containerB.root();
     {
         ui::Label lb(40, 40, 340, 80, "Window B (independent context)");
         lb.set_font(&fontB);
         lb.set_theme(&themeB);
         rootB.add_child(&lb);
     }
+
+    ui::Window& winA = containerA.window();
+    ui::Window& winB = containerB.window();
 
     // ---- 多窗口主循环：逐窗口 make_current + frame + swap ----
     const auto start = std::chrono::steady_clock::now();

@@ -98,19 +98,15 @@ int main(int argc, char** argv) {
     }
     exercise_core();
 
-    ui::Window window(1280, 1280, "opengl_ui api_demo");
-    if (!window.handle()) {
-        ui::log_error("api_demo: no GL context");
+    // 带自绘标题栏的窗口容器：居中 + 可拖动/最小化/最大化/关闭（UI-168）
+    ui::WindowContainer container(1280, 1280, "opengl_ui api_demo");
+    if (!container.ok()) {
+        ui::log_error("api_demo: window container init failed");
         return 1;
     }
-    window.set_vsync(1);
-
-    ui::Renderer renderer;
-    if (!renderer.init()) {
-        ui::log_error("api_demo: renderer init failed");
-        return 1;
-    }
-    renderer.set_viewport(window.width(), window.height());
+    ui::Window& window = container.window();
+    ui::Renderer& renderer = container.renderer();
+    ui::Scene& scene = container.scene();
 
     ui::Font font;
     if (!font.load_from_file("C:/Windows/Fonts/arial.ttf", 20.f))
@@ -128,9 +124,12 @@ int main(int argc, char** argv) {
     exercise_gl_texture(tex);
 
     ui::Theme theme;
+    // 标题条样式注入：容器已注册 titlebar 为 chrome（content_origin_y 已生效）（UI-168）
+    container.titlebar().set_font(&font);
+    container.titlebar().set_theme(&theme);
+    container.titlebar().set_icon(&font, ui::layui_icon::app);
 
     // ui::Scene：统一驱动生命周期（生产者→分配者→消费者→清理重置）
-    ui::Scene scene(window, renderer);
     scene.set_root_background(theme.window_bg);
 
     // 严格不回归：api_demo 迁移前仅 Tab/方向+Enter+Backspace+chars，无 Space/Delete/Home/End
@@ -148,7 +147,9 @@ int main(int argc, char** argv) {
 
     ui::Widget& root = scene.root();
 
-    ui::ScrollBox scroller(0, 0, 1024, (float)window.height());
+    // 内容区下移标题条高（单一原点 content_origin_y 派生，UI-153/168）
+    const float top = container.content_origin_y();
+    ui::ScrollBox scroller(0, top, 1024, (float)window.height() - top);
     scroller.set_theme(&theme);
     scroller.set_padding(8.f);
     scroller.set_spacing(4.f);
@@ -743,8 +744,8 @@ int main(int argc, char** argv) {
                           "api_demo fps %.1f | measure 'hello'=%.0f | cw=%d=%u", fps,
                           (double)font.measure_text("hello"), (int)'a', (unsigned)font.char_width('a'));
         }
-        font.draw_text(renderer, hud, 24.f, 24.f, theme.text_dim);
-        if (font.icon_loaded()) font.draw_icon(renderer, ui::layui_icon::star, 1200.f, 40.f, 20.f,
+        font.draw_text(renderer, hud, 24.f, top + 24.f, theme.text_dim);
+        if (font.icon_loaded()) font.draw_icon(renderer, ui::layui_icon::star, 1200.f, top + 40.f, 20.f,
                                                ui::Vec4{1.f, 0.85f, 0.3f, 1.f});
     });
 

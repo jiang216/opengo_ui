@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 168（BUG 160 / DOC 6 / META 2）
-- 边: 365
+- 节点: 170（BUG 162 / DOC 6 / META 2）
+- 边: 367
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -88,7 +88,7 @@
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#键盘分发：dispatch_key_down 先让焦点控件消费（focused_descendant 定位），导航键未被消费才遍历；无焦点时 Tab 落到第一个
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#字符输入：Window char 队列边沿触发；dispatch_char 只转发焦点控件；on_char 默认不消费
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#TextBox 单行输入：字符/Backspace/Delete/左右移/Home/End；聚焦光标 + 超宽 scissor 裁剪横向滚动
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）
 
 ### BUG:UI-009 · UI-009: M5 鼠标拖拽：Slider 滑块 + 鼠标捕获（2026-08-09）
 
@@ -478,7 +478,7 @@
 - 路径: `docs/CHANGELOG.md#ui-057-嵌套-scissor-pop-不恢复上级矩形textbox-之后内容被裁剪2026-08-17`
 - 反链(2):
   - `META:CHANGELOG` (ref) — 相关历史条目
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）
 
 ### BUG:UI-058 · UI-058: 表单页一比一复刻 layui form.html 预览内容（2026-08-17）
 
@@ -1128,6 +1128,18 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#延迟销毁宿主契约：`Widget::destroy()` 只标记，实际释放依赖 `flush_pending_destroys()`（由根节点 `advance()` 及 `Scene::reset/shutdown()` 触发，`g_pending_destroy` 为全局单一队列）。自定义循环宿主若绕过 Scene 不调 `root_.advance()` → destroy 永不冲刷 → 泄漏 + 僵尸模态；契约已写入 `widget.h`，绕过者须自调 `Widget::flush_pending_destroys()`（public）
 
+### BUG:UI-167 · UI-167: 全面审查修复批次——widget 销毁/弹窗生命周期、scene 生命周期、非 Windows 拖拽、utf8 解码越界、media 线程竞争、FFmpeg 返回值、Font 边界、log 线程安全（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-167-全面审查修复批次widget-销毁弹窗生命周期scene-生命周期非-windows-拖拽utf8-解码越界media-线程竞争ffmpeg-返回值font-边界log-线程安全2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#全面审查批量修复保持：① `flush_pending_destroys` 两遍式（先统一摘除父/根引用再删除）彻底消除父+子同帧 destroy 的 double-free，且 order-free；② popup owner 销毁同步摘除/隐藏弹窗（关 `prune_popups` 访问已释放 owner 的 UAF），`prune_popups` 摘除面板同 `close_popups`；③ `Scene::shutdown` 与 `running_` 解耦（独立 `shut_down_`），request_exit 后析构仍完整广播 Cleanup/Shutdown + 冲刷销毁队列；④ 非 Windows 窗口拖拽记录按下偏移（`start_* + (mouse−drag_off)`），Windows 分支 `GetCursorPos` 防 6px 振荡不变；⑤ `decode_cp` 边界守卫 + 续字节校验，截断串降级单字节不越界读；⑥ media `audio_ctx_` 先于解码线程初始化、`fps_` 原子化、`avcodec_send_packet` EAGAIN 排空后重送（视频回外层 drain、音频 3 次内腾位）、`sws_getContext` 失败跳过本帧；⑦ `set_enabled(false)` 清 pressed/hovered 并摘 root `capture_/modal_` 引用；⑧ Font 空文件直接失败、max_len 走 `decode_utf8_bounded` 有界解码；⑨ `log_print` mutex 串行化
+
+### BUG:UI-169 · UI-169: ScrollBox 内容滚动穿透标题栏/Header——退化矩形 push_scissor 空转 + pop 误弹父级裁剪（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-169-scrollbox-内容滚动穿透标题栏header退化矩形-pushscissor-空转--pop-误弹父级裁剪2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1380,6 +1392,8 @@
 | `BUG:UI-159` | BUG | UI-159: Label 换行缓存改按输入自洽键去重——preferred_height const_cast 顺序耦合收敛（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-160` | BUG | UI-160: 帧级门控下 CountdownText 倒计时冻结——on_advance 按显示桶变化 mark_dirty（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-161` | BUG | UI-161: 延迟销毁宿主契约显式化——destroy 依赖 root.advance/flush 冲刷，自定义主循环须 advance 否则泄漏 + 僵尸模态（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-167` | BUG | UI-167: 全面审查修复批次——widget 销毁/弹窗生命周期、scene 生命周期、非 Windows 拖拽、utf8 解码越界、media 线程竞争、FFmpeg 返回值、Font 边界、log 线程安全（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-169` | BUG | UI-169: ScrollBox 内容滚动穿透标题栏/Header——退化矩形 push_scissor 空转 + pop 误弹父级裁剪（2026-09-01） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1632,6 +1646,8 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-159` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-160` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-161` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-167` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-169` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

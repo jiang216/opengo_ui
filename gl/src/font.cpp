@@ -68,6 +68,39 @@ unsigned Font::decode_utf8(const char*& in) {
     return c;
 }
 
+// 带边界上限的 UTF-8 解码：多字节续字节全部约束在 [in, end) 内，绝不读越界。
+// max_len 版 draw_text 调用（text 缓冲可能恰为 max_len 字节且无 NUL 结尾），
+// 否则 decode_utf8 会在字符跨越 end 时读 in[2]/in[3] 越界（堆越界读）。
+static unsigned decode_utf8_bounded(const char*& in, const char* end) {
+    if (in >= end) return 0;
+    const unsigned char c = (unsigned char)*in;
+    if (c < 0x80) {
+        ++in;
+        return c;
+    }
+    if ((c & 0xE0) == 0xC0 && in + 1 < end && ((unsigned char)in[1] & 0xC0) == 0x80) {
+        const unsigned cp = ((c & 0x1F) << 6) | ((unsigned char)in[1] & 0x3F);
+        in += 2;
+        return cp;
+    }
+    if ((c & 0xF0) == 0xE0 && in + 2 < end && ((unsigned char)in[1] & 0xC0) == 0x80 &&
+        ((unsigned char)in[2] & 0xC0) == 0x80) {
+        const unsigned cp = ((c & 0x0F) << 12) | (((unsigned char)in[1] & 0x3F) << 6) |
+                            ((unsigned char)in[2] & 0x3F);
+        in += 3;
+        return cp;
+    }
+    if ((c & 0xF8) == 0xF0 && in + 3 < end && ((unsigned char)in[1] & 0xC0) == 0x80 &&
+        ((unsigned char)in[2] & 0xC0) == 0x80 && ((unsigned char)in[3] & 0xC0) == 0x80) {
+        const unsigned cp = ((c & 0x07) << 18) | (((unsigned char)in[1] & 0x3F) << 12) |
+                            (((unsigned char)in[2] & 0x3F) << 6) | ((unsigned char)in[3] & 0x3F);
+        in += 4;
+        return cp;
+    }
+    ++in;  // 截断/畸形序列回退单字节
+    return c;
+}
+
 Font::Font() { g_fonts.push_back(this); }
 
 Font::~Font() {
@@ -88,13 +121,16 @@ bool Font::load_icon_font(const char* path, float pixel_height) {
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
     fseek(f, 0, SEEK_SET);
-    if (size > 0) {
-        ttf.resize((size_t)size);
-        if (fread(ttf.data(), 1, (size_t)size, f) != (size_t)size) {
-            fclose(f);
-            log_error("icon font: read failed %s", path ? path : "");
-            return false;
-        }
+    if (size <= 0) {  // 空/不可读文件：直接失败，避免对空缓冲做 stbtt 烘焙
+        fclose(f);
+        log_error("icon font: empty file %s", path ? path : "");
+        return false;
+    }
+    ttf.resize((size_t)size);
+    if (fread(ttf.data(), 1, (size_t)size, f) != (size_t)size) {
+        fclose(f);
+        log_error("icon font: read failed %s", path ? path : "");
+        return false;
     }
     fclose(f);
 
@@ -177,13 +213,16 @@ bool Font::load_from_file(const char* path, float pixel_height) {
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
     fseek(f, 0, SEEK_SET);
-    if (size > 0) {
-        ttf.resize((size_t)size);
-        if (fread(ttf.data(), 1, (size_t)size, f) != (size_t)size) {
-            fclose(f);
-            log_error("font: read failed %s", path ? path : "");
-            return false;
-        }
+    if (size <= 0) {  // 空/不可读文件：直接失败，避免对空缓冲做 stbtt 烘焙
+        fclose(f);
+        log_error("font: empty file %s", path ? path : "");
+        return false;
+    }
+    ttf.resize((size_t)size);
+    if (fread(ttf.data(), 1, (size_t)size, f) != (size_t)size) {
+        fclose(f);
+        log_error("font: read failed %s", path ? path : "");
+        return false;
     }
     fclose(f);
 
@@ -506,7 +545,8 @@ void Font::draw_text_impl(Renderer& renderer, const char* text, float x, float y
     // 间距与 measure_text 保持一致。
     const auto align = [](float v) { return std::round(v); };
     for (const char* p = text; (end ? p < end : true) && *p;) {
-        const unsigned cp = decode_utf8(p);
+        // max_len 重载（end 非空）走有界解码，防止字符跨 end 越界读
+        const unsigned cp = end ? decode_utf8_bounded(p, end) : decode_utf8(p);
         if (cp == 0) break;
         if (cp >= kFirstChar && cp < kFirstChar + kNumChars) {
             const Glyph& g = glyphs_[cp - kFirstChar];
