@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-01T14:46:44+08:00",
+  "generatedAt": "2026-09-01T15:10:22+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-157": {
+      "id": "BUG:UI-157",
+      "type": "BUG",
+      "label": "UI-157: 事件分发阶段新建控件同帧被绘在 (0,0) 闪一帧——Scene 帧循环「调度/绘制」间补一次幂等布局（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-157-事件分发阶段新建控件同帧被绘在-00-闪一帧scene-帧循环调度绘制间补一次幂等布局2026-09-01"
+    },
     "BUG:UI-156": {
       "id": "BUG:UI-156",
       "type": "BUG",
@@ -1143,6 +1150,12 @@
   "edges": [
     {
       "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）"
+    },
+    {
+      "from": "META:CHANGELOG",
       "to": "DOC:BUILD",
       "kind": "mention",
       "context": "UI-002: 3rdparty 依赖构建管线（2026-08-09）"
@@ -1800,6 +1813,12 @@
       "to": "BUG:UI-156",
       "kind": "checklist",
       "context": "回归清单#显隐变更经 `set_visible`（重标闭环）：库内所有 `Widget::visible=` 直接写点一律改走 `set_visible(bool)`（变化才 `mark_dirty()`），杜绝「隐藏且仍脏的子控件再显示时父容器 `dirty_children_` 已被前帧 draw 抹 false → `layout()` 门控提前返回跳过重排 → 新现身子控件停在旧/0,0 坐标成一帧闪」；帧末去标统一走 `Widget::finish_draw_dirty()`（`Widget::draw`/`Code::draw`/`ScrollBox::draw` 一致），检测到隐藏且仍脏的子节点时保留 `dirty_children_=true` 以维系重标传播（死码 `clear_dirty()` 已删）。同类重标缺口一并收敛：`ScrollBox::mark_content_dirty()` 置 `needs_layout_` 同时 `mark_dirty()`（`needs_layout_` 仅在受脏门控保护的 `on_layout()` 里消费，不重标则 root 保持 clean、内容永不重排/滚动条永久抑制）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-157",
+      "kind": "checklist",
+      "context": "回归清单#事件阶段新建控件不闪 (0,0)：`Scene::frame()` 帧序「帧首 `root_.layout()` → 事件分发 → 绘制」下，鼠标点击在事件回调里 `new`+`add_child` 的控件同帧早先 layout 已过 → 会以 (0,0,0,0) 画一帧；故在 `root_.draw()` 前补一次 `root_.layout()`（带 `dirty_‖dirty_children_` 门控，无变更帧即时 no-op、幂等），事件阶段新建即重排后再绘，消除 (0,0) 闪帧"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3297,6 +3316,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-157": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#事件阶段新建控件不闪 (0,0)：`Scene::frame()` 帧序「帧首 `root_.layout()` → 事件分发 → 绘制」下，鼠标点击在事件回调里 `new`+`add_child` 的控件同帧早先 layout 已过 → 会以 (0,0,0,0) 画一帧；故在 `root_.draw()` 前补一次 `root_.layout()`（带 `dirty_‖dirty_children_` 门控，无变更帧即时 no-op、幂等），事件阶段新建即重排后再绘，消除 (0,0) 闪帧"
+      }
+    ],
     "BUG:UI-156": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -5168,6 +5194,11 @@
       }
     ],
     "META:CHANGELOG": [
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）"
+      },
       {
         "from": "META:CHANGELOG",
         "kind": "mention",

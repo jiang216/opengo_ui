@@ -3,6 +3,18 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-157: 事件分发阶段新建控件同帧被绘在 (0,0) 闪一帧——Scene 帧循环「调度/绘制」间补一次幂等布局（2026-09-01）
+- **类型**：缺陷修复（ui 库 `Scene` 帧序缺陷——事件阶段动态创建控件会在 (0,0) 闪现一帧）
+- **严重度**：中（运行时鼠标点击新建的控件先以 (0,0,0,0) 画一帧再归位；smoke/预建路径因有事件循环缓冲不触发，故此前未见）
+- **根因**：`Scene::frame()` 帧循环顺序为「帧首 `root_.layout()` → 事件分发（鼠标/滚轮/键盘）→ `root_.draw()`」（`scene.cpp`）。当**鼠标点击**在事件分发回调里 `new` 控件并 `add_child` 时，同帧早先的 `layout()` 已跑过、新控件尚未上树 → 保持构造默认 `(0,0,0,0)` bounds；紧接着**同一帧** `draw()` 就把这个 (0,0) 控件画出来，直到**下一帧** `layout()`（由 UI-154 的 `add_child→mark_dirty` 触发）才把它排到正确坐标 —— 用户所见即「点击后控件在左上角闪一帧再跳到位」。UI-154/UI-156 只保证「下一帧重排」，阻不断「创建当帧先绘制一次 (0,0)」。smoke 切页在应用回调/事件循环外预建页面、有缓冲被后续 layout 排好，故不触发该时序。
+- **修复**（ui 库 `Scene`）：在 `root_.draw()` 之前补一次 `root_.layout()`（`scene.cpp`「消费：绘制」段）。`Widget::layout()` 自带 `if (!dirty_ && !dirty_children_) return;` 门控（`widget.cpp`）——无变更帧即时返回、零开销且不破坏既有帧级门控；事件阶段新建控件已 `mark_dirty()` 则门控开启，本次 layout 把新控件排到唯一事实源 bounds 后再 draw → **(0,0) 闪帧消除**。布局幂等：`on_layout` 为确定性 `set_bounds`，ScrollBox `needs_layout_` 在 on_layout 清零、popup `place_popup`/`sync_panel` 幂等重算（UI-156 回归清单第 4 项已保证），同帧二次布局无副作用。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 运行时**事件阶段**（鼠标点击/拖拽/键盘）动态创建的控件（`new` + `add_child`、挂 root 的弹出面板/表格单元格下拉/日期面板等）在创建帧即绘制于正确坐标，**不再 (0,0) 闪一帧**。
+  2. 无变更帧 `root_.layout()` 因脏门控即时返回，帧循环性能/空闲帧门控（UI-135/136）不退化。
+  3. 布局幂等：ScrollBox 内容重排、popup `place_popup`/`sync_panel` 相对位置、PanelWindow 拖拽重定位在二次布局后结果一致（UI-142/146/153/154/155/156 回归项保持）。
+- **验证**（Windows cmake MSVC Release）：`ui_ui` 重编译通过、`layui_test` 重链通过；`layui_test --smoke 3`/`--smoke 8` exit 0（69 页切页全过）。注：smoke 走预建/缓冲路径本就不闪，本条目验证重点是**运行时点击创建**（人工/脚本在事件阶段 `new` 控件），由 smoke 回归项兜底确认无退化。
+- **影响范围**：`ui/src/scene.cpp`、`docs/CHANGELOG.md`、`docs/ARCHITECTURE.md`。
+
 ## UI-156: 标脏三态闭环「标记/去标/重标」——库级 set_visible 重标 + finish_draw_dirty 统一去标 + 清理死码 clear_dirty（2026-09-01）
 - **类型**：缺陷修复（ui 库脏标记机制的「重标」缺口的缺陷）+ 去重重构（去标三处分叉 → 单一实现）
 - **严重度**：中（承接 UI-154：基类树变更已标脏，但**显隐变更未经标脏**，隐藏脏子控件再显示时父容器跳过 layout，仍会 (0,0) 闪一帧）
@@ -43,7 +55,7 @@
 ## UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）
 - **类型**：缺陷修复（ui 库 `Widget` 布局门控与树变更标脏缺口的缺陷）
 - **严重度**：中（layui_test 每次切换子菜单内容面板其内容首帧在左上角 0,0 闪现一帧再归位）
-- **根因**：`Widget::layout()`（`widget.cpp`）带**帧级门控**——`on_layout()` 仅在 `dirty_ || dirty_children_` 时执行，否则提前返回不重排。但 `Widget::add_child/remove_child/clear_children` 只调 `on_children_changed()` 而**从不 `mark_dirty()`**；基类 `on_children_changed()` 为空，`ScrollBox` 覆写它仅置 `needs_layout_`（只抑制滚动条绘制），**不参与 layout 门控**。于是长命容器（内容面板 `preview`、`code`、`help`、`sidebar` 这些 ScrollBox）在切换子菜单时被 `clear_children()` + 重新 `add_child` 重建，但容器自身不脏 → 当帧 `root_.layout()` 递归进它却跳过 `on_layout()` → 新子控件保持构造默认 `(0,0,0,0)` bounds → 首帧绘制在窗口左上角 (0,0)，直到下一次标脏（如 UI-136 CJK 烘焙 `mark_dirty_all`）才触发重排归位。用户所见即「从左上角 0,0 闪一下再画到对应坐标」。新建的子容器（构造即 `dirty_=true`）无此问题，惟长命容器重建时暴露。
+- **根因**：`Widget::layout()`（`widget.cpp`）带**帧级门控**——`on_layout()` 仅在 `dirty_ || dirty_children_` 时执行，否则提前返回不重排。但 `Widget::add_child/remove_child/clear_children` 只调 `on_children_changed()` 而**从不 `mark_dirty()`**；基类 `on_children_changed()` 为空，`ScrollBox` 覆写它仅置 `needs_layout_`（只抑制滚动条绘制），**不参与 layout 门控**。于是长命容器（内容面板 `preview`、`code`、`help`、`sidebar` 这些 ScrollBox）在切换子菜单时被 `clear_children()` + 重新 `add_child` 重建，但容器自身不脏 → 当帧 `root_.layout()` 递归进它却跳过 `on_layout()` → 新子控件保持构造默认 `(0,0,0,0)` bounds → 首帧绘制在窗口左上角 (0,0)，直到下一次标脏（如 UI-136 CJK 烘焙 `mark_dirty_all`）才触发重排归位。用户所见即「从左上角 0,0 闪一下再画到对应坐标」。新建的子容器（构造即 `dirty_=true`）无此问题，惟长命容器重建时暴露。同属 (0,0) 闪帧族的另一缺口——事件回调里 `new`+`add_child` 创建控件、同帧 `draw()` 先画 (0,0) 的情形——由 [UI-157](CHANGELOG.md#ui-157-事件分发阶段新建控件同帧被绘在-00-闪一帧scene-帧循环调度绘制间补一次幂等布局2026-09-01) 根治（UI-154 的 add_child→mark_dirty 只保证下一帧重排，阻不断创建当帧先绘一次）。
 - **修复**（ui 库 `Widget` 基类）：`add_child`/`remove_child`/`clear_children` 三处末尾各加 `mark_dirty()`，使任意子树变更即把容器及祖先置脏 → 下一 `root_.layout()` 必重排，新子控件**同帧**归位，消除 0,0 闪帧。`mark_dirty()` 幂等且沿父链短路，重复标脏无害。已排查全库：VBox/HBox/Grid/FlowBox/ScrollBox/ComboBox/Tabs/Table 子控件均由 `on_layout` 流式定位，标脏只让其「更该重排」正是目标；弹出面板（挂 root、位置由 `sync_panel`/`place_popup` 幂等重算）不在 add-child 路径，不受影响；`ScrollBox::add_pinned` 已自带 `mark_dirty` 冗余无害；`PanelWindow` 是唯一 on_layout 主动重定位所有子控件的容器，既有用法（子件构造 0,0 + on_layout 定位）无回归。
 - **回归清单**（新增保证项，不得破坏既有）：
   1. 任意**长命容器**（内容面板/代码区/帮助/侧栏/可复用的 VBox 等）`clear_children()`+`add_child` 重建后，下一帧子控件即绘制在正确坐标，**不再首帧在 (0,0) 闪一帧**。

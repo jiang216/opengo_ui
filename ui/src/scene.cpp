@@ -158,7 +158,12 @@ void Scene::frame(float dt) {
     }
 
     // ---- 消费：绘制 ----
+    // 事件分发（鼠标/滚轮/键盘）后、绘制前再布局一次（UI-157）：事件回调（如点击）常在
+    // 同帧里 new 控件 + add_child，而帧首 layout() 已跑过 → 新控件保持 (0,0,0,0) 会被
+    // 本帧 draw() 画在左上角闪一帧。layout() 带 `dirty_ || dirty_children_` 门控，无变更
+    // 帧即时 return（零开销），有变更（事件阶段新建）时把新控件排位后才绘制，消除 (0,0) 闪现。
     renderer_.begin_frame(clear_);
+    root_.layout();
     root_.draw(renderer_);
 
     // 帧后派发：HUD / Tooltip / 状态文本直绘（GL 上下文与 renderer 仍处于可用态）
