@@ -376,7 +376,7 @@ void Table::set_paginated(bool on, int page_size) {
     // 仅 clamp 到新总页数范围（数据重载 reload() 仍显式归零，属 layui reload 语义）
     page_ = std::min(std::max(0, page_), std::max(0, page_count() - 1));
     if (page_bar_) {
-        page_bar_->visible = on;
+        page_bar_->set_visible(on);  // UI-156
         page_bar_->set_total(page_count());
         page_bar_->set_page(page_);
     }
@@ -849,7 +849,7 @@ void Table::set_cell_editable(int col, bool editable) {
 // 若 delete 会销毁正在执行回调的 ComboBox 自身，select() 返回后 close()/focus()
 // 即 use-after-free。combo_box_ 作为 Table 子树常驻，由 Widget 树统一析构。
 void Table::close_combo() {
-    if (combo_box_) combo_box_->visible = false;
+    if (combo_box_) combo_box_->set_visible(false);  // UI-156
     combo_row_ = -1;
     combo_col_ = -1;
     combo_data_row_ = -1;
@@ -875,7 +875,7 @@ void Table::begin_combo(int row, int col) {
         add_child(combo_box_);
     }
     combo_box_->set_bounds(cx, cy, cw, row_h());
-    combo_box_->visible = true;
+    combo_box_->set_visible(true);  // UI-156
     if ((int)combo_options_.size() <= col) combo_options_.resize(col + 1);
     combo_box_->set_options(combo_options_[col]);
     // 恢复当前单元格文本对应的选中项（此时 on_change 未设置，select 仅复位显示）
@@ -896,7 +896,7 @@ void Table::begin_combo(int row, int col) {
             text = combo_options_[col][index];
         if (data >= 0 && data < (int)rows_.size() && col < (int)rows_[data].size())
             rows_[data][col] = text;
-        combo_box_->visible = false;
+        combo_box_->set_visible(false);  // UI-156
         if (on_cell_combo_) on_cell_combo_(row, col, index, text);
     });
     combo_row_ = row;

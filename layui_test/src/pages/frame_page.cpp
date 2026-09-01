@@ -84,7 +84,7 @@ public:
         user_menu_->set_padding(0.f);
         user_menu_->set_spacing(0.f);
         user_menu_->add_class("layui-menu");
-        user_menu_->visible = false;
+        user_menu_->set_visible(false);  // UI-156
         // 内容主体：layui-body 白底 + 内部可滚动（UI-050）
         body_ = new ui::ScrollBox(0, 0, 0, 0);
         body_->add_class("layui-body");
@@ -101,7 +101,7 @@ public:
         nav_groups_menu_->set_padding(0.f);
         nav_groups_menu_->set_spacing(0.f);
         nav_groups_menu_->add_class("layui-menu");
-        nav_groups_menu_->visible = false;
+        nav_groups_menu_->set_visible(false);  // UI-156
     }
 
     ~AdminFrame() override {

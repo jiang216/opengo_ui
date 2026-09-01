@@ -276,12 +276,12 @@ void demo_static(PageHost& host) {
         std::snprintf(buf, sizeof(buf), "已转化：点击第 %d 行（数据表格模式）", row + 1);
         status->set_text(buf);
     });
-    dynamic_table->visible = false;
+    dynamic_table->set_visible(false);  // UI-156
     host.content->add_child(dynamic_table);
 
     btn->set_on_click([status, btn, static_table, dynamic_table]() {
-        static_table->visible = false;
-        dynamic_table->visible = true;
+        static_table->set_visible(false);  // UI-156
+        dynamic_table->set_visible(true);  // UI-156
         btn->set_text("已转化为数据表格");
         btn->set_enabled(false);
         status->set_text("已转化：昵称列可排序，双击单元格可编辑，行点击可交互");

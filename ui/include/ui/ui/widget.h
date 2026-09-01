@@ -23,7 +23,12 @@ public:
     // 像素坐标，y 向下
     const Rect& bounds() const { return bounds_; }
 
+    // 显隐态：直接写可见性会破坏脏标记「重标」闭环——端帧 draw 已把本容器
+    // dirty_children_ 清 false，隐藏脏子控件再被显示时父容器会跳过 layout()，
+    // 新现身子控件停在旧/0,0 坐标成一帧闪（UI-156）。一律经 set_visible() 变更，
+    // 变化时 mark_dirty() 向上传播，保证下一帧重排。
     bool visible = true;
+    virtual void set_visible(bool on);
     // 禁用态（M22）：禁用控件不接收鼠标/键盘/焦点，Tab 遍历跳过，绘制层灰化显示
     bool enabled = true;
     virtual void set_enabled(bool en);
@@ -31,7 +36,9 @@ public:
     // ---- 脏标记机制：空闲时跳过无变子树绘制，降低 CPU/GPU 占用 ----
     bool is_dirty() const { return dirty_ || dirty_children_; }
     void mark_dirty();
-    void clear_dirty();
+    // 帧末清脏（去标）：仅当自身及所有可见子控件本轮均已绘制时置 false，
+    // 不抹除仍隐藏未绘的脏子节点留下的 dirty_children_，否则重标传播中断（UI-156）。
+    void finish_draw_dirty();
     // 全树递归置脏（UI-136）：字形逐帧烘焙导致 xadvance 变化后，由根节点 advance
     // 调用，强制所有 Label 以真实宽度重新换行/布局（近似宽度 → 真实宽度）
     void mark_dirty_all();

@@ -84,7 +84,7 @@ void Collapse::layout_items() {
         const size_t end = (i + 1 < items_.size()) ? items_[i + 1].child_begin : children_.size();
         for (size_t c = begin; c < end; ++c) {
             Widget* child = children_[c];
-            child->visible = expanded;
+            child->set_visible(expanded);  // UI-156：经 set_visible（含 mark_dirty）
             if (expanded) {
                 float ch = child->preferred_height();
                 if (ch <= 0) ch = 24.f;

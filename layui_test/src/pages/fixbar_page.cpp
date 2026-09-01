@@ -70,10 +70,10 @@ void build_fixbar(PageHost& host) {
         top->set_on_click([&host]() { host.content->set_scroll_offset(0.f); });
         bar->add_child(top);
         // layui 行为：下滚一屏后出现；滚回顶部隐藏（用既有 set_on_scroll 编排）
-        bar->visible = false;
+        bar->set_visible(false);  // UI-156
         host.content->add_pinned(bar, ui::PinCorner::BottomRight, 20.f, 20.f);
         host.content->set_on_scroll([&host, bar]() {
-            bar->visible = host.content->scroll_offset() > host.content->bounds().h;
+            bar->set_visible(host.content->scroll_offset() > host.content->bounds().h);  // UI-156
         });
     }
 

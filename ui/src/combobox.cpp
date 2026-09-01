@@ -22,7 +22,7 @@ ComboBox::ComboBox(float x, float y, float w, float h) : Widget(x, y, w, h) {
     focusable = true;
     add_class("layui-form-select");
     panel_ = new ScrollBox(0, 0, 1, 1);
-    panel_->visible = false;
+    panel_->set_visible(false);  // UI-156
     panel_->set_padding(2.f);
     panel_->set_spacing(1.f);
     panel_->add_class("layui-form-select-panel");
@@ -100,7 +100,7 @@ void ComboBox::open() {
 
 void ComboBox::close() {
     mark_dirty();
-        panel_->visible = false;
+    panel_->set_visible(false);  // UI-156
     close_popups();
 }
 

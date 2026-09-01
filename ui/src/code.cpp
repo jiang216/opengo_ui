@@ -75,9 +75,8 @@ void Code::draw(Renderer& renderer) {
         if (child->visible) child->draw(renderer);
     }
     renderer.pop_scissor();
-    // 与基类 Widget::draw 末尾一致：清掉本节点脏标记，避免容器常脏短路 mark_dirty()。
-    dirty_ = false;
-    dirty_children_ = false;
+    // 帧末去标：与基类一致（finish_draw_dirty 保留隐藏脏子节点的 dirty_children_）。
+    finish_draw_dirty();
 }
 
 void Code::on_draw(Renderer& renderer) {

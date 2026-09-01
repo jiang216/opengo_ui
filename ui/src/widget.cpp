@@ -39,6 +39,12 @@ void Widget::set_bounds(float x, float y, float w, float h) {
     mark_dirty();
 }
 
+void Widget::set_visible(bool on) {
+    if (visible == on) return;
+    visible = on;
+    mark_dirty();  // UI-156：重标——显隐变更向上传播，使父容器下一帧重排（见 widget.h 说明）
+}
+
 void Widget::set_enabled(bool en) {
     if (enabled == en) return;
     enabled = en;
@@ -64,12 +70,18 @@ void Widget::mark_dirty_all() {
     for (Widget* c : children_) c->mark_dirty_all();
 }
 
-void Widget::clear_dirty() {
+// UI-156：帧末去标（收敛到唯一实现，取代原 clear_dirty 死代码）。self 本轮已绘制；
+// 但若存在「隐藏且仍脏」的子节点（draw 跳过不可见子树故其 dirty_ 未清），dirty_children_
+// 保持 true——否则父容器清后重标传播中断，隐藏脏子控件再显示时会停在旧/0,0 坐标成一帧闪。
+void Widget::finish_draw_dirty() {
     dirty_ = false;
-    dirty_children_ = false;
     for (Widget* c : children_) {
-        if (c->dirty_ || c->dirty_children_) c->clear_dirty();
+        if (!c->visible && (c->dirty_ || c->dirty_children_)) {
+            dirty_children_ = true;
+            return;
+        }
     }
+    dirty_children_ = false;
 }
 
 void Widget::add_class(const char* cls) {
@@ -157,11 +169,9 @@ void Widget::destroy() {
     for (Widget* w : g_pending_destroy) {
         if (w == this) return;  // 幂等：已在待销毁队列，忽略重复调用
     }
-    visible = false;
-    mark_dirty();
+    set_visible(false);  // UI-156：显隐变更经 set_visible（内含 mark_dirty）
     g_pending_destroy.push_back(this);
 }
-
 void Widget::flush_pending_destroys() {
     if (g_pending_destroy.empty()) return;
     std::vector<Widget*> pending;
@@ -632,8 +642,7 @@ void Widget::draw(Renderer& renderer) {
             if (p.popup->visible) p.popup->draw(renderer);
         }
     }
-    dirty_ = false;
-    dirty_children_ = false;
+    finish_draw_dirty();  // UI-156：收敛去标（保留隐藏脏子节点的 dirty_children_）
 }
 
 void Widget::open_popup(Widget* owner, Widget* popup) {
@@ -643,14 +652,14 @@ void Widget::open_popup(Widget* owner, Widget* popup) {
         if (p.popup == popup) return;  // 已在打开列表
     }
     r->popups_.push_back({owner, popup});
-    popup->visible = true;
+    popup->set_visible(true);  // UI-156：经 set_visible（含 mark_dirty）
     mark_dirty();
 }
 
 void Widget::close_popups() {
     Widget* r = root();
     for (const Popup& p : r->popups_) {
-        p.popup->visible = false;
+        p.popup->set_visible(false);  // UI-156
         // 弹出面板通常挂在根节点下（事件路由需要），关闭时从根分离，
         // 避免切页/销毁控件后根节点残留悬空子指针（UI-033 生命周期修复）
         if (p.popup->parent()) p.popup->parent()->remove_child(p.popup);
@@ -667,7 +676,7 @@ void Widget::close_topmost_popup() {
     Widget* r = root();
     if (r->popups_.empty()) return;
     const Popup& p = r->popups_.back();
-    p.popup->visible = false;
+    p.popup->set_visible(false);  // UI-156
     if (p.popup->parent()) p.popup->parent()->remove_child(p.popup);
     r->popups_.pop_back();
 }
@@ -678,7 +687,7 @@ void Widget::prune_popups(float x, float y) {
         const bool inside_popup = it->popup->contains(x, y);
         const bool inside_owner = it->owner && it->owner->contains(x, y);
         if (!inside_popup && !inside_owner) {
-            it->popup->visible = false;
+            it->popup->set_visible(false);  // UI-156
             it = r->popups_.erase(it);
         } else {
             ++it;

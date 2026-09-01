@@ -22,7 +22,7 @@ Dropdown::Dropdown(float x, float y, float w, float h, const char* title)
     add_child(trigger_);
 
     menu_ = new Menu(0, 0, menu_w_, 0);
-    menu_->visible = false;
+    menu_->set_visible(false);  // UI-156
     menu_->add_class("layui-menu");
     menu_->set_on_item_click([this](const char* t) {
         input_text_ = t ? t : "";
@@ -84,7 +84,7 @@ void Dropdown::set_trigger_style(DropdownStyle s) {
     } else {
         if (trigger_->has_class("layui-btn-primary")) trigger_->remove_class("layui-btn-primary");
     }
-    trigger_->visible = (style_ == DropdownStyle::Button || style_ == DropdownStyle::PrimaryButton);
+    trigger_->set_visible(style_ == DropdownStyle::Button || style_ == DropdownStyle::PrimaryButton);  // UI-156
 }
 
 void Dropdown::set_trigger_event(DropdownTrigger t) { mark_dirty();
@@ -101,7 +101,7 @@ void Dropdown::set_region(const char* placeholder) {
         region_txt_ = placeholder ? placeholder : "";
     set_trigger_style(DropdownStyle::Text);
     set_trigger_event(DropdownTrigger::ContextMenu);
-    trigger_->visible = false;
+    trigger_->set_visible(false);  // UI-156
 }
 
 void Dropdown::set_custom_content(Widget* content) {
@@ -110,7 +110,7 @@ void Dropdown::set_custom_content(Widget* content) {
     if (custom_ && custom_->parent()) custom_->parent()->remove_child(custom_);
     delete custom_;
     custom_ = content;
-    if (custom_) custom_->visible = false;
+    if (custom_) custom_->set_visible(false);  // UI-156
 }
 
 void Dropdown::set_popup_style(const Vec4& bg, const Vec4& hover, const Vec4& text) {
@@ -131,7 +131,7 @@ void Dropdown::show() {
 void Dropdown::hide() {
     mark_dirty();
         Widget* box = custom_ ? static_cast<Widget*>(custom_) : menu_;
-    if (box) box->visible = false;
+    if (box) box->set_visible(false);  // UI-156
     close_popups();
     hover_open_ = false;
     show_at_ = false;
@@ -154,7 +154,7 @@ void Dropdown::open() {
         root()->add_child(box);
     }
     open_popup(this, box);
-    box->visible = true;
+    box->set_visible(true);  // UI-156
 }
 
 void Dropdown::place_popup() {

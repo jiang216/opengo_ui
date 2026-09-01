@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 162（BUG 154 / DOC 6 / META 2）
-- 边: 358
+- 节点: 163（BUG 155 / DOC 6 / META 2）
+- 边: 359
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1092,6 +1092,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#窗口容器 `WindowFrame`（UI-155）：自带自绘顶部标题栏（默认系统风格 `TitleBar`，标题栏高参数化默认 30）+ 标题栏下方铺满内容区；内容子控件以**容器相对坐标** `set_content_child(child,x,y,w,h)` 定位（相对内容区顶部），控件内部以相对矩形快照为唯一事实源、`on_layout` 重基准为绝对坐标（不二次叠加）；通用头部 `set_head(widget,height)` 可换任意 Widget 作头（`set_head_child` 头部相对坐标），内容区随 head_h 整体下移
 
+### BUG:UI-156 · UI-156: 标脏三态闭环「标记/去标/重标」——库级 set_visible 重标 + finish_draw_dirty 统一去标 + 清理死码 clear_dirty（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-156-标脏三态闭环标记去标重标库级-setvisible-重标--finishdrawdirty-统一去标--清理死码-cleardirty2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#显隐变更经 `set_visible`（重标闭环）：库内所有 `Widget::visible=` 直接写点一律改走 `set_visible(bool)`（变化才 `mark_dirty()`），杜绝「隐藏且仍脏的子控件再显示时父容器 `dirty_children_` 已被前帧 draw 抹 false → `layout()` 门控提前返回跳过重排 → 新现身子控件停在旧/0,0 坐标成一帧闪」；帧末去标统一走 `Widget::finish_draw_dirty()`（`Widget::draw`/`Code::draw`/`ScrollBox::draw` 一致），检测到隐藏且仍脏的子节点时保留 `dirty_children_=true` 以维系重标传播（死码 `clear_dirty()` 已删）。同类重标缺口一并收敛：`ScrollBox::mark_content_dirty()` 置 `needs_layout_` 同时 `mark_dirty()`（`needs_layout_` 仅在受脏门控保护的 `on_layout()` 里消费，不重标则 root 保持 clean、内容永不重排/滚动条永久抑制）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1337,6 +1343,7 @@
 | `BUG:UI-153` | BUG | UI-153: 库级「顶部装帧内容区原点」——Scene::set_chrome/content_origin_y，其余控件统一绘制于标题栏下方 + 修复帧率 HUD 与标题条重叠（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-154` | BUG | UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-155` | BUG | UI-155: 新增窗口容器 WindowFrame——自带自绘标题栏 + 内容区相对坐标 + 通用头部槽（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-156` | BUG | UI-156: 标脏三态闭环「标记/去标/重标」——库级 set_visible 重标 + finish_draw_dirty 统一去标 + 清理死码 clear_dirty（2026-09-01） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1583,6 +1590,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-153` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-154` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-155` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-156` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

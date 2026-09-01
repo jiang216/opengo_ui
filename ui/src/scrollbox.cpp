@@ -268,12 +268,11 @@ void ScrollBox::draw(Renderer& renderer) {
         const Theme* t = theme_ ? theme_ : &kDefaultTheme;
         scrollbar::draw(renderer, t, track_rect(), thumb_rect(), sb_, over_bar());
     }
-    // 与基类 Widget::draw 末尾一致：清掉本节点脏标记。
-    // 覆写 draw 若不清理 dirty_children_，该容器将永远被视为“有脏子节点”，
-    // 使 mark_dirty() 的短路优化在沿父链上抛时在此 break，子控件标脏永远到不了 root，
-    // 帧级门控将跳过整帧渲染（设置页等 ScrollBox 内容点击/悬停不刷新）。
-    dirty_ = false;
-    dirty_children_ = false;
+    // 帧末去标：与基类一致（finish_draw_dirty 保留隐藏脏子节点的 dirty_children_，
+    // 见 widget.cpp）。覆写 draw 若不清理 dirty_children_，该容器将永远被视为
+    // “有脏子节点”，使 mark_dirty() 的短路优化在沿父链上抛时在此 break，子控件
+    // 标脏永远到不了 root，帧级门控将跳过整帧渲染（设置页等 ScrollBox 内容点击/悬停不刷新）。
+    finish_draw_dirty();
 }
 
 }  // namespace ui

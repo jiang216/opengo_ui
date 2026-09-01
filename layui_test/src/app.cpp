@@ -355,7 +355,7 @@ int main(int argc, char** argv) {
     child_sidebar.set_padding(0.f);
     child_sidebar.set_spacing(0.f);
     child_sidebar.add_class("ws-menu");
-    child_sidebar.visible = false;  // 默认隐藏，选中数据表格板块时显示
+    child_sidebar.set_visible(false);  // 默认隐藏，选中数据表格板块时显示  UI-156
     root.add_child(&child_sidebar);
     ui::Menu child_nav(0, 0, kChildSidebarW, (float)window.height() - kTopH);
     child_nav.set_font(&font);
@@ -385,7 +385,7 @@ int main(int argc, char** argv) {
                   (float)window.height() - content_y);
     code.set_font(&font);
     code.set_theme(&theme);
-    code.visible = false;
+    code.set_visible(false);  // UI-156：显隐经 set_visible（含 mark_dirty）
     root.add_child(&code);
 
     ui::ScrollBox help(kSidebarW, content_y, (float)window.width() - kSidebarW,
@@ -394,13 +394,13 @@ int main(int argc, char** argv) {
     help.add_class("layui-body");
     help.set_padding(24.f);
     help.set_spacing(16.f);
-    help.visible = false;
+    help.set_visible(false);  // UI-156
     root.add_child(&help);
 
     auto set_view = [&](int idx) {
-        preview.visible = (idx == 0);
-        code.visible = (idx == 1);
-        help.visible = (idx == 2);
+        preview.set_visible(idx == 0);
+        code.set_visible(idx == 1);
+        help.set_visible(idx == 2);
     };
     tabs.set_on_change(set_view);
 
@@ -409,7 +409,7 @@ int main(int argc, char** argv) {
         const float content_x = kSidebarW + (child_visible ? kChildSidebarW : 0.f);
         const float cw = (float)window.width() - content_x;
         const float ch = (float)window.height() - content_y;
-        child_sidebar.visible = child_visible;  // 子菜单可见态跟随 child_visible
+        child_sidebar.set_visible(child_visible);  // 子菜单可见态跟随 child_visible  UI-156
         child_sidebar.set_bounds(kSidebarW, kTopH, kChildSidebarW, (float)window.height() - kTopH);
         child_nav.set_bounds(0, 0, kChildSidebarW, (float)window.height() - kTopH);
         tabs.set_bounds(content_x, kTopH, cw, kTabTitleH);

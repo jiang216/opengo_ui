@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-01T13:58:05+08:00",
+  "generatedAt": "2026-09-01T14:46:44+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-156": {
+      "id": "BUG:UI-156",
+      "type": "BUG",
+      "label": "UI-156: 标脏三态闭环「标记/去标/重标」——库级 set_visible 重标 + finish_draw_dirty 统一去标 + 清理死码 clear_dirty（2026-09-01）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-156-标脏三态闭环标记去标重标库级-setvisible-重标--finishdrawdirty-统一去标--清理死码-cleardirty2026-09-01"
+    },
     "BUG:UI-155": {
       "id": "BUG:UI-155",
       "type": "BUG",
@@ -1790,6 +1797,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-156",
+      "kind": "checklist",
+      "context": "回归清单#显隐变更经 `set_visible`（重标闭环）：库内所有 `Widget::visible=` 直接写点一律改走 `set_visible(bool)`（变化才 `mark_dirty()`），杜绝「隐藏且仍脏的子控件再显示时父容器 `dirty_children_` 已被前帧 draw 抹 false → `layout()` 门控提前返回跳过重排 → 新现身子控件停在旧/0,0 坐标成一帧闪」；帧末去标统一走 `Widget::finish_draw_dirty()`（`Widget::draw`/`Code::draw`/`ScrollBox::draw` 一致），检测到隐藏且仍脏的子节点时保留 `dirty_children_=true` 以维系重标传播（死码 `clear_dirty()` 已删）。同类重标缺口一并收敛：`ScrollBox::mark_content_dirty()` 置 `needs_layout_` 同时 `mark_dirty()`（`needs_layout_` 仅在受脏门控保护的 `on_layout()` 里消费，不重标则 root 保持 clean、内容永不重排/滚动条永久抑制）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-146",
       "kind": "checklist",
       "context": "回归清单#Scene 生命周期四阶段：`ui::Scene(window, renderer)` 随窗口同步创建，构造广播 `ScenePhase::Ready`；`run()/run_for(秒)` 承载 poll+swap 完整循环与 `--smoke` 通用语义；`reset()/shutdown()` 随 `~Scene()` 自动收尾——禁止应用手写 poll/layout/dispatch/draw/swap 五段主循环"
@@ -3284,6 +3297,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-156": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#显隐变更经 `set_visible`（重标闭环）：库内所有 `Widget::visible=` 直接写点一律改走 `set_visible(bool)`（变化才 `mark_dirty()`），杜绝「隐藏且仍脏的子控件再显示时父容器 `dirty_children_` 已被前帧 draw 抹 false → `layout()` 门控提前返回跳过重排 → 新现身子控件停在旧/0,0 坐标成一帧闪」；帧末去标统一走 `Widget::finish_draw_dirty()`（`Widget::draw`/`Code::draw`/`ScrollBox::draw` 一致），检测到隐藏且仍脏的子节点时保留 `dirty_children_=true` 以维系重标传播（死码 `clear_dirty()` 已删）。同类重标缺口一并收敛：`ScrollBox::mark_content_dirty()` 置 `needs_layout_` 同时 `mark_dirty()`（`needs_layout_` 仅在受脏门控保护的 `on_layout()` 里消费，不重标则 root 保持 clean、内容永不重排/滚动条永久抑制）"
+      }
+    ],
     "BUG:UI-155": [
       {
         "from": "DOC:ARCHITECTURE",

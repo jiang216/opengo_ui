@@ -19,7 +19,7 @@ LaydateBox::LaydateBox(float x, float y, float w, float h)
     if (h <= 0.f) bounds_.h = kTextH;
     focusable = true;
     panel_ = new Laydate(0, 0, kPanelW, 0);  // 尺寸由 sync_panel 按 type 决定
-    panel_->visible = false;
+    panel_->set_visible(false);  // UI-156
     panel_->set_on_change([this](int, int, int) { apply_value_from_panel(); });
     panel_->set_on_done([this](const char*, int, int, int, int, int, int) { apply_value_from_panel(); });
 }
@@ -112,7 +112,7 @@ void LaydateBox::open() {
 
 void LaydateBox::close() {
     mark_dirty();
-        panel_->visible = false;
+    panel_->set_visible(false);  // UI-156
     close_popups();
     open_ = false;
 }

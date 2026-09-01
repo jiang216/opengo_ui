@@ -37,7 +37,7 @@ void MenuBar::add_menu(const char* title) {
     add_child(trig);
 
     VBox* popup = new VBox(0, 0, 0, 0);
-    popup->visible = false;
+    popup->set_visible(false);  // UI-156
     popup->set_padding(4.f);
     popup->set_spacing(2.f);
     popup->set_theme(theme_);
@@ -62,7 +62,7 @@ void MenuBar::add_item(const char* title, std::function<void()> cb) {
 
 void MenuBar::toggle_menu(Menu& m) {
     if (m.popup->visible) {
-        m.popup->visible = false;
+        m.popup->set_visible(false);  // UI-156
         close_popups();
         return;
     }
@@ -75,7 +75,7 @@ void MenuBar::toggle_menu(Menu& m) {
 }
 
 void MenuBar::close_all_menus() {
-    for (Menu& m : menus_) m.popup->visible = false;
+    for (Menu& m : menus_) m.popup->set_visible(false);  // UI-156
     close_popups();
 }
 

@@ -24,7 +24,7 @@ Tabs::Tabs(float x, float y, float w, float h) : Widget(x, y, w, h) {
     content_label_->set_wrap(true);
     add_child(content_label_);
     overflow_panel_ = new ScrollBox(0, 0, 1, 1);
-    overflow_panel_->visible = false;
+    overflow_panel_->set_visible(false);  // UI-156
     overflow_panel_->set_padding(2.f);
     overflow_panel_->set_spacing(1.f);
     overflow_panel_->add_class("layui-form-select-panel");

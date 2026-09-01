@@ -3,6 +3,26 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-156: 标脏三态闭环「标记/去标/重标」——库级 set_visible 重标 + finish_draw_dirty 统一去标 + 清理死码 clear_dirty（2026-09-01）
+- **类型**：缺陷修复（ui 库脏标记机制的「重标」缺口的缺陷）+ 去重重构（去标三处分叉 → 单一实现）
+- **严重度**：中（承接 UI-154：基类树变更已标脏，但**显隐变更未经标脏**，隐藏脏子控件再显示时父容器跳过 layout，仍会 (0,0) 闪一帧）
+- **根因**：UI-154 只补了「标记（mark）」的半环，脏标记「去标/重标」存在缺口与分叉：
+  1. **重标缺口**：脏标记的「去标」在 `Widget::draw`（及 `Code::draw`/`ScrollBox::draw` 覆写）尾部无条件 `dirty_=false; dirty_children_=false`。但 draw 跳过不可见子树，**隐藏的脏子控件不会画、其 `dirty_/dirty_children_` 不被清**；而父容器尾部的 `dirty_children_=false` 却把它一并抹掉。于是「隐藏且仍脏」的子控件一旦经 `visible=true` 再显示，父容器（其 `dirty_children_` 已被前帧 draw 抹为 false）会因 `layout()` 门控 `!dirty_ && !dirty_children_` 提前返回**跳过重排** → 新现身的子控件停在旧/0,0 坐标成一帧闪。而库内大量控件（collapse/tabs/dropdown/menubar/combobox/laydatebox/laypage/table/ScrollBox 内容切页等）**直接写 `visible=`** 而不 `mark_dirty()`，未触发重标。
+  2. **去标分叉 + 死码**：`Widget::draw` 尾部、`Code::draw`、`ScrollBox::draw` 三处各写一套内联清（互不一致）；还有一个**无任何调用方**的递归 `clear_dirty()`（`widget.cpp`）从未被调用，纯死代码、语义与上述内联清相左。
+- **修复**（ui 库 `Widget` 基类 + 全库迁移）：
+  - **重标**：新增 `Widget::set_visible(bool)`（`widget.h`/`widget.cpp`）——`visible` 变化才 `mark_dirty()`，向上传播 `dirty_children_`，保证隐藏脏子控件再显示时父容器下一帧重排。`destroy()`、弹层开关、`combobox/laydatebox/dropdown/menubar/collapse/laypage/table/tabs(overflow)` 等全部改走 `set_visible`；测试程序 `app.cpp`（preview/code/help/child_sidebar）、`fixbar/frame/table_data4` 页同步改走正确 API（不绕过库而在测试程序打补丁）。
+  - **去标收敛**：新增唯一 `Widget::finish_draw_dirty()`，在 `dirty_=false` 前先检测是否存在「隐藏且仍脏」的子节点：有则**保留 `dirty_children_=true`**（重标传播不断），无则置 false。`Widget::draw` 尾部 + `Code::draw` + `ScrollBox::draw` 统一走它。
+   - **清理死码**：删除无调用方的 `Widget::clear_dirty()`（声明+定义）。
+   - **同类重标缺口收敛（ScrollBox::mark_content_dirty）**：全库脏标记三态清查中另发现 `ScrollBox::mark_content_dirty()`（`scrollbox.h`）只置 `needs_layout_` 而**不 `mark_dirty()`**。`needs_layout_` 仅在 `ScrollBox::on_layout()`（受 Widget 脏门控 `dirty_ || dirty_children_` 保护）里被消费置 false；应用/宿主直接调 `mark_content_dirty()` 时 root 保持 clean → `on_layout()` 永不触发 → 内容不重排、滚动条被永久抑制——同属「重标」缺口。修正为 `{ needs_layout_ = true; mark_dirty(); }`，统一走 frame 级重标链路。
+- **回归清单**（新增保证项，不得破坏既有）：
+  1. 显隐变更（显示/隐藏面板、折叠展开、下拉开合、菜单弹出/收起、表格单元格 ComboBox、分页子件、child_sidebar 子菜单）一律经 `set_visible`，变化后下一帧即重排，**不再**因父容器 `dirty_children_` 为 false 跳过布局而停在旧/0,0 坐标。
+  2. `Widget::draw`/`Code::draw`/`ScrollBox::draw` 帧末清脏语义一致（`finish_draw_dirty`）；含「隐藏且仍脏」子节点的容器保持 `dirty_children_=true`，重标传播不中断。
+  3. 空闲帧门控、CJK 烘焙续帧、hover/焦点重绘、ScrollBox/Code 覆写 draw 清脏等既有回归项保持（UI-135/136/140/154）。
+  4. 弹层/下拉相对位置（挂 root、`sync_panel`/`place_popup` 幂等重算）不受 `set_visible` 迁移影响。
+  5. 任意状态/内容变更 API（含 `ScrollBox::mark_content_dirty()`，不经 add_child/remove_child/clear 而直接改内容的宿主路径）都能触发下一次 `root_.layout()` 重排与重绘，不再静默漏布局。
+- **验证**（Windows cmake MSVC Release）：`ui_ui` 重编译通过、`layui_test` 重链通过（本串共 54/54 目标）；`layui_test --smoke 3`/`--smoke 8` exit 0（69 页含 board 子菜单的 `child_sidebar` 显隐切换全过）。截屏（`--shot-page 47` 数据表格板块）像素采样：标题条带 (x500-1100,y10-28) 单一纯色 `#262A2F` 无内容渗入、(x244-398,y300-600) 子菜单区 265 色正常渲染——无 (0,0) 闪帧。全库脏标记三态清查：去标点已收敛到 `finish_draw_dirty` 唯一实现；`TextArea::lines_dirty_` 每个 `invalidate_lines()` 均成对 `mark_dirty()`（无缺口）；`needs_layout_` 由 `mark_content_dirty`/`on_children_changed` 置位（后者已被 UI-154 的 add_child mark_dirty 覆盖）；`visible=` 直接写点仅剩 `Menu`/`Tab` 结构体成员字段（非 `Widget::visible`）与 `code.cpp` 局部 int，均正确保留。
+- **影响范围**：`ui/include/ui/ui/widget.h`、`ui/src/widget.cpp`、`ui/src/code.cpp`、`ui/src/scrollbox.cpp`、`ui/include/ui/ui/scrollbox.h`、`ui/src/laypage.cpp`、`ui/src/table.cpp`、`ui/src/tabs.cpp`、`ui/src/dropdown.cpp`、`ui/src/combobox.cpp`、`ui/src/laydatebox.cpp`、`ui/src/collapse.cpp`、`ui/src/menubar.cpp`、`layui_test/src/app.cpp`、`layui_test/src/pages/{fixbar,frame,table_data4}_page.cpp`、`docs/CHANGELOG.md`。
+
 ## UI-155: 新增窗口容器 WindowFrame——自带自绘标题栏 + 内容区相对坐标 + 通用头部槽（2026-09-01）
 - **类型**：功能新增（ui 库新增 `ui::WindowFrame` 可复用窗口容器控件）
 - **严重度**：中

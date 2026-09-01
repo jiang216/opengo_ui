@@ -152,7 +152,7 @@ const std::vector<int>& src =
         limit_box_->set_font(font_);
         limit_box_->set_theme(theme_);
     }
-    if (limit_box_) limit_box_->visible = has_item(Item::Limit);
+    if (limit_box_) limit_box_->set_visible(has_item(Item::Limit));
 
     if (has_item(Item::Skip)) {
         if (!skip_box_) {
@@ -172,8 +172,8 @@ const std::vector<int>& src =
         skip_btn_->set_font(font_);
         skip_btn_->set_theme(theme_);
     }
-    if (skip_box_) skip_box_->visible = has_item(Item::Skip);
-    if (skip_btn_) skip_btn_->visible = has_item(Item::Skip);
+    if (skip_box_) skip_box_->set_visible(has_item(Item::Skip));
+    if (skip_btn_) skip_btn_->set_visible(has_item(Item::Skip));
 
     if (has_item(Item::Refresh)) {
         if (!refresh_btn_) {
@@ -188,7 +188,7 @@ const std::vector<int>& src =
         refresh_btn_->set_font(font_);
         refresh_btn_->set_theme(theme_);
     }
-    if (refresh_btn_) refresh_btn_->visible = has_item(Item::Refresh);
+    if (refresh_btn_) refresh_btn_->set_visible(has_item(Item::Refresh));
 }
 
 void Laypage::visible_pages(std::vector<int>& out) const {
