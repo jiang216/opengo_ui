@@ -3,6 +3,163 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-148: TitleBar 补齐 最小化/最大化/关闭 三键 + 左上角应用图标；Menu 分组头箭头改用 iconfont + 可联动收起子菜单列（2026-09-01）
+- **类型**：功能补强（ui 库，UI-147 基础上的标题条交互补全 + 菜单分组头图标与联动缺口修复）
+- **严重度**：中
+- **根因**：
+  - `ui::TitleBar`（UI-147）仅有标题 + 右上关闭钮，缺系统标题栏常规的「最小化/最大化/关闭」三键与左上角应用图标；
+    而 gl 库 `Window` 已具备 `iconify()/maximize()/restore()/is_maximized()`，属标题条未接线。
+  - `ui::Menu` 分组头折叠箭头用 `renderer.draw_polygon` 画**裸三角形**（`ui/src/menu.cpp` 原 L239-247），未走 `Font::draw_icon`
+    使用 iconfont 码点（图标库已有 `layui_icon::down/right`）→ 子菜单标题栏箭头为粗糙几何三角、风格不统一。
+  - 点击分组头仅 `it.spread = !it.spread`（折叠组内子项），**不联动外部子菜单列显隐**——子菜单列显隐受 `app.cpp` 的
+    `child_sidebar.visible = child_visible` 控制，分组头点击无法收起/展开整列，属菜单与宿主间缺联动回调。
+- **修复**（ui 库，禁止测试程序打补丁）：
+  - `ui::TitleBar`（`ui/src/titlebar.cpp` + `titlebar.h`）右侧补齐三键：最小化 → `window_->iconify()`；最大化/还原
+    → 依 `window_->is_maximized()` 切 `maximize()/restore()`（图标随态切 `□`/`⧉`）；关闭 → `on_close_`。三键带 hover/按下红底，
+    命中区与拖拽互斥（`pressed_`/`dragging_`）。新增 `set_minimize_visible/set_maximize_visible`；新增
+    `set_icon(Font*, uint32_t codepoint)` 在左上画应用图标（`Font::draw_icon`，默认不画）。测试程序主标题条接
+    `set_icon(&font, ui::layui_icon::app)`。
+  - `ui::Menu`（`ui/src/menu.cpp`）分组头折叠箭头改 `font_->draw_icon(renderer, layui_icon::down/right, ...)`，弃 `draw_polygon`
+    裸三角（`draw_icon` 缺字形/缺图集时安全提前返回，兼容未烘焙 icon 字体）。
+  - `ui::Menu` 新增 `set_on_group_click(std::function<void(const char*)>)`：分组头点击、`spread` 切换后触发回调，供宿主联动
+    收起/展开外部面板。测试程序 `populate_child` 接入：点击子菜单分组头（如"数据表格"）在 `child_visible` 与
+    `place_content()` 间切换，实现整列子菜单收起/展开。
+- **回归清单**（新增保证项，且不得破坏既有）：
+  1. UI-147 回归项全部保持：空白区拖动整窗、关闭钮 `on_close_`、`window_` 为空仅绘制不崩溃、`center_on_primary_monitor` 居中、
+     resize 时标题条全宽置顶、Scene 子窗口标题条关闭子窗，均不变。
+  2. `TitleBar` 三键命中区与拖拽互斥：鼠标落在任一窗口键上按下→触发对应操作，不误触发拖动；空白区按下→拖动。
+  3. 最小化/最大化/还原：`iconify()` 最小化、点击最大化钮在最大/还原间切换且图标随 `is_maximized()` 更新。
+  4. `set_icon` 仅当提供了 icon 字体与码点才绘制左上图标；未设置不绘制、不崩溃。
+  5. Menu 分组头箭头改 iconfont 后仍正常指示折叠态（展开 `down`/折叠 `right`）；`draw_icon` 对缺字形字体安全返回不崩。
+  6. `set_on_group_click` 仅分组头点击触发（`add_group` 项）；点击可同步收起/展开 `child_sidebar` 整列，`place_content` 正确重排内容区。
+- **验证**（Windows cmake MSVC Release）：`layui_test` 编译链接通过；`layui_test --smoke 2` exit 0（"page switches ok"）；
+  `--shot`/`--shot-page` 截图正常落盘（1280x900 PAM）。
+- **影响范围**：`ui/include/ui/ui/titlebar.h`、`ui/src/titlebar.cpp`、`ui/include/ui/ui/menu.h`、`ui/src/menu.cpp`、
+  `layui_test/src/app.cpp`、`docs/CHANGELOG.md`、`docs/UI_API.md`。
+
+## UI-147: 新增自绘系统风格标题条 TitleBar + 窗口居中——无边框窗口可拖动 / 关闭（2026-09-01）
+- **类型**：功能新增（ui 库新增 `ui::TitleBar` 可复用控件 + gl 库补 `Window::center_on_primary_monitor`）
+- **严重度**：中
+- **根因**：`gl/src/window.cpp` 的 `init_glfw()` 全局 `glfwWindowHint(GLFW_DECORATED, GLFW_FALSE)` 令所有 `ui::Window` 无边框，
+  而 ui/gl 库虽已具备 `Window::start_drag/update_drag/end_drag`，却**无任何自绘标题栏 / 窗口居中机制**，导致测试程序窗口
+  绘制在 0,0、无法拖动。按 AGENTS「ui 库能力缺陷归因到 ui 库」强制修库侧，禁止测试程序打补丁。
+- **修复**（ui 库 + gl 库）：
+  - 新增 `ui::TitleBar`（`ui/include/ui/ui/titlebar.h` + `ui/src/titlebar.cpp`）：系统标题栏风格一条（深色底 + 底部 1px 分隔线 +
+    左侧标题文字 + 右上关闭钮 hover/按下红底）。空白区 mouse_down → `window_->start_drag`、move（拖动中，经 `capture_mouse` 保证
+    OS 窗口拖动期间持续收 move 事件）→ `update_drag`、up → `end_drag`；关闭钮命中 → `on_close_` 回调（宿主注入退出/关闭窗口）。
+    `window_` 可为空，此时仅绘制不拖动。字体未设时绘制全部跳过；主题未设时回退内置深色主题。
+  - gl 库补 `Window::center_on_primary_monitor()`：在主显示器工作区内居中（`get_monitor_workarea` + `get_size`，窗口大于工作区时贴左上）。
+  - 测试程序接入：主窗口创建后居中 + 顶部加标题条（关闭钮→`request_exit`）；Scene 子窗口（scene_page）加标题条（关闭钮→子窗 `request_exit`），
+    子窗内容下移标题条高。主窗口侧栏/导航/标签页整体下移 `kTitleBarH` 以让出标题条。
+- **回归清单**（新增保证项，且不得破坏既有）：
+  1. `TitleBar` 空白区拖动整窗、关闭钮点击触发的 `on_close_` 行为不变；`window_` 为空时仅绘制不崩溃。
+  2. `Window::center_on_primary_monitor` 使窗口在主显示器工作区内完整可见（窗口大于工作区时贴左上，不越界）。
+  3. 主窗口标题条在窗口 resize（Resized 钩子）时保持全宽并置于 y=0；侧栏/导航/标签随 `kTopH` 整体下移不错位。
+  4. Scene 子窗口标题条关闭钮关闭子窗（`request_exit` → 下一帧 `close_child`），客户区内容下移标题条高不重叠。
+  5. `GLFW_DECORATED=GLFW_FALSE` 前提下，标题条为主窗口与外接子窗口提供唯一拖动入口。
+- **验证**（Windows cmake MSVC Release）：`layui_test` 编译链接通过（仅 MSB8029/MSB8012 临时目录警告）；`layui_test --smoke 2` exit 0（"page switches ok"）。
+- **影响范围**：`ui/include/ui/ui/titlebar.h`（新）、`ui/src/titlebar.cpp`（新）、`ui/include/ui/all.h`、`ui/CMakeLists.txt`、
+  `gl/include/ui/gl/window.h`、`gl/src/window.cpp`（新增 `Window::center_on_primary_monitor`）、`layui_test/src/app.cpp`、
+  `layui_test/src/pages/scene_page.cpp`、`docs/CHANGELOG.md`、`docs/UI_API.md`。
+
+## UI-146: 新增统一生命周期抽象 ui::Scene——生产者→分配者→消费者→清理重置（2026-09-01）
+- **类型**：新功能 + 架构演进（ui 库新增 `ui::Scene`，收敛各应用主循环模板）
+- **严重度**：中（新增能力，5 个渲染循环应用全部迁移为 Scene 驱动，行为不回归）
+- **归因**：ui 库（`ui/include/ui/ui/scene.h` + `ui/src/scene.cpp`）+ gl 库（`Window::make_current` 补缺口）+ 测试程序迁移（apps、layui_test）。
+- **修复**（ui 库）：
+  - 新增 `ui::Scene(window, renderer)`：随窗口同步创建，构造广播 `ScenePhase::Ready`；`frame(dt)` 单帧统一完成
+    **分配**（layout + mouse/scroll/键盘导航/文本 dispatch + `root.advance(dt)`）+ **消费**（`begin_frame(clear)` + `root.draw`），
+    `run()/run_for(seconds)` 含 poll + swap 的完整循环、`run_for` 承载 `--smoke` 通用语义。
+  - 生命周期阶段 `ScenePhase`（Ready/Reset/Frame/PostDraw/Cleanup/Shutdown）向量广播，`subscribe(phase, fn)`
+    一阶段多观察者、`on(phase, fn)` 便捷重载；二者均返回**订阅 token**（非 0），`unsubscribe(token)` 可按 token
+    单独摘除单个阶段观察者（不清其他 App 级订阅），页面级局部订阅切页时即用此摘除防悬空；
+    逐事件钩子 `SceneEvent`（MouseMove/Down/Up/Scroll/Key/Char/Drop/Resized）单槽位、返回 true=消费。
+  - 分配开关 `dispatch_mouse/scroll/nav_keys/text/resize`（默认全开）保留各应用迁移前按键语义；Escape 不在标准模板
+    （属应用语义，如 layui_test 关弹窗经 Key 钩子自处理）。
+  - **清理重置**（`~Scene`/`shutdown`/`reset`）：只清理库内自管对象——`flush_pending_destroys` + `close_popups`。
+    **不调用 `clear_children()`**：Widget 容器默认不拥有子树，其子节点可能是**栈上对象**（`root.add_child(&栈Label)`），
+    `clear_children` 会对栈对象 `delete` 造成堆损坏（0xC0000374）。此为迁移验证发现的硬约束，已写入回归清单。
+  - 多窗口：每窗口 = 独立 Scene + Window/Renderer/Font/root；GLFW 每窗口默认独立 GL 上下文，绘制前须
+    `window.make_current()`（新增 `Window::make_current()` 补齐切换上下文的 ui_gl 缺口）。禁止同上下文双 Renderer
+    （Renderer 实例级缓存 active_program_/scissor_stack_/proj_[16] 等 GL 全局状态）。
+- **测试程序迁移**（行为保真矩阵）：
+  - `apps/main.cpp`（opengl_ui_demo）：全套 nav+Enter/Space/Backspace/Delete/Home/End+chars 默认保留；媒体/轮播/上传
+    `advance` + 主题清屏色同步入 Frame 订阅，Tooltip/HUD 入 PostDraw，Exit 按钮改 `scene.request_exit()`。
+  - `apps/api_demo.cpp`：原无 Space/Delete/Home/End → `dispatch_nav_keys=false` + Key 事件钩子仅分发原 Tab/方向/Enter/
+    Backspace（严格不回归）。
+  - `apps/image_viewer.cpp`：原无标准键/字符分发 → 关 nav/text/scroll，滚轮缩放/拖拽/Ctrl+O 走 Frame 订阅与 Key 钩子，
+    图像直绘入 PostDraw。
+  - `apps/video_player.cpp`：原无 nav 键 → 关 nav/text，Space=播放（Key 钩子）与 Ctrl+O，resize 重排入 Resized 钩子。
+  - `layui_test/src/app.cpp`：全套键默认 + Escape 经 Key 钩子关弹窗；冒烟自动切页/`--click` 注入入 Frame，截图入 PostDraw
+    （glReadPixels 后 `scene.request_exit()`）。
+  - **新增** `apps/scene_multiwin.cpp`：双窗口各自独立 GL 上下文，逐窗口 make_current + `scene.frame(dt)` + swap 的主循环，
+    验证多 Scene 并行。
+   - `apps/edit_test.cpp` / `apps/media_load_test.cpp` 无渲染循环，保持不动。
+   - **新增** `layui_test/src/pages/scene_page.cpp`（展示 > 生命周期 demo）：静态说明（四阶段 / 发布-订阅 /
+     分配开关 / 多窗口 make_current）+ 实时交互（PostDraw 直绘 HUD、Frame 每帧计数、request_exit、
+     子窗口驱动），全部订阅经页面 `destroy` 钩子统一 `unsubscribe` 摘除（页面级 token，不影响 App 级订阅）。
+- **回归清单**（新增保证项，且不得破坏既有）：
+  1. Scene 清理重置不得对栈上子控件 delete（仅 flush + close_popups），否则堆损坏崩溃（UI-146 根因）。
+  2. 各应用迁移后按键语义与迁移前严格一致（api_demo/image_viewer/video_player 关闭非原分发即保证）。
+  3. 多窗口每窗口独立 GL 上下文，绘制前 make_current；禁止同上下文双 Renderer（实例级 GL 全局状态冲突）。
+  4. 5 个渲染应用 + scene_multiwin 均以 Scene 驱动且菜单/按钮/弹窗/导航/截图验证不回归。
+  5. 页面级局部订阅必须 `unsubscribe(token)` 单独摘除（不经 `clear_observers` 清掉 App 级订阅），且摘除须在
+     页面控件 `clear_children` 之前（本页经 `destroy` 钩子统一摘除），防止切页悬空闭包引用旧树。
+- **验证**（Windows cmake MSVC Release + Debug）：
+  - 根工程 `--preset x64`（media OFF）全目标编译通过；`--preset x64-all`（media ON）编译通过。
+  - `opengl_ui_demo`/`api_demo`/`image_viewer`/`video_player`/`layui_test`/`scene_multiwin` 全部 `--smoke 2` **exit 0**
+    （迁移前 Release 因 Scene 对栈控件 clear_children 而 exit 0xC0000374，修复后全绿）。
+  - `layui_test --smoke 2` 输出 "page switches ok"（Scene Frame 订阅自动切页正常）。
+  - `layui_test --shot-page 0 --shot x.pam` 输出 "shot saved (1280x900)" 且生成合法 PAM 头（PostDraw 截图 + request_exit 正常）。
+  - `scene_multiwin --smoke 2` 双上下文渲染 "done" 且 exit 0。
+- **影响范围**：`ui/include/ui/ui/scene.h`（新）、`ui/src/scene.cpp`（新）、`ui/CMakeLists.txt`、`ui/include/ui/all.h`、
+  `gl/include/ui/gl/window.h`、`gl/src/window.cpp`（新增 `Window::make_current`）、`apps/CMakeLists.txt`、
+  `apps/main.cpp`、`apps/api_demo.cpp`、`apps/image_viewer.cpp`、`apps/video_player.cpp`、`apps/scene_multiwin.cpp`（新）、
+  `layui_test/src/app.cpp`、`layui_test/src/page_registry.h`、`layui_test/src/pages/scene_page.cpp`（新）、
+  `docs/CHANGELOG.md`、`docs/ARCHITECTURE.md`、`docs/UI_API.md`。
+
+## UI-145: 全方位优化批次——渲染性能/内存生命周期/代码去重/构建与清理（2026-08-31）
+- **类型**：优化批次（性能 / 内存 / 可维护性 / 构建；不改对外 API 语义）
+- **严重度**：低中（纯优化，各功能行为经编译验证等价）
+- **阶段1 渲染性能**（`gl/`，归因 ui 库）：
+  - `Renderer::set_viewport` 计算并缓存正交投影到 `proj_[16]`；删去 `draw_rounded_rect_impl`/`draw_textured_quad`/`draw_polygon` 每次调用重复算投影并上传。
+  - 颜色/纹理管线按需切换 program 的混合/深度状态集中到 `bind_color_blend`；避免高频 draw 反复设置状态。
+  - 逐顶点 `cos/sin(uRotation)` 移除，改为 CPU 预计算并以 `uCosRot`/`uSinRot` uniform 传入（每顶点省两次三角函数）。
+- **阶段2 内存/生命周期**（`ui/`+`gl/`）：
+  - `Widget` 5 个事件 dispatch 的子节点遍历：小缓冲（≤32）栈数组快照免堆分配，超限回退堆 vector（语义同 UI-073 快照）。
+  - `CursorIconManager` 泄漏：`get_cursor_manager` 改函数局部静态，删除从未释放的 `new`。
+  - 标准光标（arrow/hand/resize/ibeam）新增 `StandardCursorCache` 一次创建复用 + `ensure/destroy`，替代每次 set 都 create+destroy。
+  - `Image::texture_` 由裸指针 `Texture*` 改 `std::unique_ptr<Texture>`，随控件析构自动释放（消除手动 delete 泄漏风险）。
+- **阶段3 代码去重**（`gl/`+`core/`+`ui/`）：
+  - `Font::draw_text` 两个重载合并到私有 `draw_text_impl`（可选 `end` 字节界），消除双份绘制循环防逻辑漂移。
+  - UTF-8 解码统一到新 `core/include/ui/core/utf8.h`（`next_index/prev_index/decode_cp`），textbox/textarea/table 原各拷一份的 `next_cp/prev_cp/decode_cp` 收敛为转发实现。
+  - `Renderer` push/pop scissor 的 y-flip 收敛到 `apply_scissor_gl`；5 个 `set_cursor_*` 收敛到 `apply_standard_cursor` helper。
+- **阶段4 构建**（CMake）：
+  - Release 启用 LTO（`INTERPROCEDURAL_OPTIMIZATION_RELEASE`）+ `-O3`（GCC/Clang）/ `/O2`（MSVC）。
+  - 新增 `OPENGUI_USE_PCH`（默认 ON）为 core/gl/ui 库加 `target_precompile_headers`。
+  - `apps/CMakeLists.txt` 将多段 `POST_BUILD` 依赖 DLL / 素材拷贝合并为按目标单条（genex 条件），减少重复命令。
+  - **Windows 实机补充修复（CMake 4.2.2 / MSVC 19.51，2026-08-31）**：
+    - 根 `CMakeLists.txt` 新增 `add_compile_definitions(GLFW_INCLUDE_NONE)`：GLFW 默认在未定义该宏时（仅 Windows 分支）include 系统 `<GL/gl.h>`，
+      与 GLAD `<glad/gl.h>` 同 TU 冲突（`#error: OpenGL (gl.h) header already included`）；`GLFW_INCLUDE_NONE` 统一定义后由各 TU 显式 include `glad/gl.h` 提供 GL API。Linux 验证因无系统 `GL/gl.h` 且用 GL 头 stub 未暴露此问题。
+    - `apps/CMakeLists.txt` POST_BUILD 的嵌套生成器表达式 `$<$<BOOL:...>:COMMAND ... $<TARGET_FILE_DIR:...>>` 在 CMake 4.x 下解析残留字面 `$<0:`，致 `copy_if_different ... Release $<0:` 报「系统找不到指定的路径 / 命令语法不正确」exit 255；
+      改为 `if(...)` 分支显式拼接命令列表（`_DLL_CMDS`/`_ASSET_CMDS`），语义不变、与 CMake 版本无关。
+  - **保留** `vcpkg.json`/`conanfile.py`/`portfile.cmake`（文档化打包分发通道，非死文件，继续支持 CMake export+vcpkg+Conan 三选一）。
+- **阶段5 清理**：删除再生成/冗余产物（约 2GB）：`*.obj`、`shot_*.png`、`tmp/`、`tools/__pycache__/`、`3rdparty/src/layui-v2.13.8/`（zip 保留可重解压）、顶层 CMake 构建树 `build/ cmake-build-*`、过时顶层 `graphgen-dist/`（权威版本在 `tools/graphgen-dist/`）。
+- **回归清单**：
+  1. 投影矩阵缓存后，圆角/纹理/多边形绘制坐标、窗口缩放纵横比不回归（`set_viewport` 变化仍触发重传）。
+  2. 文字/图标绘制、仿粗体偏移、像素对齐（UI-055）不回归；`max_len` 重载按字节界截断语义不变。
+  3. 事件分发对子节点增删的回调安全性不回归（快照语义同 UI-073）；光标样式切换/回收/泄漏修复。
+  4. 图片加载（含懒加载 lay-src UI-093）、重复设置 lay_src 释放旧纹理不回归。
+  5. UTF-8 编辑（多字节光标移动/删除、CJK 宽度）-textbox/textarea/table 不回归（函数体与统一实现逐字节等价）。
+  6. 嵌套裁剪（UI-057）/标准光标 set 行为不变。
+  7. Release 构建 + PCH 正常编译产出，各 demo 可运行；依赖 DLL 与素材照常拷贝到可执行目录。
+- **验证**：Linux 下 core/gl/ui 全部 `.cpp` 经 g++ `-fsyntax-only` **0 错误**编译通过（临时 GL 头 stub，未提交）。**Windows 主机实机验证（2026-08-31，CMake 4.2.2 + MSVC 19.51.36246，含上述补充修复）**：
+  - `--preset x64` 与 `--preset install` 双预设 **Release 全量构建 + install 成功**（PCH/LTO 生效）：ui_core/ui_gl/ui_ui 三大静态库 + opengl_ui_demo/opengl_ui_api_demo/opengl_ui_edit_test 三 exe。
+  - POST_BUILD 依赖拷贝正常：`glfw3.dll` / `iconfont.ttf` 已拷至 exe 目录；install 产物（头文件/库/config/GLFW DLL/资产）完整。
+  - `opengl_ui_edit_test` 冒烟 **10/10 PASS**（文本输入、Ctrl 组合、剪贴板、CJK 输入）、exit 0。
+  - `opengl_ui_demo` 实机启动：1280x1280 窗口渲染正常，菜单/按钮/滑块/表格/左侧导航/CJK 中文全部显示（无 UI-135「字体擦除/缺渲染」），交互（点击/滚轮）后仍稳定运行无崩溃。
+- **影响范围**：`gl/`(renderer/window/font/cursor_icon_manager)、`ui/`(widget/image/textbox/textarea/table)、`core/`(新增 utf8.h)、`CMakeLists.txt`（根/gl/ui/apps）、docs/CHANGELOG.md。
+
 ## UI-143: Table 新增下拉单元格列——表格行内下拉选择（2026-08-30）
 - **类型**：功能新增（audio_text 插件配置面板表格式：翻译路径/模型/URL/api_key/目标语言/启用/测试 单行表，「目标语言」列须行内下拉）
 - **严重度**：中

@@ -225,19 +225,80 @@ while (!window.should_close()) {
 
 **依赖说明**：前置：无。`Window` 需先于 `Renderer::init()` 创建（提供 GL 3.3 Core 上下文）。
 
+**依赖 include**：`ui/gl/cursor_icon_manager.h`、`string`、`vector`
+
 **类 `Window`**
 
 | 方法 | 功能说明 |
 | --- | --- |
+| `static void init_glfw()` | GLFW 全局初始化/终止（整个进程只需调一次）； 多窗口架构下 ~Window() 不再调 glfwTerminate()，由应用层在退出时调 terminate_glfw() |
+| `static void terminate_glfw()` |  |
 | `Window(int width, int height, const char* title)` |  |
 | `bool should_close() const` |  |
 | `void poll_events()` |  |
+| `void wait_events_timeout(double timeout)` |  |
 | `void swap_buffers()` |  |
 | `void set_vsync(int interval)` |  |
+| `void make_current()` | 把本窗口的 GL 上下文设为当前（多窗口各自独立上下文：绘制前先 make_current） |
 | `int width() const` |  |
 | `int height() const` |  |
 | `GLFWwindow* handle() const` |  |
+| `static GLFWwindow* primary_handle()` | 最近创建窗口的句柄（剪贴板等系统级 API 用；无窗口时返回 nullptr） |
 | `bool resized()` | 边沿触发：本轮 poll 内发生过窗口尺寸变化（读一次后清除） |
+| `void set_title(const char* title)` | ---- 窗口管理 ---- |
+| `void set_icon(int count, const GLFWimage* images)` |  |
+| `void set_position(int xpos, int ypos)` |  |
+| `void get_position(int& xpos, int& ypos) const` |  |
+| `void center_on_primary_monitor()` | 在主显示器工作区内居中（避免无边框窗口默认落在屏幕角落 0,0） |
+| `void set_size(int width, int height)` |  |
+| `void get_size(int& width, int& height) const` |  |
+| `void set_size_limits(int minw, int minh, int maxw, int maxh)` |  |
+| `void set_aspect_ratio(int numer, int denom)` |  |
+| `void get_framebuffer_size(int& width, int& height) const` |  |
+| `void get_frame_size(int& left, int& top, int& right, int& bottom) const` |  |
+| `float get_content_scale() const` |  |
+| `float get_opacity() const` |  |
+| `void set_opacity(float opacity)` |  |
+| `void iconify()` |  |
+| `void restore()` |  |
+| `void maximize()` |  |
+| `void show()` |  |
+| `void hide()` |  |
+| `void focus()` |  |
+| `void request_attention()` |  |
+| `bool is_visible() const` |  |
+| `bool is_iconified() const` |  |
+| `bool is_maximized() const` |  |
+| `bool is_focused() const` |  |
+| `bool is_resizable() const` |  |
+| `bool is_decorated() const` |  |
+| `void set_should_close(bool value)` |  |
+| `void set_resizable(bool value)` |  |
+| `void set_decorated(bool value)` |  |
+| `void set_auto_iconify(bool value)` |  |
+| `void set_floating(bool value)` |  |
+| `void start_drag(float mouse_x, float mouse_y)` | ---- 拖拽（无边框窗口）---- |
+| `void update_drag(float mouse_x, float mouse_y)` |  |
+| `void end_drag()` |  |
+| `bool is_dragging() const` |  |
+| `void set_cursor(CursorType type)` | ---- 光标形状 ---- 统一光标接口 |
+| `void set_cursor_arrow()` |  |
+| `void set_cursor_hand()` |  |
+| `void set_cursor_resize_ns()` |  |
+| `void set_cursor_resize_ew()` |  |
+| `void set_cursor_ibeam()` |  |
+| `void set_clipboard_string(const char* string)` | ---- 剪贴板 ---- |
+| `const char* get_clipboard_string() const` |  |
+| `static double get_time()` | ---- 时间 ---- |
+| `static void set_time(double time)` |  |
+| `static GLFWmonitor* get_primary_monitor()` | ---- 显示器 ---- |
+| `static GLFWmonitor** get_monitors(int& count)` |  |
+| `static void get_monitor_position(GLFWmonitor* monitor, int& xpos, int& ypos)` |  |
+| `static void get_monitor_workarea(GLFWmonitor* monitor, int& xpos, int& ypos, int& width, int& height)` |  |
+| `static void get_monitor_content_scale(GLFWmonitor* monitor, float& xscale, float& yscale)` |  |
+| `static const char* get_monitor_name(GLFWmonitor* monitor)` |  |
+| `static void get_video_modes(GLFWmonitor* monitor, int& count, void*& modes)` |  |
+| `static void get_video_mode(GLFWmonitor* monitor, void*& mode)` |  |
 | `float mouse_x() const` | ---- 输入（像素坐标，y 向下，(0,0)=左上角）---- |
 | `float mouse_y() const` |  |
 | `bool mouse_down(int button) const` | button: 0=左键 1=右键 2=中键 |
@@ -248,9 +309,13 @@ while (!window.should_close()) {
 | `bool key_down(int key) const` | 键盘（key 用 ui::Key 常量）：当前按住 / 本轮按下边沿 / 本轮抬起边沿 |
 | `bool key_pressed(int key)` |  |
 | `bool key_released(int key)` |  |
+| `int key_pressed_mods(int key) const` | 本轮按下边沿发生时的修饰键快照（UI-102）：SendInput 等快速序列在主循环 轮询时可能已全部抬起，实时查询 key_down 拼 mods 会丢失；本方法返回 PRESS 回调瞬间的 mods，与 key_pressed 配合使用（先调 key_pressed 再取）。 |
 | `int char_pressed_count() const` | 文本输入：本轮 poll 内收到的 Unicode 码点队列（读一次后清空），返回数量 |
 | `unsigned int char_pressed_at(int i) const` |  |
 | `void clear_chars()` |  |
+| `int drop_count() const` | ---- 文件拖放 ---- |
+| `const std::string& drop_path(int i) const` |  |
+| `void clear_drops()` |  |
 
 
 ### `ui/gl/renderer.h`
@@ -342,23 +407,27 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, theme.success);
 
 **依赖说明**：前置：GL 上下文就绪；`draw_text/draw_icon/measure_*` 依赖 Renderer。中文字体需 `load_cjk_font*` 后才可绘制非 ASCII。
 
-**依赖 include**：`ui/core/math.h`、`unordered_map`、`vector`
+**依赖 include**：`ui/core/math.h`、`chrono`、`unordered_map`、`unordered_set`、`vector`
 
 **类 `Font`**
 
 | 方法 | 功能说明 |
 | --- | --- |
-| `Font() = default` |  |
+| `Font()` |  |
 | `bool load_from_file(const char* path, float pixel_height = 32.f)` | 从 .ttf 加载并烘培图集；pixel_height 为像素字号 |
 | `bool load_cjk_font(const char* path, int font_index = 0)` | 加载中文字体（懒烘培源）：保留 TTF/TTC 字节，首次遇到图集外码点按需光栅化。 .ttc 集合用 font_index 选取子字体；失败返回 false（ASCII 仍可用）。 |
 | `bool load_cjk_font_auto()` | 自动探测 CJK 字体：OPENGUI_CJK_FONT 环境变量（自定义字体）→ 系统候选 msyh.ttc / msyh.ttf / simhei.ttf / simsun.ttc / Deng.ttf；命中打日志。 |
-| `bool load_emoji_font(const char* path)` | 加载 emoji 字体（[UI-128](CHANGELOG.md#ui-128-emoji-渲染回退链缺字-tofu-防护--seguei-ui-emoji-单色轮廓烘焙2026-08-22)）：中文字体缺字码点（增补平面 emoji 等）的回退懒烘培源；stbtt 烘 glyf 单色轮廓 |
-| `bool load_emoji_font_auto()` | 自动探测 emoji 字体：OPENGUI_EMOJI_FONT → Windows seguiemj.ttf；失败静默（无 emoji 字形时维持方块宽近似） |
-| `bool load_icon_font(const char* path, float pixel_height)` | 加载图标字体（M17d）：烘培 U+E600..ECFF 主段 + U+1000..100F 辅段到第二图集（layui iconfont.ttf 2.13.9） |
-| `void draw_text(Renderer& renderer, const char* text, float x, float y, const Vec4& color, float scale = 1.f, bool bold = false) const` | (x, y) 为文本左上角（像素坐标，y 向下）；UTF-8 输入，私用区码点走图标图集；scale 为相对烘培像素号的缩放倍率（图集 2x 过采样，≤2x 清晰）；bold 仿粗体（字形 x 错位叠加一次，偏移 ≈ 字号/16） |
-| `float measure_text(const char* text, float scale = 1.f) const` | 宽度按 scale 同步缩放 |
+| `bool load_emoji_font(const char* path)` | 加载 emoji 字体（UI-128）：中文字体缺字码点（增补平面 emoji U+1F300+ 等） 的回退懒烘培源。stbtt 仅支持轮廓字形——Windows seguiemj.ttf 的 glyf 单色 轮廓可正常烘焙（COLR 彩色分层忽略，形状可辨）；位图彩色 emoji 字体不可用。 |
+| `bool load_emoji_font_auto()` | 自动探测 emoji 字体：OPENGUI_EMOJI_FONT 环境变量 → Windows seguiemj.ttf。 macOS/Linux 系统彩色 emoji 为位图格式（stbtt 无法光栅化），默认不探测， 需要时用环境变量指向单色轮廓字体（Symbola / NotoSansSymbols2 等）。 失败静默返回 false（无 emoji 字形时维持方块字宽近似，不报错刷屏）。 |
+| `bool load_icon_font(const char* path, float pixel_height)` | 加载图标字体（M17d）：烘培 U+E600..E7FF 私用区 + U+1000..100F（layui 2.13.x close/ok-circle 等非私用区码点）到第二图集（layui iconfont.ttf） |
+| `void draw_text(Renderer& renderer, const char* text, float x, float y, const Vec4& color, float scale = 1.f, bool bold = false) const` | (x, y) 为文本左上角（像素坐标，y 向下）；UTF-8 输入，私用区码点走图标图集。 scale 为相对烘培像素号的缩放倍率（图集 2x 过采样，≤2x 仍清晰）；bold 为仿粗体 （字形沿 x 错位叠加一次，偏移随字号缩放）。 |
+| `void draw_text(Renderer& renderer, const char* text, float x, float y, const Vec4& color, int max_len, float scale = 1.f, bool bold = false) const` | 带长度的重载：绘制 text 的前 max_len 字节，避免 substr 堆分配 |
+| `float measure_text(const char* text, float scale = 1.f) const` |  |
 | `float char_width(unsigned int codepoint) const` | 单字符宽度：ASCII 用字形 advance；私用区图标用图标 advance；CJK 懒烘培后取真实 advance， 仍缺失时按方块字近似为字号 |
 | `bool icon_loaded() const` |  |
+| `void prebake_text(const char* utf8)` | 强制烘焙一段 UTF-8 文本的全部 CJK 字形（UI-125）：不受逐帧配额限制， 供启动预热等场景一次性消除首绘卡顿；重复码点/图集内字形自动跳过 |
+| `static bool any_pending_bake()` | ---- 逐帧烘焙推进状态（UI-136）----    // 批次受 16ms 窗口限额，只有「渲染帧」才会烘焙下一批；帧级门控宿主 （root.is_dirty() 决定跳帧）必须在每帧无条件执行处查询这两个信号： 有待烘焙字形（配额耗尽未烘）→ 继续渲染； 烘焙 epoch 变化（有新字形上屏，xadvance 可能变化）→ 全树重排一次。 两者皆静 → 恢复空闲停帧。 |
+| `static unsigned bake_epoch_sum()` |  |
 | `void draw_icon(Renderer& renderer, unsigned codepoint, float cx, float cy, float size, const Vec4& color, float rotation = 0.f) const` | 以 (cx, cy) 为中心绘制单个图标，目标尺寸 size（像素）；rotation 绕中心旋转（弧度，0 不转） |
 | `float ascent() const` |  |
 | `float descent() const` |  |
@@ -385,6 +454,7 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, theme.success);
 | `static unsigned decode_utf8(const char*& in)` | UTF-8 解码下一个码点；*in 指向字节，返回解码后的码点，*in 前进到下一字符（返回 0 表示结束/非法） |
 | `const Glyph* ensure_dynamic(unsigned int cp) const` | 懒烘培 CJK 字形：查 dyn_ → 命中返回；cjk 字体未载入返回 nullptr；否则光栅化打包进图集 |
 | `void bake_cjk(unsigned int cp) const` |  |
+| `const Glyph* icon_glyph(unsigned int cp) const` | 图标字形查询：按码点落在 E600..E7FF / 1000..100F 哪一段返回对应字形，段外返回 nullptr |
 
 
 ## 5、ui/ui 组件（`ui/ui`）
@@ -423,6 +493,10 @@ b->destroy();
 | `void set_bounds(float x, float y, float w, float h)` |  |
 | `const Rect& bounds() const` | 像素坐标，y 向下 |
 | `virtual void set_enabled(bool en)` |  |
+| `bool is_dirty() const` | ---- 脏标记机制：空闲时跳过无变子树绘制，降低 CPU/GPU 占用 ---- |
+| `void mark_dirty()` |  |
+| `void clear_dirty()` |  |
+| `void mark_dirty_all()` | 全树递归置脏（UI-136）：字形逐帧烘焙导致 xadvance 变化后，由根节点 advance 调用，强制所有 Label 以真实宽度重新换行/布局（近似宽度 → 真实宽度） |
 | `void add_class(const char* cls)` | ---- CSS 类名机制（M17a）：layui 语法入口，供样式层查询 ---- 支持空格分隔的多个类名（如 "layui-btn layui-btn-danger"） |
 | `void remove_class(const char* cls)` |  |
 | `bool has_class(const char* cls) const` |  |
@@ -440,6 +514,7 @@ b->destroy();
 | `virtual bool on_mouse_down(float x, float y, int button)` |  |
 | `virtual bool on_mouse_up(float x, float y, int button)` |  |
 | `virtual bool on_mouse_scroll(float x, float y, float dx, float dy)` |  |
+| `virtual bool on_drop(float x, float y, const std::vector<std::string>& paths)` | 文件拖放：paths 为拖入的文件/文件夹路径列表 |
 | `void capture_mouse()` | 鼠标捕获（M5 拖拽）：on_mouse_down 返回 true 即自动捕获（如 Slider 拖动）， 此后鼠标 move/up 即使指针离开控件范围也路由给捕获者；up 后自动释放 |
 | `void release_mouse_capture()` |  |
 | `void open_popup(Widget* owner, Widget* popup)` | ---- 弹出层（M9）：根节点维护弹出面板（下拉/菜单），点击外部自动关闭 ---- 打开弹出面板（owner 内点击不关闭它；面板绘制在控件树最上层） |
@@ -454,6 +529,7 @@ b->destroy();
 | `bool dispatch_mouse_down(float x, float y, int button)` |  |
 | `bool dispatch_mouse_up(float x, float y, int button)` |  |
 | `bool dispatch_mouse_scroll(float x, float y, float dx, float dy)` |  |
+| `bool dispatch_drop(float x, float y, const std::vector<std::string>& paths)` |  |
 | `bool hovered() const` |  |
 | `bool pressed() const` |  |
 | `virtual void on_focus_changed(bool focused)` | 获取/失去焦点回调（子类用于高亮） |
@@ -491,6 +567,74 @@ b->destroy();
 | --- | --- |
 | `Widget* owner;` |  |
 | `Widget* popup;` |  |
+
+
+### `ui/ui/scene.h`
+
+**调用示例**：
+```cpp
+ui::Window window(1280, 900, "demo");
+ui::Renderer renderer; renderer.init();
+ui::Widget root; root.set_bounds(0, 0, 1280, 900);
+
+ui::Scene scene(&window, &renderer, &root);   // 随窗口同步创建，构造广播 Ready
+scene.run();                                  // poll + 分配(layout/dispatch/advance) + 消费(begin_frame+draw) + swap
+
+// 或自定义主循环：run_for(秒) 承载 --smoke 通用语义
+scene.run_for(2.0f);
+
+// 全量订阅：阶段向量广播 + 逐事件钩子
+scene.subscribe(ui::ScenePhase::Frame, [&]{ /* 每帧推进媒体/动画 */ });
+scene.subscribe(ui::ScenePhase::PostDraw, [&]{ renderer.draw_text(...); }); // 应用直绘 HUD
+scene.on(ui::SceneEvent::Key, [&](int key, int mods){ if (key==UI_KEY_ESCAPE) { scene.request_exit(); } return false; });
+
+// 清理重置只清库内自管对象；子节点可为栈对象，严禁对子树 delete
+```
+
+**依赖说明**：前置：需要 `ui::Window`（已创建）+ `Renderer::init()`（GL 3.3 Core）。Scene 随窗口同步创建、构造即广播 Ready；每窗口一个 Scene 绑定同一 Window/Renderer/root。清理重置只清库内自管对象（flush_pending_destroys + close_popups），不裁子树——子节点可为栈对象。
+
+**依赖 include**：`ui/core/math.h`、`ui/ui/widget.h`、`array`、`functional`
+
+**类 `Scene`**
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `Scene(ui::Window& window, ui::Renderer& renderer)` | 生产：绑定窗口/渲染器。构造即广播 ScenePhase::Ready。 窗口、渲染器由调用方持有（非拥有关系），存活期必须 ≥ Scene。 |
+| `ui::Window& window()` | ---- 资源访问 ---- |
+| `ui::Renderer& renderer()` |  |
+| `ui::Widget& root()` | 根控件树（Scene 拥有，构造时按窗口尺寸初始化 bounds；reset 清空后重建） |
+| `void set_root_background(const ui::Vec4& clear_color)` |  |
+| `size_t subscribe(ScenePhase phase, PhaseFn fn)` | 返回订阅 token（非 0），供 unsubscribe 单独摘除（页面级局部订阅切页时摘除，防悬空）。 |
+| `size_t on(ScenePhase phase, std::function<void(Scene&)> fn)` | 便捷重载：不关心 dt 的阶段/帧回调；同样返回 token |
+| `void unsubscribe(size_t token)` | 按 token 摘除单个阶段观察者；token 为 0 或不存在则无操作。 与 clear_observers() 不同：仅移除这一个订阅，不清其他（App 级）订阅。 |
+| `void set_event_hook(SceneEvent event, EventHook hook)` |  |
+| `void clear_observers()` | 清空全部订阅与钩子（reset/shutdown 内部调用，防闭包悬空引用旧树/旧窗口） |
+| `int event_key() const` | 最近一次 Key/Scroll/MouseDown 等事件的键码（event_key()）或滚轮量（event_scroll_dx/dy） |
+| `float event_scroll_dx() const` |  |
+| `float event_scroll_dy() const` |  |
+| `void frame(float dt)` | ---- 消费者：运行 ---- 单帧：算 dt（由调用方传入）→ 分配 → 绘制。不进入 poll 循环。 |
+| `void run()` | 直至窗口关闭：poll_events（生产者）→ frame |
+| `void run_for(double seconds)` | 运行至超时自动退出（--smoke 通用语义）：内部按帧 poll 并累计运行时长 |
+| `bool running() const` |  |
+| `void request_exit()` | 请求退出（Run 循环下一帧即止；如 demo_exit 按钮） |
+| `void reset()` | ---- 清理重置 ---- 关弹窗 + 排空延迟销毁队列 + 广播 Reset→Ready（重跑新一轮生命周期；先订阅 Reset/Ready 再调用） 不删子树（子节点可能为栈对象，见类注释） |
+| `void shutdown()` | 广播 Cleanup/Shutdown + flush_pending_destroys（析构自动调用；可手动提前） |
+
+| 数据成员 | 说明 |
+| --- | --- |
+| `Scene& operator=(const Scene&) = delete;` |  |
+| `bool dispatch_mouse = true;` | ---- 分配者/消费者开关（保留各应用迁移前按键语义，默认全开）---- mouse_move + mouse_down/up |
+| `bool dispatch_scroll = true;` | scroll_dx/dy -> dispatch_mouse_scroll |
+| `bool dispatch_nav_keys = true;` | Tab/方向/Enter/Space/Backspace/Delete/Home/End/Escape |
+| `bool dispatch_text = true;` | char 队列 -> dispatch_char |
+| `bool dispatch_resize = true;` | window.resized() -> set_viewport + root.set_bounds |
+
+**类 `Observer`**
+
+| 数据成员 | 说明 |
+| --- | --- |
+| `size_t token;` |  |
+| `PhaseFn fn;` |  |
 
 
 ### `ui/ui/theme.h`
@@ -560,6 +704,7 @@ bool has = ui::layui::has_class(widget, "layui-btn");
 | --- | --- |
 | `Vec4 bg_color(const char* cls)` | 工具色：bg-red/orange/green/cyan/blue/purple/black/gray -> 前景色（#fff 文字） |
 | `Vec4 bg_fill(const char* cls)` | 工具色背景底（layui-bg-* 的 background-color 值） |
+| `Vec4 font_color(const char* cls)` | 文字工具色（layui-font-* 的 color 值，2.13.x）：red/orange/green/cyan/blue/ purple/black/gray。色值与 layui-bg-* 不同源（green=#16baaa、blue=#01aaed、 black=#000、gray=#c2c2c2）；未知类回退黑色。 |
 | `Vec4 hex(const char* hex)` | 十六进制颜色串 "#16baaa" / "16baaa" -> Vec4 |
 | `bool has_class(const Widget* w, const char* cls)` | 组件便捷查询：widget 是否带某类 |
 
@@ -568,7 +713,7 @@ bool has = ui::layui::has_class(widget, "layui-btn");
 
 **调用示例**：
 ```cpp
-// 图标码点常量（195 项，主区 U+E600..ECFF + close/ok-circle 等非私用区 U+1005..1007）
+// 图标码点常量（190 项，layui-iconfont.ttf 私用区 U+E600..E7FF）
 font.load_icon_font("iconfont.ttf", 18.f);
 font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, ui::Vec4{1,1,1,1});
 ```
@@ -602,6 +747,7 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, ui::Vec4{1,1,1,
 | `auz` | `0xE672` | layui-icon-auz |
 | `backspace` | `0xE694` | layui-icon-backspace |
 | `bluetooth` | `0xE689` | layui-icon-bluetooth |
+| `bot` | `0xE7D6` | layui-icon-bot（2.13.9 新增） |
 | `camera` | `0xE660` | layui-icon-camera |
 | `camera_fill` | `0xE65D` | layui-icon-camera-fill |
 | `carousel` | `0xE634` | layui-icon-carousel |
@@ -616,6 +762,8 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, ui::Vec4{1,1,1,
 | `circle` | `0xE63F` | layui-icon-circle |
 | `circle_dot` | `0xE617` | layui-icon-circle-dot |
 | `clear` | `0xE788` | layui-icon-clear |
+| `close` | `0x1006` | layui-icon-close（2.13.x 新增，非私用区） |
+| `close_fill` | `0x1007` | layui-icon-close-fill（2.13.x 新增，非私用区） |
 | `code_circle` | `0xE635` | layui-icon-code-circle |
 | `cols` | `0xE610` | layui-icon-cols |
 | `component` | `0xE857` | layui-icon-component |
@@ -702,6 +850,7 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, ui::Vec4{1,1,1,
 | `note` | `0xE66E` | layui-icon-note |
 | `notice` | `0xE667` | layui-icon-notice |
 | `ok` | `0xE605` | layui-icon-ok |
+| `ok_circle` | `0x1005` | layui-icon-ok-circle（2.13.x 新增，非私用区） |
 | `password` | `0xE673` | layui-icon-password |
 | `pause` | `0xE651` | layui-icon-pause |
 | `picture` | `0xE64A` | layui-icon-picture |
@@ -739,6 +888,7 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, ui::Vec4{1,1,1,
 | `shrink_right` | `0xE668` | layui-icon-shrink-right |
 | `slider` | `0xE714` | layui-icon-slider |
 | `snowflake` | `0xE6B1` | layui-icon-snowflake |
+| `sound` | `0xE69D` | layui-icon-sound（2.13.9 新增） |
 | `speaker` | `0xE645` | layui-icon-speaker |
 | `spread_left` | `0xE66B` | layui-icon-spread-left |
 | `star` | `0xE600` | layui-icon-star |
@@ -900,7 +1050,7 @@ parent->add_child(b);
 | `void set_font(Font* font)` |  |
 | `void set_theme(const Theme* theme)` |  |
 | `void set_icon(const char* icon_name)` | layui 图标按钮：图标类名（如 "left"，即 layui-icon-left 去前缀） |
-| `void set_icon_right(bool on)` | 图标置于文本右侧（默认 false = 图标居左，既有行为不变；镜像「文字 <i layui-icon>」顺序 demo 必备，UI-114） |
+| `void set_icon_right(bool on)` | 图标放文本右侧（镜像「按钮 <i class="layui-icon-down">」文字在前语义）； 默认 false = 图标居左（既有行为不变） |
 | `bool icon_right() const` |  |
 | `void set_badge(const char* text)` | 按钮内嵌徽章（layui-badge 红底白字，内嵌在文本右缘，如 `<button>查看消息<span layui-badge>1</span>`） 叠加 layui-bg-* 可换底（如 layui-bg-gray / layui-bg-orange）；dot 为 8px 圆点 |
 | `void set_dot_badge()` |  |
@@ -940,6 +1090,7 @@ parent->add_child(c);
 | `void set_font(Font* font)` |  |
 | `void set_theme(const Theme* theme)` |  |
 | `void set_spacing(float spacing)` | 子控件间距（body 内） |
+| `void set_outline(const Vec4& color, float thickness = 1.f)` | 可选描边（layui 图标列表等 1px 边框卡片）；a<=0 关闭 |
 | `void on_layout() override` |  |
 | `float preferred_height() const` |  |
 | `void on_draw(Renderer& renderer) override` |  |
@@ -1236,8 +1387,10 @@ parent->add_child(cb);
 | --- | --- |
 | `ComboBox(float x, float y, float w, float h)` |  |
 | `void add_option(const char* text)` |  |
+| `void set_options(const std::vector<std::string>& options)` | 就地重载全部选项（UI-121）：清空并递归释放旧选项按钮后重建； 调用方无需再「delete+new 销毁重建」整个下拉框——重建孤儿控件（可见性/坐标 失管）是幽灵下拉类缺陷的根源。重载非用户选择事件：不触发 on_change， 原选中项若仍在新列表范围内则保持，否则复位为未选中（显示回退到首项文本）。 |
 | `void select(int index)` | 选中并触发 on_change |
 | `void close()` |  |
+| `void open()` | 展开下拉面板（UI-143：Table 行内下拉等外部调用方需要显式展开） |
 | `int selected() const` |  |
 | `void set_on_change(std::function<void(int)> cb)` |  |
 | `void set_font(Font* font)` |  |
@@ -1417,6 +1570,7 @@ parent->add_child(box);
 | `void set_fill(const Vec4& color)` | 覆盖背景填充色（默认 theme->button_normal，如 layui-bg-gray 灰底 #fafafa）；传 a<0 不覆盖 |
 | `void on_layout() override` |  |
 | `void on_draw(Renderer& renderer) override` |  |
+| `float preferred_height() const` | h<=0（自适应）：取可见子控件 preferred_height 最大值 + 2*padding； h>0 时显式高度优先（返回 bounds_.h）。使 HBox 可直接投入 ScrollBox/VBox 流式排布。 |
 
 
 ### `ui/ui/hline.h`
@@ -1466,7 +1620,7 @@ parent->add_child(ic);
 
 ### `ui/ui/image.h`
 
-**依赖 include**：`ui/ui/widget.h`、`string`
+**依赖 include**：`ui/ui/widget.h`、`memory`、`string`
 
 **类 `Image`**
 （继承 `: Widget`）
@@ -1490,8 +1644,6 @@ label->set_font(&font);
 label->set_theme(&theme);
 label->set_color(theme.text);
 label->set_wrap(true);                   // 超宽自动换行
-label->set_text_scale(22.f / 18.f);      // 字号缩放（Font 基准 18px 烘培）
-label->set_bold(true);                   // 仿粗体
 parent->add_child(label);
 ```
 
@@ -1511,7 +1663,7 @@ parent->add_child(label);
 | `void set_theme(const Theme* theme)` |  |
 | `void set_color(const Vec4& color)` |  |
 | `void set_align(int align)` | 0=左对齐 1=水平居中 2=右对齐 |
-| `void set_text_scale(float s)` | 字号缩放：相对 Font 烘培像素号的倍率（1=原大），行高/换行/度量随缩放；图集 2x 过采样，≤2x 清晰 |
+| `void set_text_scale(float s)` | 字号缩放：相对 Font 烘培像素号的倍率（1 = 原大），行高/换行/度量随缩放； 图集 2x 过采样，≤2x 清晰，更大倍率发虚 |
 | `float text_scale() const` |  |
 | `void set_bold(bool b)` | 仿粗体：字形沿 x 错位叠加一次（偏移 ≈ 字号/16，随缩放同步） |
 | `bool bold() const` |  |
@@ -1871,6 +2023,7 @@ parent->add_child(mb);
 | `void set_theme(const Theme*)` |  |
 | `void set_style_overrides(const Vec4& bg, const Vec4& border, const Vec4& hover, const Vec4& text)` | 自定义配色覆盖（bg/border/hover/文字），不设置则用主题默认 |
 | `void set_on_item_click(std::function<void(const char*)> cb)` | 普通菜单项被点击时回调（title 文本），供宿主（如 Dropdown）做选中/收起 |
+| `void set_on_group_click(std::function<void(const char*)> cb)` | 分组头被点击时回调（title 文本，spread 已切换后触发），供宿主联动收起/展开外部面板 |
 | `float preferred_height() const` |  |
 
 **类 `Item`**
@@ -2204,13 +2357,10 @@ sb->set_padding(12.f);
 sb->set_spacing(8.f);
 sb->add_child(child_widget);                 // 内容超高自动滚动 + scissor 裁剪
 sb->set_on_scroll_to_bottom([] { ui::log_info("滚到底"); });  // 传 nullptr 清除
-auto* bar = new ui::VBox(0, 0, 52.f, 52.f);  // 视口锚定工具组（UI-110）
-bar->add_child(top_btn);
-sb->add_pinned(bar, ui::PinCorner::BottomRight, 20.f, 20.f);  // 钉右下角，不随滚动
 parent->add_child(sb);
 ```
 
-**依赖 include**：`ui/ui/widget.h`、`functional`
+**依赖 include**：`ui/ui/scrollbar_style.h`、`ui/ui/widget.h`、`functional`
 
 **类 `ScrollBox`**
 （继承 `: Widget`）
@@ -2221,26 +2371,38 @@ parent->add_child(sb);
 | `void set_spacing(float spacing)` | 子控件之间的间距（像素） |
 | `void set_padding(float padding)` | 内部边距（像素） |
 | `float padding() const` |  |
+| `void set_header_height(float h)` | 固定头部高度（像素，默认 0=关闭）。>0 时顶部留出高度 header_height_ 的固定 不可滚动横条（背景与内容面板连续），内容在其下方滚动——用于把「首个卡片上方 的留白」固定在顶部而不随滚动上移（UI-142）。既可用默认直角背景，也可 layui class。 |
+| `float header_height() const` |  |
 | `void set_scroll_step(float step)` | 滚动步长（每滚一格滚轮） |
 | `float scroll_offset() const` |  |
 | `void set_scroll_offset(float offset)` | 滚动到指定偏移（自动 clamp 到 [0, scroll_max]；脚本化截图/程序化定位用） |
 | `void reset_scroll()` | 滚动回顶部（切页/内容重建后复位滚动位置，防止残留旧页滚动偏移） |
 | `void mark_content_dirty()` | 标记子树变化（clear_children/add_child 后调用），抑制滚动条绘制直到下一次 on_layout() |
 | `void set_on_scroll_to_bottom(std::function<void()> cb)` | 滚到内容底部时回调一次（再次离开底部再滚回底部会重新触发）。 传入 nullptr 清除回调（切页清理用，防悬空引用）。 |
-| `void rearm_bottom()` | 内容增长后由宿主调用：解除触底一次性武装并挂起重检（[UI-126](CHANGELOG.md#ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22)引入；[UI-127](CHANGELOG.md#ui-127-流加载表格首显闪烁触底重检分帧--prebakevisibletext-字形预热2026-08-22) 改分帧）——下一次 on_layout() 开头消费 check_bottom，每帧至多灌一批，防同步递归级联单帧暴增 |
+| `void rearm_bottom()` | 内容增长后由宿主调用：解除触底一次性武装并安排重检（UI-126 引入，UI-127 改分帧）。 场景：流加载续灌批次未把内容底推出触发区（用户已在底部无法再滚），不清 bottom_fired_ 将永不再触发——补齐 layui flow.load「DOM 插入后再查一次 reachBottom」 语义。UI-127 起不再同步重检（同步链会在 rebuild_rows 内递归级联多批、单帧工作量 暴增），改为置挂起标记、下一次 on_layout() 开头消费 check_bottom——每帧至多灌一批， 且回调重建的行控件在本次布局内即归位，无乱帧。 |
 | `void set_on_scroll(std::function<void()> cb)` | 通用滚动回调：每次 scroll_offset 变化时触发（用于关闭下拉面板等场景）。 |
 | `void set_bottom_margin(float mb)` | 距底部触发距离 margin（镜像 layui flow mb，默认 50）：当 scroll_offset 距内容底部 不足 mb 像素时即触发触底回调，而不必严格滚到底（UI-094）。仅影响 check_bottom， 触发/重新武装语义（bottom_fired_）与 set_on_scroll_to_bottom 一致。 |
-| `void add_pinned(Widget* w, PinCorner corner = PinCorner::BottomRight, float margin_x = 16.f, float margin_y = 16.f)` | —— 视口级锚定子控件（layui fixbar，UI-110）—— 控件照常 add_child（生命周期/命中/绘制顺序不变），但不参与纵向流式排布、不计入内容高度；每次布局钉在可视区 corner 内缩 (margin_x, margin_y) 处，不随 scroll_offset 移动；后加的锚定控件绘制在流式内容之上 |
-| `int pinned_count() const` | 当前锚定子控件数 |
+| `void add_pinned(Widget* w, PinCorner corner = PinCorner::BottomRight, float margin_x = 16.f, float margin_y = 16.f)` | —— 视口级锚定子控件（layui fixbar，UI-110）—— 控件照常 add_child（生命周期/命中/绘制顺序不变），但不参与纵向流式排布、 不计入 content_height；每次布局钉在可视区 corner 内缩 (margin_x, margin_y) 处， 不随 scroll_offset 移动。后加的锚定控件绘制在流式内容之上。 |
+| `int pinned_count() const` |  |
 | `void on_layout() override` |  |
 | `void on_draw(Renderer& renderer) override` |  |
 | `void draw(Renderer& renderer) override` | 覆写 draw：背景 -> scissor(内容) -> 滚动条 |
+| `bool pass_hit_to_children(float x, float y) override` | 命中裁剪守卫（UI-152）：与绘制端 scissor(bounds_) 对称，滚动越界到可视区外的 子控件（如滚到标题栏区域的设置页内容）不可命中，消除「点击上层却落到越界内容」穿透。 |
+| `void on_advance(float dt) override` | overlay 滚动条自动隐藏（2s 无活动）：状态迁移时标脏，触发帧级重绘收/放滚动条 |
 | `void on_children_changed() override` | 子节点变化后抑制滚动条绘制，直到下一次 on_layout() |
 | `bool on_mouse_scroll(float x, float y, float dx, float dy) override` |  |
 | `bool on_mouse_down(float x, float y, int button) override` |  |
 | `bool on_mouse_move(float x, float y) override` |  |
 | `bool on_mouse_up(float x, float y, int button) override` |  |
 | `void set_theme(const Theme* theme)` |  |
+
+**类 `Pinned`**
+
+| 数据成员 | 说明 |
+| --- | --- |
+| `Widget* w;` |  |
+| `PinCorner corner;` |  |
+| `float mx, my;` |  |
 
 
 ### `ui/ui/slider.h`
@@ -2282,7 +2444,7 @@ parent->add_child(sl);
 | `void set_theme_color(const Vec4& c)` | 主题色 |
 | `void set_vertical(bool on)` | type:vertical |
 | `void set_track_height(float h)` | vertical 高度 |
-| `void set_focus_ring(bool on)` | 聚焦外框反馈（默认不显示，[UI-120](CHANGELOG.md#ui-120-slider-聚焦外框改为默认不显示--setfocusring-可选开启2026-08-22)） |
+| `void set_focus_ring(bool on)` | 聚焦外框反馈（默认不显示） |
 | `void set_theme(const Theme* theme)` |  |
 | `void set_on_change(std::function<void(float)> cb)` | 值变化回调（普通模式返回单值） |
 | `void set_on_range_change(std::function<void(float, float)> cb)` | 范围模式回调整（start, end） |
@@ -2326,6 +2488,12 @@ parent->add_child(sw);
 | `float preferred_height() const` |  |
 | `void on_draw(Renderer& renderer) override` |  |
 
+**自由函数**（命名空间 `ui` / `ui::layui`）：
+
+| 函数 | 功能说明 |
+| --- | --- |
+| `void draw_switch_skin(Renderer& renderer, const Rect& rect, const Theme* theme, bool checked, bool enabled, bool hovered = false, bool pressed = false)` | 统一圆角开关皮肤（UI-130）：项目内一切开关必须用本函数渲染（ui::Switch 本体、 Table set_cell_switch 行内开关等），严禁另造矩形/方块皮肤——开=绿底白滑块靠右， 关=白底灰边灰滑块靠左，禁用=全灰。取色走传入 Theme（空指针回退默认主题）； hover/pressed 仅控件本体传入。 |
+
 
 ### `ui/ui/table.h`
 
@@ -2337,9 +2505,6 @@ tb->set_theme(&theme);
 tb->add_column("ID");
 tb->add_column("姓名");
 tb->add_row({"1", "张三"});                  // 行 = 与列等长的字符串列表
-tb->add_tree_row(0, {"总公司", "", ""});      // 树形层级：depth 0=根（UI-109）
-tb->add_tree_row(1, {"研发部", "贤心", ""});  // 子级：首列自动缩进 + 展开三角，点击折叠子树
-tb->set_on_expand([](int data_row, bool expanded) { /* ... */ });
 tb->add_class("layui-table");                // layui 外观类
 parent->add_child(tb);
 ```
@@ -2368,17 +2533,18 @@ parent->add_child(tb);
 | `void set_on_sort(std::function<void(int col, bool asc)> cb)` |  |
 | `void set_on_row_click(std::function<void(int row)> cb)` |  |
 | `void set_paginated(bool on, int page_size = 10)` | —— 分页（layui page:true / resetPage）—— 分页时表底显示 Laypage，仅渲染当前页 |
-| `void set_on_load_more(std::function<void()> cb)` | —— 流加载（layui flow 信息流滚动自动加载，[UI-126](CHANGELOG.md#ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22)）—— 仅非分页模式生效：滚动近底部时回调，rebuild 尾部自动挂起重检（[UI-127](CHANGELOG.md#ui-127-流加载表格首显闪烁触底重检分帧--prebakevisibletext-字形预热2026-08-22) 分帧，每帧至多一批）直至填满一屏或数据耗尽 |
-| `void set_end_note(const char* text)` | 流加载尾注（如「没有更多了」）：行尾只读提示行，随内容滚动；不参与行号映射/选中/编辑 |
-| `void reset_scroll()` | 滚动回顶部（过滤条件变化重灌数据后调用） |
-| `void prebake_visible_text()` | 预热表头+可见行+尾注全部 CJK 字形（[UI-127](CHANGELOG.md#ui-127-流加载表格首显闪烁触底重检分帧--prebakevisibletext-字形预热2026-08-22)）：消除 UI-125 配额限流的方块宽渐进补齐闪烁（续灌/首显瞬间）；跳过已烘焙码点可重复调用 |
 | `bool paginated() const` |  |
 | `void set_page(int page)` | 0 基，立即跳页 |
 | `int page() const` |  |
 | `int page_count() const` |  |
 | `int page_size() const` |  |
+| `int auto_page_size() const` | 按当前 bounds 高度自适应每页行数（UI-123）：已扣除表头与内部分页条高度 （28px）。调用方此前按 (h-表头)/行高 自行估算，末行被挤进分页条下方盲区。 |
 | `int visible_row_count() const` | 当前页可见数据行数（未分页 = 全量行数） |
 | `int data_row_of(int visible) const` | 可视行号 → 数据行下标（rows_ 下标；跨分页/树形过滤的稳定行标识） |
+| `void set_on_load_more(std::function<void()> cb)` | —— 流加载（layui flow 信息流滚动自动加载，UI-126）—— 仅非分页模式生效： body_ 滚动近底部（mb 临界距离，UI-035/UI-094 语义）时回调；配合 add_row/reload 续灌数据。rebuild_rows 尾部自动 rearm 重检：追加批次后若内容底仍未推出触发区， 将继续回调直至填满一屏或数据耗尽（耗尽时回调方停止 append 即可，链自然断）。 |
+| `void set_end_note(const char* text)` | 流加载尾注（如「没有更多了」）：非分页且非空时在最后一行之后渲染只读提示行 （灰字居中跨列，随内容滚动）；不参与 data_row_of/选中/编辑/命中回调。 文本变化才触发重建，空串清除。 |
+| `void reset_scroll()` | 滚动回顶部（过滤条件变化重灌数据后调用） |
+| `void prebake_visible_text()` | 预热表头 + 当前可见行全部单元格 + 尾注的 CJK 字形（UI-127）：一次性烘焙消除 UI-125 逐帧配额限流的方块宽渐进补齐闪烁（流加载续灌瞬间/表格首次显示瞬间）。 prebake_text 不受配额限制且自动跳过已烘焙码点，重复调用开销可忽略。 |
 | `void add_checkbox_column()` | —— 复选列 / 单选列（layui type:'checkbox' / type:'radio'）—— 表头全选 + 各行复选位 |
 | `void add_radio_column()` | 表头占位 + 各行单选位 |
 | `void add_numbers_column()` | 序号列（从 1 起，跨页连续） |
@@ -2396,10 +2562,13 @@ parent->add_child(tb);
 | `void set_on_selection(std::function<void(int visible_row, bool checked)> cb)` | 选中 / 单选变化回调（参数：可见行号, 最新选中态） |
 | `void set_cell_switch(int col)` | —— 单元格表单列（layui templet 内嵌 switch/checkbox，form.html）—— 该列每格渲染 Switch（基于该行第 col 列文本非空与否预置开） |
 | `void set_cell_checkbox(int col)` | 该列每格渲染 CheckBox（默认勾选：文本为 "1"/"true"） |
-| `void set_cell_combobox(int col)` | —— 下拉单元格列（[UI-143](CHANGELOG.md#ui-143-table-新增下拉单元格列表格行内下拉选择2026-08-30)）—— 该列每格渲染文本 + 右侧下拉三角，单击展开行内 ComboBox（复用 layui-form-select 皮肤与 popup 弹出） |
+| `void set_on_cell_form(std::function<void(int visible_row, int col, bool checked)> cb)` | 单元格表单切换回调（UI-129）：点击 Switch/CheckBox 格翻转后触发 （参数：可见行号, 列号, 切换后的选中态）；此前仅翻转单元格文本不通知，调用方无法感知 |
+| `void set_on_cell_edited(std::function<void(int data_row, int col, const std::string& text)> cb)` | —— 单元格文本编辑提交回调（UI-134）—— 双击文本格进入行内编辑，Enter/失焦 commit_edit 写回 rows_ 后触发； 参数：数据行号（rows_ 下标，跨分页/排序稳定）, 列号, 新文本。 此前仅写控件私有副本不通知调用方，应用层无法感知编辑结果 （audio_text 模式映射编辑丢失缺陷根源）。 |
+| `void set_cell_editable(int col, bool editable)` | 列级可编辑开关（UI-134）：false 则该列双击不进入行内编辑（默认 true 可编辑） |
+| `void set_cell_combobox(int col)` | —— 下拉单元格列（UI-143：表格行内下拉选择，复用 ComboBox layui-form-select 皮肤）—— 该列每格渲染文本 + 右侧下拉三角，单击单元格展开行内 ComboBox； 选项选中后写回该格文本并触发选中回调。 |
 | `bool is_cell_combobox(int col) const` |  |
-| `void set_combobox_options(int col, const std::vector<std::string>& options)` | 下拉列可选项（与列下标平行；未设置视为空选项集） |
-| `void set_on_cell_combobox(std::function<void(int visible_row, int col, int index, const std::string& text)> cb)` | 下拉选中回调（参数：可见行号, 列号, 选项下标, 选中文本）；选中即写回该格文本 |
+| `void set_combobox_options(int col, const std::vector<std::string>& options)` | 指定下拉列的可选项（与列下标平行；未设置视为空选项集） |
+| `void set_on_cell_combobox(std::function<void(int visible_row, int col, int index, const std::string& text)> cb)` | 下拉选中回调（参数：可见行号, 列号, 选项下标, 选中文本） |
 | `void set_total_row(bool on)` | —— 合计行（layui totalRow，totalRow.html / parseData.html）—— |
 | `bool total_row() const` |  |
 | `void set_total_row_text(const char* s)` |  |
@@ -2417,19 +2586,20 @@ parent->add_child(tb);
 | `const std::string& button_label(int i) const` |  |
 | `const std::string& button_event(int i) const` |  |
 | `void set_on_action(std::function<void(int visible_row, const std::string& event)> cb)` | 行内工具按钮点击回调（参数：可视行号, 事件名） |
-| `void add_tree_row(int depth, const std::vector<std::string>& cells)` | —— 树形层级（layui treeTable，UI-109）—— 按先序追加带层级行：depth 0=根，>0 为上一 depth-1 行的子级；有子级的行首列渲染展开三角 |
+| `void add_tree_row(int depth, const std::vector<std::string>& cells)` | —— 树形层级（layui treeTable）—— 追加带层级的行：depth 0=根，>0 为上一 depth-1 行的子级（须按先序次序追加）。 有子级的行首列渲染展开三角（▼ 展开 / ▶ 折叠），点击切换；折叠时整棵子树隐藏。 |
 | `bool is_tree() const` | 存在 depth>0 的行 |
 | `int row_depth(int data_row) const` | 层级深度（add_row 的行恒为 0） |
 | `bool row_has_children(int data_row) const` | 下一行深度更深即有子级 |
-| `bool row_expanded(int data_row) const` | 展开态（默认 true） |
-| `void set_row_expanded(int data_row, bool on)` | 程序化设置展开态并重建 |
+| `bool row_expanded(int data_row) const` | 默认展开 |
+| `void set_row_expanded(int data_row, bool on)` |  |
 | `void toggle_row(int visible_row)` | 点击展开图标切换并重建 |
-| `float tree_indent() const` | 每级缩进像素（20） |
-| `void set_on_expand(std::function<void(int data_row, bool expanded)> cb)` | 展开/折叠回调（数据行下标, 展开态） |
+| `float tree_indent() const` | 每级缩进像素 |
+| `void set_on_expand(std::function<void(int data_row, bool expanded)> cb)` |  |
 | `int col_count() const` | 供内部行控件查询列/数据（TableRow） |
 | `float col_width(int c) const` |  |
 | `const std::vector<std::string>& row(int r) const` |  |
 | `int selected_row() const` |  |
+| `void set_selected_row(int visible_row)` | 行选中态（UI-124）：单击数据行高亮定位；参数为可见行号，-1 清除。 与复选/单选列无关，纯视觉反馈；reload/set_page/排序时自动清除。 |
 | `bool even() const` |  |
 | `bool has_row_line() const` |  |
 | `bool has_col_line() const` |  |
@@ -2437,7 +2607,9 @@ parent->add_child(tb);
 | `float row_h() const` |  |
 | `float cell_pad_x() const` |  |
 | `void on_layout() override` |  |
-| `float preferred_height() const` | 高度自适应：构造时 h=0 → 表头 + 行数 × 行高（静态表格整表展示）；h>0 → 固定 + 纵向滚动 |
+| `float preferred_height() const` | 高度语义（UI-131）：默认内容跟随——每次调用按表头 + 可见行数×行高 [+ 分页条] 重算， 不再被首次分配的 bounds_.h 冻结（旧「h>0 即冻结」导致流式容器内行数增长永不反映， 行区被裁剪成 0，见 audio_text SPK-005）。 set_fixed_height(h>0)：显式锁定高度（固定视口 + 内部纵向滚动的摆放），h<=0 解除回内容跟随； set_max_content_height(h>0)：内容跟随模式的上限钳制（流式容器防溢出），超出部分由内部滚动区承载。 |
+| `void set_fixed_height(float h)` |  |
+| `void set_max_content_height(float h)` |  |
 | `bool on_mouse_down(float x, float y, int button) override` |  |
 | `void on_draw(Renderer& renderer) override` |  |
 
@@ -2449,6 +2621,7 @@ parent->add_child(tb);
 | `float width = 0.f;` |  |
 | `bool sortable = false;` |  |
 | `bool ascending = true;` |  |
+| `bool editable = true;` | UI-134：false 则双击不进入行内编辑 |
 | `ColKind kind = ColKind::Data;` |  |
 
 **自由函数**（命名空间 `ui` / `ui::layui`）：
@@ -2461,9 +2634,10 @@ parent->add_child(tb);
 | `void sort_rows(int col)` |  |
 | `void begin_edit(int row, int col, float click_x = -1.f)` |  |
 | `void commit_edit()` |  |
+| `void begin_combo(int row, int col)` | 下拉单元格列：单击展开行内 ComboBox（UI-143） |
+| `void close_combo()` |  |
 | `bool in_header(float x, float y) const` |  |
 | `int header_col_at(float x) const` |  |
-| `int data_row_of(int visible) const` | 可见行→数据行映射（分页切片）；未分页时索引即数据行号 |
 | `int col_hit(float x) const` |  |
 | `float col_x(int c) const` | 第 c 列起始 x（布局后有效） |
 
@@ -2577,9 +2751,21 @@ tb->focus();                                 // focusable，可聚焦输入
 | `void set_on_change(std::function<void(const char*)> cb)` | 文本变化（含程序 set_text）时回调 |
 | `void set_on_enter(std::function<void()> cb)` | 按 Enter 时回调（M17c：Table 行内编辑提交） |
 | `void set_caret_pos(size_t pos)` | 设置光标字节位置（Table::begin_edit 初始定位 + 点击定位） |
+| `float caret_offset() const` | 文本起点 -> caret 的像素宽度（IME 锚定等外部用途） |
+| `bool has_selection() const` | ---- 选择 / 剪贴板（UI-101）---- |
+| `std::string selected_text() const` | 选中区间文本（字节下标 [min(anchor,caret), max)；密码框返回原文） |
+| `void select_all()` |  |
+| `void clear_selection()` |  |
+| `void set_drop_enabled(bool v)` | ---- 文件拖放 ---- |
+| `bool drop_enabled() const` |  |
+| `void set_on_drop(std::function<void(const std::vector<std::string>&)> cb)` | 自定义拖放处理：覆盖默认路径插入行为 |
+| `void insert_text(const std::string& s)` | 向外部暴露插入能力（供 on_drop_cb_ 回调使用） |
 | `bool on_key_down(int key, int mods) override` |  |
 | `bool on_char(unsigned int codepoint) override` |  |
 | `bool on_mouse_down(float x, float y, int button) override` |  |
+| `bool on_mouse_move(float x, float y) override` |  |
+| `bool on_mouse_up(float x, float y, int button) override` |  |
+| `bool on_drop(float x, float y, const std::vector<std::string>& paths) override` |  |
 | `void on_draw(Renderer& renderer) override` |  |
 
 
@@ -2641,6 +2827,33 @@ parent->add_child(tl);
 | 常量 | 值 | 说明 |
 | --- | --- | --- |
 | `theme_` | `nullptr` |  |
+
+
+### `ui/ui/titlebar.h`
+
+**依赖 include**：`ui/ui/widget.h`、`ui/core/math.h`、`functional`、`string`
+
+**类 `TitleBar`**
+（继承 `: Widget`）
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `TitleBar(float w, float h, const char* title = , Window* win = nullptr)` |  |
+| `void set_font(Font* f)` |  |
+| `void set_theme(const Theme* t)` |  |
+| `void set_title(const char* title)` |  |
+| `void set_icon(Font* font, uint32_t codepoint)` | 左上角应用图标：font 用 Font::draw_icon 画 codepoint（iconfont 已有码点，如 layui_icon::more） |
+| `void set_on_close(std::function<void()> cb)` |  |
+| `void set_on_minimize(std::function<void()> cb)` |  |
+| `void set_on_maximize(std::function<void()> cb)` |  |
+| `void set_minimize_visible(bool v)` | 右侧窗口键显隐（默认三键全显） |
+| `void set_maximize_visible(bool v)` |  |
+| `void set_close_visible(bool v)` |  |
+| `bool close_visible() const` |  |
+| `bool on_mouse_down(float x, float y, int button) override` |  |
+| `bool on_mouse_move(float x, float y) override` |  |
+| `bool on_mouse_up(float x, float y, int button) override` |  |
+| `void on_draw(Renderer& renderer) override` |  |
 
 
 ### `ui/ui/transfer.h`

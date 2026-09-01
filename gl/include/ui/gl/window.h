@@ -27,6 +27,8 @@ public:
     void wait_events_timeout(double timeout);
     void swap_buffers();
     void set_vsync(int interval);
+    // 把本窗口的 GL 上下文设为当前（多窗口各自独立上下文：绘制前先 make_current）
+    void make_current();
 
     int width() const { return width_; }
     int height() const { return height_; }
@@ -43,6 +45,8 @@ public:
     void set_icon(int count, const GLFWimage* images);
     void set_position(int xpos, int ypos);
     void get_position(int& xpos, int& ypos) const;
+    // 在主显示器工作区内居中（避免无边框窗口默认落在屏幕角落 0,0）
+    void center_on_primary_monitor();
     void set_size(int width, int height);
     void get_size(int& width, int& height) const;
     void set_size_limits(int minw, int minh, int maxw, int maxh);

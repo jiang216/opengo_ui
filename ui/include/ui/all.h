@@ -72,6 +72,7 @@
 #include "ui/ui/textarea.h"
 #include "ui/ui/textbox.h"
 #include "ui/ui/timeline.h"
+#include "ui/ui/titlebar.h"
 #include "ui/ui/transfer.h"
 #include "ui/ui/tree.h"
 #include "ui/ui/upload.h"

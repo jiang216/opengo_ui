@@ -36,7 +36,7 @@ MODULES = [
 CORE_ORDER = ["keycodes.h", "log.h", "math.h", "version.h"]
 GL_ORDER = ["window.h", "renderer.h", "texture.h", "font.h"]
 UI_ORDER = [
-    "widget.h", "theme.h", "layui_style.h", "layui_icons.h",
+    "widget.h", "scene.h", "theme.h", "layui_style.h", "layui_icons.h",
     "badge.h", "blockquote.h", "breadcrumb.h", "button.h", "card.h",
     "carousel.h", "checkbox.h", "circle.h", "code.h", "collapse.h",
     "colorpicker.h", "combobox.h", "countdown_text.h", "dropdown.h",
@@ -44,7 +44,7 @@ UI_ORDER = [
     "laydate.h", "laypage.h", "laytpl.h", "menubar.h", "menu.h", "navmenu.h", "panel.h",
     "panelwindow.h", "progress.h", "radiobutton.h", "radiogroup.h",
     "rate.h", "scrollbox.h", "slider.h", "switch.h", "table.h",
-    "tabs.h", "textbox.h", "timeline.h", "transfer.h", "tree.h",
+    "tabs.h", "textbox.h", "timeline.h", "titlebar.h", "transfer.h", "tree.h",
     "upload.h", "vbox.h",
 ]
 
@@ -57,6 +57,7 @@ NOTES = {
     "ui/gl/texture.h": "前置：GL 上下文就绪（Renderer init 之后）。",
     "ui/gl/font.h": "前置：GL 上下文就绪；`draw_text/draw_icon/measure_*` 依赖 Renderer。中文字体需 `load_cjk_font*` 后才可绘制非 ASCII。",
     "ui/ui/widget.h": "前置：无。根节点由应用持有，`add_child` 的控件为裸指针、由根节点或布局容器接管释放（见 `clear_children`/`destroy` 注释）。",
+    "ui/ui/scene.h": "前置：需要 `ui::Window`（已创建）+ `Renderer::init()`（GL 3.3 Core）。Scene 随窗口同步创建、构造即广播 Ready；每窗口一个 Scene 绑定同一 Window/Renderer/root。清理重置只清库内自管对象（flush_pending_destroys + close_popups），不裁子树——子节点可为栈对象。",
     "ui/ui/theme.h": "前置：无。把 `Theme` 对象地址经 `set_theme(&theme)` 分发给控件，切换主题时重建同一地址即可即时生效。",
     "ui/ui/layui_style.h": "前置：无。供绘制层查询 layui 工具色；`hex()` 十六进制转 Vec4。",
     "ui/ui/layui_icons.h": "前置：配合 `Font::load_icon_font()`（iconfont.ttf）与 `Font::draw_icon()` 使用。",
@@ -127,6 +128,25 @@ root.draw(renderer);
 // 生命周期：销毁子树用 clear_children()（递归释放）；销毁单控件及其子树用 destroy()
 root.clear_children();
 b->destroy();
+```""",
+    "ui/ui/scene.h":
+"""```cpp
+ui::Window window(1280, 900, "demo");
+ui::Renderer renderer; renderer.init();
+ui::Widget root; root.set_bounds(0, 0, 1280, 900);
+
+ui::Scene scene(&window, &renderer, &root);   // 随窗口同步创建，构造广播 Ready
+scene.run();                                  // poll + 分配(layout/dispatch/advance) + 消费(begin_frame+draw) + swap
+
+// 或自定义主循环：run_for(秒) 承载 --smoke 通用语义
+scene.run_for(2.0f);
+
+// 全量订阅：阶段向量广播 + 逐事件钩子
+scene.subscribe(ui::ScenePhase::Frame, [&]{ /* 每帧推进媒体/动画 */ });
+scene.subscribe(ui::ScenePhase::PostDraw, [&]{ renderer.draw_text(...); }); // 应用直绘 HUD
+scene.on(ui::SceneEvent::Key, [&](int key, int mods){ if (key==UI_KEY_ESCAPE) { scene.request_exit(); } return false; });
+
+// 清理重置只清库内自管对象；子节点可为栈对象，严禁对子树 delete
 ```""",
     "ui/ui/theme.h":
 """```cpp

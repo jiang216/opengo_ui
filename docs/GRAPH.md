@@ -5,14 +5,9 @@
 
 ## 统计
 
-- 节点: 152（BUG 144 / DOC 6 / META 2）
-- 边: 337
-- lint: 0 错误 / 5 警告
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-139
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-140
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-141
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-142
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-144
+- 节点: 156（BUG 148 / DOC 6 / META 2）
+- 边: 352
+- lint: 0 错误 / 0 警告
 
 ## 反链索引
 
@@ -999,22 +994,26 @@
 ### BUG:UI-139 · UI-139: 帧级门控下 Menu 左侧导航 hover 高亮不跟随——on_mouse_move 更新 hover_ 却漏标脏（2026-08-27）
 
 - 路径: `docs/CHANGELOG.md#ui-139-帧级门控下-menu-左侧导航-hover-高亮不跟随onmousemove-更新-hover-却漏标脏2026-08-27`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Menu 左侧导航 hover 高亮随跟随：`Menu::on_mouse_move` 重排 `hover_`/`active_hover_` 后必须比对旧值、目标变化即 `mark_dirty()`（基类 `dispatch_mouse_move` 只在控件 hover 边界翻转时标脏，菜单项间移动不标脏）——高亮框在菜单项间移动即时跟随，不需额外点击/切页；移出菜单高亮即时清除
 
 ### BUG:UI-140 · UI-140: ScrollBox/Code 覆写 draw 不清自身脏标记→dirty_children_ 常脏，短路 mark_dirty 上抛、容器内控件点击/悬停不刷新（2026-08-27）
 
 - 路径: `docs/CHANGELOG.md#ui-140-scrollboxcode-覆写-draw-不清自身脏标记dirtychildren-常脏短路-markdirty-上抛容器内控件点击悬停不刷新2026-08-27`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBox/Code 覆写 draw 末尾必须清自身脏（`dirty_=false; dirty_children_=false;`，与基类 `Widget::draw` 一致）——否则 `dirty_children_` 常脏使 `mark_dirty()` 沿父链短路 `break`，事件内子控件标脏到不了 root、滚动/点击/悬停不即时刷新
 
 ### BUG:UI-141 · UI-141: Transfer 双侧列表滚轮改 scroll 漏 mark_dirty——同类漏标脏补全（2026-08-27）
 
 - 路径: `docs/CHANGELOG.md#ui-141-transfer-双侧列表滚轮改-scroll-漏-markdirty同类漏标脏补全2026-08-27`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Transfer 双侧列表滚轮即时刷新：`Transfer::on_mouse_scroll`（滚动条目）直接改 `side->scroll` 后必须 `mark_dirty()`（与 `move/add_item/clear` 等 setter 一致），否则滚轮滚动不刷新
 
 ### BUG:UI-142 · UI-142: ScrollBox 固定头部 + 背景直角化——页面顶部留白固定且与左栏拼全宽横条（2026-08-27）
 
 - 路径: `docs/CHANGELOG.md#ui-142-scrollbox-固定头部--背景直角化页面顶部留白固定且与左栏拼全宽横条2026-08-27`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBox 固定头部 `set_header_height(float)`：置顶一条固定不随滚动移动的头部带，内容区/滚动范围/裁减区以其为顶边内边距；默认背景改为直角 `draw_quad(bounds_, button_normal)`（消除面板圆角与左导航直角月牙空隙），`layui-round` class 可显式切回圆角
 
 ### BUG:UI-143 · UI-143: Table 新增下拉单元格列——表格行内下拉选择（2026-08-30）
 
@@ -1025,7 +1024,37 @@
 ### BUG:UI-144 · UI-144: ScrollBox 滚动条按下滑块不再立即跳转，点击轨道空白仍跳转（2026-08-28）
 
 - 路径: `docs/CHANGELOG.md#ui-144-scrollbox-滚动条按下滑块不再立即跳转点击轨道空白仍跳转2026-08-28`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地
+
+### BUG:UI-145 · UI-145: 全方位优化批次——渲染性能/内存生命周期/代码去重/构建与清理（2026-08-31）
+
+- 路径: `docs/CHANGELOG.md#ui-145-全方位优化批次渲染性能内存生命周期代码去重构建与清理2026-08-31`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#优化批次契约（不改 API 语义）：Renderer 投影矩阵在 `set_viewport` 缓存、颜色/纹理管线状态合并（不得逐 draw 重算/重传投影）；字形旋转三角函数 CPU 预计算经 uniform 下传；事件分发子节点遍历用 ≤32 栈数组快照免堆分配（语义同 UI-073）；标准光标一次创建缓存复用（`StandardCursorCache`）；`Image::texture_` 为独占 `unique_ptr` 随控件释放；`Font::draw_text` 双载合并共享实现；UTF-8 解码统一 `core/ui/core/utf8.h`（textbox/textarea/table 收敛）；scissor/标准光标 helper 去重
+
+### BUG:UI-146 · UI-146: 新增统一生命周期抽象 ui::Scene——生产者→分配者→消费者→清理重置（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-146-新增统一生命周期抽象-uiscene生产者分配者消费者清理重置2026-09-01`
+- 反链(6):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Scene 生命周期四阶段：`ui::Scene(window, renderer)` 随窗口同步创建，构造广播 `ScenePhase::Ready`；`run()/run_for(秒)` 承载 poll+swap 完整循环与 `--smoke` 通用语义；`reset()/shutdown()` 随 `~Scene()` 自动收尾——禁止应用手写 poll/layout/dispatch/draw/swap 五段主循环
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Scene 全量发布-订阅：`subscribe(ScenePhase, fn)` 阶段向量广播（一阶段多观察者，Phase 含 Ready/Reset/Frame/PostDraw/Cleanup/Shutdown）、`on(phase, fn)` 便捷重载、`set_event_hook(SceneEvent, hook)` 逐事件钩子（返回 true=消费，含 MouseMove/Down/Up/Scroll/Key/Char/Drop/Resized）；`subscribe/on` 返回**订阅 token**（非 0），`unsubscribe(token)` 按 token 单独摘除单个观察者（不清其他 App 级订阅）；`event_key()/event_scroll_dx/y()` 取随路数据
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#页面级订阅生命周期（layui_test 展示 > 生命周期）：页面 build 内经 `host.scene` 挂的 PostDraw/Frame 等局部订阅，切页时必须在页面 `destroy` 钩子统一 `unsubscribe(token)`（在预览区 `clear_children` 之前）逐个摘除，**禁止** `clear_observers()` 清掉 App 级订阅，且不得持有已释放页面控件的闭包指针
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Scene 分配开关 `dispatch_mouse/scroll/nav_keys/text/resize`（默认全开）保留各应用迁移前按键语义；Escape 不在标准模板（属应用语义经 Key 钩子自处理）——迁移应用禁止为省事改而改原按键语义
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Scene 清理重置只清库内自管对象（`flush_pending_destroys` + `close_popups`），**禁止 `clear_children()`**——Widget 容器默认不拥有子树，其子节点可为栈上对象（`root.add_child(&栈Label)`），对栈对象 `delete` 即堆损坏崩溃（0xC0000374）
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#多窗口独立 GL 上下文：每窗口 = 独立 `Scene` + `Window`/`Renderer`/`Font`/`root`；绘制某窗口前先 `window.make_current()`（`Window::make_current()`），禁止同上下文运行两个 `Renderer`（Renderer 实例级缓存 active_program_/scissor_stack_/proj_[16] 等 GL 全局状态会冲突）
+
+### BUG:UI-147 · UI-147: 新增自绘系统风格标题条 TitleBar + 窗口居中——无边框窗口可拖动 / 关闭（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-147-新增自绘系统风格标题条-titlebar--窗口居中无边框窗口可拖动--关闭2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#无边框窗口框架：`GLFW_DECORATED=false` 下，`ui::TitleBar(w,h,title,win)` 提供自绘系统风格标题条（空白区 `start_drag/update_drag/end_drag` 拖动整窗、关闭钮触发 `on_close_`，win 为空仅绘制）；`Window::center_on_primary_monitor()` 在主显示器工作区内居中（窗口大于工作区贴左上）。主窗口 / Scene 子窗均经其拖动与关闭
+
+### BUG:UI-148 · UI-148: TitleBar 补齐 最小化/最大化/关闭 三键 + 左上角应用图标；Menu 分组头箭头改用 iconfont + 可联动收起子菜单列（2026-09-01）
+
+- 路径: `docs/CHANGELOG.md#ui-148-titlebar-补齐-最小化最大化关闭-三键--左上角应用图标menu-分组头箭头改用-iconfont--可联动收起子菜单列2026-09-01`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换图标 `□`/`⧉`、关闭钮 `on_close_`）、`set_icon(font,cp)` 左上角应用图标；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -1035,7 +1064,7 @@
 ### DOC:ARCHITECTURE · ARCHITECTURE
 
 - 路径: `docs/ARCHITECTURE.md`
-- 反链(15):
+- 反链(16):
   - `META:CHANGELOG` (mention) — UI-003: 分层框架骨架与构建验证（2026-08-09）
   - `META:CHANGELOG` (mention) — UI-004: M1 渲染管线升级：圆角矩形 SDF + 纹理/字体 + 控件树（2026-08-09）
   - `META:CHANGELOG` (mention) — UI-005: M2 布局系统：VBox/Label + 滚轮/窗口缩放（2026-08-09）
@@ -1051,6 +1080,7 @@
   - `DOC:PLAN` (mention) — 终点达成（M16 验收）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:README` (mention) — OpenGL UI
+  - `META:CHANGELOG` (mention)
 
 ### DOC:BUILD · BUILD
 
@@ -1261,6 +1291,10 @@
 | `BUG:UI-142` | BUG | UI-142: ScrollBox 固定头部 + 背景直角化——页面顶部留白固定且与左栏拼全宽横条（2026-08-27） | `docs/CHANGELOG.md` |
 | `BUG:UI-143` | BUG | UI-143: Table 新增下拉单元格列——表格行内下拉选择（2026-08-30） | `docs/CHANGELOG.md` |
 | `BUG:UI-144` | BUG | UI-144: ScrollBox 滚动条按下滑块不再立即跳转，点击轨道空白仍跳转（2026-08-28） | `docs/CHANGELOG.md` |
+| `BUG:UI-145` | BUG | UI-145: 全方位优化批次——渲染性能/内存生命周期/代码去重/构建与清理（2026-08-31） | `docs/CHANGELOG.md` |
+| `BUG:UI-146` | BUG | UI-146: 新增统一生命周期抽象 ui::Scene——生产者→分配者→消费者→清理重置（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-147` | BUG | UI-147: 新增自绘系统风格标题条 TitleBar + 窗口居中——无边框窗口可拖动 / 关闭（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-148` | BUG | UI-148: TitleBar 补齐 最小化/最大化/关闭 三键 + 左上角应用图标；Menu 分组头箭头改用 iconfont + 可联动收起子菜单列（2026-09-01） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1486,7 +1520,21 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-136` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-137` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-138` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-139` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-140` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-141` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-142` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-143` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-144` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-145` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-146` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-146` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-146` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-146` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-146` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-146` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-147` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-148` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1578,6 +1626,7 @@
 | `META:CHANGELOG` | `BUG:UI-097` | ref |
 | `META:CHANGELOG` | `BUG:UI-098` | ref |
 | `META:CHANGELOG` | `BUG:UI-117` | ref |
+| `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |
 | `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |
 | `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |
 | `META:CHANGELOG` | `DOC:ARCHITECTURE` | mention |

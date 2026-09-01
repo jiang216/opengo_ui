@@ -243,6 +243,18 @@ void Window::get_position(int& xpos, int& ypos) const {
     else { xpos = 0; ypos = 0; }
 }
 
+void Window::center_on_primary_monitor() {
+    if (!window_) return;
+    int wsx, wsy, wsw, wsh;
+    get_monitor_workarea(get_primary_monitor(), wsx, wsy, wsw, wsh);
+    int ww, wh;
+    get_size(ww, wh);
+    // 窗口大于工作区时至少贴左上（不出现窗口超出屏幕不可达）
+    int x = wsx + (wsw > ww ? (wsw - ww) / 2 : 0);
+    int y = wsy + (wsh > wh ? (wsh - wh) / 2 : 0);
+    set_position(x, y);
+}
+
 void Window::set_size(int width, int height) {
     if (window_) glfwSetWindowSize(window_, width, height);
 }
@@ -407,7 +419,7 @@ void Window::start_drag(float /*mouse_x*/, float /*mouse_y*/) {
     dragging_ = true;
 }
 
-void Window::update_drag(float /*mouse_x*/, float /*mouse_y*/) {
+void Window::update_drag(float mouse_x, float mouse_y) {
     if (!window_ || !dragging_) return;
 #if defined(_WIN32)
     POINT pt;

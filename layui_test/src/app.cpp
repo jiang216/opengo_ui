@@ -9,12 +9,15 @@
 #include "ui/ui/dropdown.h"
 #include "ui/ui/image.h"
 #include "ui/ui/label.h"
+#include "ui/ui/layui_icons.h"
 #include "ui/ui/menu.h"
 #include "ui/ui/scrollbox.h"
 #include "ui/ui/switch.h"
 #include "ui/ui/tabs.h"
 #include "ui/ui/theme.h"
+#include "ui/ui/titlebar.h"
 #include "ui/ui/widget.h"
+#include "ui/ui/scene.h"
 
 #include <algorithm>
 #include <chrono>
@@ -37,6 +40,8 @@
 namespace {
 
 constexpr float kHeaderH = 60.f;
+constexpr float kTitleBarH = 30.f;   // 自绘系统风格标题条高（顶部可拖动条）
+constexpr float kTopH = kTitleBarH + kHeaderH;  // 内容区起始 y（标题条 + 头部）
 constexpr float kSidebarW = 240.f;  // 新镜像 docs/2 侧栏宽（ws-menu 240）
 constexpr float kChildSidebarW = 160.f;  // 第二列子菜单宽（镜像 side-child 160）
 constexpr float kTabTitleH = 40.f;
@@ -233,7 +238,6 @@ int main(int argc, char** argv) {
                 click_points.push_back({cx, cy});
         }
     }
-    const auto smoke_start = std::chrono::steady_clock::now();
     bool shot_done_ = false;
 
     ui::log_info("layui_test %s starting (%d pages)", ui::version_string(),
@@ -244,6 +248,7 @@ int main(int argc, char** argv) {
         ui::log_error("no GL context");
         return 1;
     }
+    window.center_on_primary_monitor();  // 无边框窗口默认常落 0,0 → 居中到主显示器工作区
     ui::Renderer renderer;
     if (!renderer.init()) {
         ui::log_error("renderer init failed");
@@ -274,12 +279,23 @@ int main(int argc, char** argv) {
 
     ui::Theme theme = ui::Theme::make_layui();
 
-    ui::Widget root;
-    root.set_bounds(0, 0, (float)window.width(), (float)window.height());
+    // ui::Scene：统一驱动生命周期（生产者→分配者→消费者→清理重置）
+    ui::Scene scene(window, renderer);
+    scene.set_root_background(theme.window_bg);
+
+    ui::Widget& root = scene.root();
 
     // 第二列子菜单可见态：选中数据表格板块时为 true，内容区右移 kChildSidebarW
     bool child_visible = false;
-    const float content_y = kHeaderH + kTabTitleH;
+    const float content_y = kTitleBarH + kHeaderH + kTabTitleH;
+
+    // ---- 顶部自绘标题条（无边框窗口可拖动 + 最小化/最大化/关闭三键 + 左上角应用图标）----
+    ui::TitleBar titlebar((float)window.width(), kTitleBarH, "layui_test", &window);
+    titlebar.set_font(&font);
+    titlebar.set_theme(&theme);
+    titlebar.set_icon(&font, ui::layui_icon::app);  // iconfont 已烘焙（见 load_system_icon）左侧应用图标
+    titlebar.set_on_close([&window]() { window.set_should_close(true); });
+    root.add_child(&titlebar);
 
     // ---- 顶部栏：深色头部（新镜像 docs/2）+ logo + 组件/笔记/生态 + 主题开关 ----
     Header header((float)window.width(), kHeaderH);
@@ -308,35 +324,35 @@ int main(int argc, char** argv) {
     header.add_theme_switch(theme_sw);
 
     // ---- 侧栏：可滚动白色容器（新镜像 ws-menu 白底）+ 分组 Menu（layui-menu 克隆）----
-    ui::ScrollBox sidebar(0, kHeaderH, kSidebarW, (float)window.height() - kHeaderH);
+    ui::ScrollBox sidebar(0, kTopH, kSidebarW, (float)window.height() - kTopH);
     sidebar.set_theme(&theme);
     sidebar.set_padding(0.f);
     sidebar.set_spacing(0.f);
     sidebar.add_class("ws-menu");
     root.add_child(&sidebar);
 
-    ui::Menu nav(0, 0, kSidebarW, (float)window.height() - kHeaderH);
+    ui::Menu nav(0, 0, kSidebarW, (float)window.height() - kTopH);
     nav.set_font(&font);
     nav.set_theme(&theme);
     sidebar.add_child(&nav);
 
     // ---- 第二列子菜单（数据表格板块，新镜像无此列，但测试程序需导航 30+ 子页）----
-    ui::ScrollBox child_sidebar(kSidebarW, kHeaderH, kChildSidebarW,
-                                (float)window.height() - kHeaderH);
+    ui::ScrollBox child_sidebar(kSidebarW, kTopH, kChildSidebarW,
+                                (float)window.height() - kTopH);
     child_sidebar.set_theme(&theme);
     child_sidebar.set_padding(0.f);
     child_sidebar.set_spacing(0.f);
     child_sidebar.add_class("ws-menu");
     child_sidebar.visible = false;  // 默认隐藏，选中数据表格板块时显示
     root.add_child(&child_sidebar);
-    ui::Menu child_nav(0, 0, kChildSidebarW, (float)window.height() - kHeaderH);
+    ui::Menu child_nav(0, 0, kChildSidebarW, (float)window.height() - kTopH);
     child_nav.set_font(&font);
     child_nav.set_theme(&theme);
     child_sidebar.add_child(&child_nav);
 
     // ---- 内容区：Tabs（预览/查看代码/帮助）+ 三个视图 ----
     // 位置由 place_content() 依据第二列可见态动态计算（构造先占位，随后 place_content 定界）
-    ui::Tabs tabs(kSidebarW, kHeaderH, (float)window.width() - kSidebarW, kTabTitleH);
+    ui::Tabs tabs(kSidebarW, kTopH, (float)window.width() - kSidebarW, kTabTitleH);
     tabs.set_font(&font);
     tabs.set_theme(&theme);
     tabs.add_class("layui-tab-brief");
@@ -382,9 +398,9 @@ int main(int argc, char** argv) {
         const float cw = (float)window.width() - content_x;
         const float ch = (float)window.height() - content_y;
         child_sidebar.visible = child_visible;  // 子菜单可见态跟随 child_visible
-        child_sidebar.set_bounds(kSidebarW, kHeaderH, kChildSidebarW, (float)window.height() - kHeaderH);
-        child_nav.set_bounds(0, 0, kChildSidebarW, (float)window.height() - kHeaderH);
-        tabs.set_bounds(content_x, kHeaderH, cw, kTabTitleH);
+        child_sidebar.set_bounds(kSidebarW, kTopH, kChildSidebarW, (float)window.height() - kTopH);
+        child_nav.set_bounds(0, 0, kChildSidebarW, (float)window.height() - kTopH);
+        tabs.set_bounds(content_x, kTopH, cw, kTabTitleH);
         preview.set_bounds(content_x, content_y, cw, ch);
         code.set_bounds(content_x, content_y, cw, ch);
         help.set_bounds(content_x, content_y, cw, ch);
@@ -411,6 +427,12 @@ int main(int argc, char** argv) {
     auto populate_child = [&](const char* board) {
         child_nav.clear();
         child_nav.add_group(board ? board : "子菜单");
+        // 点击分组头（如"数据表格"）：同时收起/展开整列子菜单（缺 UI-148 归因：分组头仅折叠
+        // 组内子项、不联动外部列显隐，需宿主经 on_group_click 回调联动 child_sidebar 显隐）
+        child_nav.set_on_group_click([&](const char* /*g*/) {
+            child_visible = !child_visible;
+            place_content();
+        });
         active_board = board ? board : "";
         // 按 (seg, order) 排序板内子页，seg 变化间插分隔线（镜像 <hr> 分段）
         std::vector<int> sub;
@@ -441,6 +463,7 @@ int main(int argc, char** argv) {
         host.help = &help;
         host.font = &font;
         host.theme = &theme;
+        host.scene = &scene;
         // 先清理上一页的根级弹出（destroy 钩子），再关闭全部弹出面板（分离根子指针），
         // 最后释放控件树 —— 防止切页后 root 残留悬空引用（UI-033）
         if (current_page >= 0 && current_page < (int)pages.size() &&
@@ -545,26 +568,18 @@ int main(int argc, char** argv) {
         if (shot_scroll > 0.f) preview.set_scroll_offset(shot_scroll);
     }
 
-    auto last = std::chrono::steady_clock::now();
-    auto prev = last;
+    // ---- Scene 生命周期订阅 ----
+    auto last = std::chrono::steady_clock::now();  // HUD 每秒 tick 计时
     int frames = 0;
     char hud[64] = "";  // 右上角 HUD：每秒 tick 更新内容，每帧绘制（不闪烁，UI-049）
     // 冒烟自动切页游标（每 500ms 切下一页，验证 release_tree 无崩溃）
     int smoke_page = 0;
-    auto last_switch = last;
+    auto last_switch = std::chrono::steady_clock::now();
     bool smoke_switched_any = false;
     bool clicks_injected = false;
-    while (!window.should_close()) {
-        window.poll_events();
-        const float dt = std::chrono::duration<float>(std::chrono::steady_clock::now() - prev).count();
-        prev = std::chrono::steady_clock::now();
-        if (smoke_seconds > 0.0 &&
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - smoke_start).count() >=
-                smoke_seconds) {
-            ui::log_info("smoke: exiting after %.1fs%s", smoke_seconds,
-                         smoke_switched_any ? " (page switches ok)" : "");
-            break;
-        }
+
+    // 帧前：冒烟自动切页 + --click 合成点击注入（脚本化交互验证，点击会重建行控件）
+    scene.subscribe(ui::ScenePhase::Frame, [&](ui::Scene&, float) {
         if (smoke_seconds > 0.0 && (int)pages.size() > 1 &&
             std::chrono::steady_clock::now() - last_switch >= std::chrono::milliseconds(500)) {
             smoke_page = (smoke_page + 1) % (int)pages.size();
@@ -572,21 +587,7 @@ int main(int argc, char** argv) {
             last_switch = std::chrono::steady_clock::now();
             smoke_switched_any = true;
         }
-        (void)dt;
-        root.advance(dt);
-
-        if (window.resized()) {
-            renderer.set_viewport(window.width(), window.height());
-            root.set_bounds(0, 0, (float)window.width(), (float)window.height());
-            header.set_bounds(0, 0, (float)window.width(), kHeaderH);
-            sidebar.set_bounds(0, kHeaderH, kSidebarW, (float)window.height() - kHeaderH);
-            nav.set_bounds(0, 0, kSidebarW, (float)window.height() - kHeaderH);
-            place_content();
-        }
-
-        root.layout();
-        // --click x,y：首次布局后注入合成点击（脚本化交互验证，如树形表格展开/折叠），
-        // 点击可能重建行控件，注入后再布局一次保证首帧截图正确
+        // 首次布局后注入合成点击（与旧主循环一致），再布局一次保证首帧截图正确
         if (!click_points.empty() && !clicks_injected) {
             clicks_injected = true;
             for (const auto& c : click_points) {
@@ -596,33 +597,29 @@ int main(int argc, char** argv) {
             }
             root.layout();
         }
-        root.dispatch_mouse_move(window.mouse_x(), window.mouse_y());
-        if (window.mouse_pressed(0)) root.dispatch_mouse_down(window.mouse_x(), window.mouse_y(), 0);
-        if (window.mouse_released(0)) root.dispatch_mouse_up(window.mouse_x(), window.mouse_y(), 0);
-        const float sdx = window.scroll_dx();
-        const float sdy = window.scroll_dy();
-        if (sdx != 0.f || sdy != 0.f)
-            root.dispatch_mouse_scroll(window.mouse_x(), window.mouse_y(), sdx, sdy);
+    });
 
-        const int nav_keys[] = {ui::KeyTab, ui::KeyUp, ui::KeyDown, ui::KeyLeft, ui::KeyRight};
-        for (int k : nav_keys) {
-            if (window.key_pressed(k))
-                root.dispatch_key_down(k, window.key_down(ui::KeyLeftShift) ? ui::ModShift : 0);
+    // 窗口尺寸变化：Scene 已更新视口+root；此处重排顶部/侧栏 + 内容
+    scene.set_event_hook(ui::SceneEvent::Resized, [&](ui::Scene&) {
+        titlebar.set_bounds(0, 0, (float)window.width(), kTitleBarH);
+        header.set_bounds(0, kTitleBarH, (float)window.width(), kHeaderH);
+        sidebar.set_bounds(0, kTopH, kSidebarW, (float)window.height() - kTopH);
+        nav.set_bounds(0, 0, kSidebarW, (float)window.height() - kTopH);
+        place_content();
+        return true;
+    });
+
+    // Escape：关最上层弹窗（非标准编辑键 → Key 钩子自处理；其余键留给标准模板分发）
+    scene.set_event_hook(ui::SceneEvent::Key, [&](ui::Scene& s) {
+        if (s.event_key() == ui::KeyEscape) {
+            root.close_topmost_popup();
+            return true;
         }
-        if (window.key_pressed(ui::KeyEnter)) root.dispatch_key_down(ui::KeyEnter, 0);
-        if (window.key_pressed(ui::KeySpace)) root.dispatch_key_down(ui::KeySpace, 0);
-        if (window.key_pressed(ui::KeyBackspace)) root.dispatch_key_down(ui::KeyBackspace, 0);
-        if (window.key_pressed(ui::KeyDelete)) root.dispatch_key_down(ui::KeyDelete, 0);
-        if (window.key_pressed(ui::KeyHome)) root.dispatch_key_down(ui::KeyHome, 0);
-        if (window.key_pressed(ui::KeyEnd)) root.dispatch_key_down(ui::KeyEnd, 0);
-        if (window.key_pressed(ui::KeyEscape)) root.close_topmost_popup();
-        const int nchar = window.char_pressed_count();
-        for (int i = 0; i < nchar; ++i) root.dispatch_char(window.char_pressed_at(i));
-        window.clear_chars();
+        return false;
+    });
 
-        renderer.begin_frame(theme.window_bg);
-        root.draw(renderer);
-
+    // 帧后：截图（glReadPixels，begin_frame+root.draw 之后）+ HUD 绘制
+    scene.on(ui::ScenePhase::PostDraw, [&](ui::Scene& s) {
         if (shot_path && !shot_done_) {
             shot_done_ = true;
             const int w = window.width();
@@ -636,21 +633,24 @@ int main(int argc, char** argv) {
             FILE* f = fopen(shot_path, "wb");
             if (f) {
                 fwrite("P7\n", 1, 3, f);
-                std::fprintf(f, "WIDTH %d\nHEIGHT %d\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n", w, h);
+                std::fprintf(f,
+                             "WIDTH %d\nHEIGHT %d\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n",
+                             w, h);
                 fwrite(flipped.data(), 1, flipped.size(), f);
                 fclose(f);
                 ui::log_info("shot saved: %s (%dx%d)", shot_path, w, h);
             } else {
                 ui::log_error("shot save failed: %s", shot_path);
             }
-            break;
+            s.request_exit();  // 截图完成即退出
         }
 
         ++frames;
         auto now = std::chrono::steady_clock::now();
         if (now - last >= std::chrono::seconds(1)) {
             std::snprintf(hud, sizeof(hud), "layui_test | page %d/%d | %.0f fps", current_page + 1,
-                          (int)pages.size(), frames / std::chrono::duration<double>(now - last).count());
+                          (int)pages.size(),
+                          frames / std::chrono::duration<double>(now - last).count());
             frames = 0;
             last = now;
         }
@@ -661,8 +661,15 @@ int main(int argc, char** argv) {
             font.draw_text(renderer, hud, hud_x, (kHeaderH - font.line_height()) * 0.5f,
                            theme.text_secondary);
         }
+    });
 
-        window.swap_buffers();
+    // 运行：--smoke 指定秒自动退出（含切页统计），否则直至窗口关闭
+    if (smoke_seconds > 0.0) {
+        scene.run_for(smoke_seconds);
+        ui::log_info("smoke: exiting after %.1fs%s", smoke_seconds,
+                     smoke_switched_any ? " (page switches ok)" : "");
+    } else {
+        scene.run();
     }
     return 0;
 }

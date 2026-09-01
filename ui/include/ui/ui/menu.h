@@ -39,6 +39,8 @@ public:
     void set_style_overrides(const Vec4& bg, const Vec4& border, const Vec4& hover, const Vec4& text);
     // 普通菜单项被点击时回调（title 文本），供宿主（如 Dropdown）做选中/收起
     void set_on_item_click(std::function<void(const char*)> cb);
+    // 分组头被点击时回调（title 文本，spread 已切换后触发），供宿主联动收起/展开外部面板
+    void set_on_group_click(std::function<void(const char*)> cb);
 
     float preferred_height() const override;
 
@@ -85,6 +87,7 @@ private:
     bool style_ov_ = false;
     Vec4 ov_bg_, ov_border_, ov_hover_, ov_text_;
     std::function<void(const char*)> on_item_click_;
+    std::function<void(const char*)> on_group_click_;
 };
 
 }  // namespace ui

@@ -2,6 +2,7 @@
 
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
+#include "ui/ui/layui_icons.h"
 #include "ui/ui/theme.h"
 
 #include <algorithm>
@@ -134,6 +135,10 @@ void Menu::set_on_item_click(std::function<void(const char*)> cb) {
     on_item_click_ = std::move(cb);
 }
 
+void Menu::set_on_group_click(std::function<void(const char*)> cb) {
+    on_group_click_ = std::move(cb);
+}
+
 float Menu::preferred_height() const {
     compute_visibility();
     float h = 0.f;
@@ -238,13 +243,9 @@ void Menu::draw_item(Renderer& renderer, Item& it, int /*index*/) {
 
         const float ax = bounds_.x + bounds_.w - kArrowSize - kItemPad;
         const float ay = it.y0 + ih * 0.5f;
-        if (is_spread) {
-            Vec2 tri[3] = {{ax - kArrowSize, ay - 2.f}, {ax + kArrowSize, ay - 2.f}, {ax, ay - 2.f + kArrowSize}};
-            renderer.draw_polygon(tri, 3, muted);
-        } else {
-            Vec2 tri[3] = {{ax - kArrowSize, ay + 2.f - kArrowSize}, {ax + kArrowSize, ay + 2.f - kArrowSize}, {ax, ay + 2.f}};
-            renderer.draw_polygon(tri, 3, muted);
-        }
+        // 折叠箭头用 iconfont 码点（原先裸 draw_polygon 三角、图标库缺失：UI-148）
+        const uint32_t arrow_cp = is_spread ? layui_icon::down : layui_icon::right;
+        font_->draw_icon(renderer, arrow_cp, ax, ay, ih * 0.45f, muted);
         return;
     }
 
@@ -431,6 +432,7 @@ bool Menu::on_mouse_down(float x, float y, int button) {
         if (y >= it.y0 && y < it.y1) {
             if (it.type == Item::Group && it.allow_spread) {
                 it.spread = !it.spread;
+                if (on_group_click_) on_group_click_(it.text.c_str());
                 return true;
             }
             if (it.type == Item::Parent) {
