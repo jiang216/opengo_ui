@@ -80,6 +80,12 @@ void Scene::notify_phase(ScenePhase p, float dt) {
 // 标准路径收敛各应用重复的主循环模板；按键/滚轮/鼠标明细开关见各 public bool。
 void Scene::frame(float dt) {
     frame_began_ = true;  // 首帧起 set_chrome 前置断言生效（见 set_chrome）
+    // 鼠标按下/抬起边沿在 Frame 订阅者之前快照（peek 非消耗读）。控件树分发依赖这些边沿，
+    // 而 Frame 订阅者（如应用拖拽逻辑）也会消费 window.mouse_pressed/released——若 Scene 在
+    // 订阅者之后才读，边沿会被最先读者吞掉，导致控件树永远收不到按下/抬起（标题栏等按钮失效，
+    // UI-173）。此处用非消耗 peek 各取所需：分发者与订阅者共享同一边沿。
+    const bool mouse_down_edge = dispatch_mouse && window_.mouse_pressed_peek(0);
+    const bool mouse_up_edge = dispatch_mouse && window_.mouse_released_peek(0);
     // 帧前派发：媒体推进/动画/工具逻辑（如 video.advance、carousel.advance）
     notify_phase(ScenePhase::Frame, dt);
     root_.advance(dt);
@@ -104,14 +110,14 @@ void Scene::frame(float dt) {
             ;  // 已消费
         else
             root_.dispatch_mouse_move(mx, my);
-        if (window_.mouse_pressed(0)) {
+        if (mouse_down_edge) {
             if (hooks_[(size_t)SceneEvent::MouseDown] &&
                 hooks_[(size_t)SceneEvent::MouseDown](*this))
                 ;
             else
                 root_.dispatch_mouse_down(mx, my, 0);
         }
-        if (window_.mouse_released(0)) {
+        if (mouse_up_edge) {
             if (hooks_[(size_t)SceneEvent::MouseUp] &&
                 hooks_[(size_t)SceneEvent::MouseUp](*this))
                 ;

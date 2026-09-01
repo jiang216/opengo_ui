@@ -76,9 +76,11 @@ int main(int argc, char** argv) {
     ui::Window& winB = containerB.window();
 
     // ---- 多窗口主循环：逐窗口 make_current + frame + swap ----
+    // UI-173：任一窗口点关闭即整体退出（&&）。此前用 || 需两窗口全部关闭才退出，
+    // 表现为「点一个窗口的关闭没反应、必须两个都点」。
     const auto start = std::chrono::steady_clock::now();
     auto prev = start;
-    while ((!winA.should_close() || !winB.should_close()) &&
+    while (winA.should_close() == false && winB.should_close() == false &&
            (smoke_seconds <= 0.0 ||
             std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count() <
                 smoke_seconds)) {

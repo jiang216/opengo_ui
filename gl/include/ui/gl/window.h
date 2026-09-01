@@ -115,6 +115,11 @@ public:
     // 边沿触发：本轮 poll 内新按下/新抬起（读一次后清除）
     bool mouse_pressed(int button);
     bool mouse_released(int button);
+    // 边沿触发(peek)：本轮 poll 内新按下/新抬起，但不清除标志。
+    // 供 Scene 在 Frame 订阅者之前快照同一边沿（避免最先读者的消费吞掉后续分发者的边沿，
+    // 见 scene.cpp 鼠标分发）——「生产者-消费方」与「分配者-控件树」可用非消耗读各取所需。
+    bool mouse_pressed_peek(int button) const;
+    bool mouse_released_peek(int button) const;
     // 边沿触发：本轮 poll 内滚轮滚动量（dx,dy，读一次后清零）
     float scroll_dx();
     float scroll_dy();

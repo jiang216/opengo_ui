@@ -3,6 +3,21 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-173: 鼠标按下/抬起边沿被 Frame 订阅者抢先消费，Scene 控件树收不到 down/up → 标题栏三键（及其它控件点击）全部无响应；多窗口循环须两窗口都关才退出（2026-09-01）
+- **级别**：缺陷修复（ui 库 + apps）。根因有两处，分别归属 ui 库与测试程序，均按 AGENTS 框架修复。
+- **根因A（ui 库，主缺陷）**：`Scene::frame()` 在 `notify_phase(ScenePhase::Frame)`（scene.cpp 帧前派发媒体/动画/工具逻辑）**之后**才轮询 `window_.mouse_pressed(0)/mouse_released(0)` 来分发 down/up 给控件树。而 `mouse_pressed/released` 是**读一次即清除**的边沿（window.cpp）。image_viewer 的 Frame 订阅者（image_viewer.cpp 拖拽 `if (window.mouse_pressed(0) ...)`）每帧先于 Scene 读取并**消费**该边沿，导致 Scene 在 scene.cpp 分发处读到 false → `root_.dispatch_mouse_down/up` **永不被调用** → 标题栏三键（最大化/最小化/关闭）和所有 widget 的点击按下/抬起都收不到，用户见「hover 红底正常、点击无响应」。
+- **修复（ui 库，scene.cpp + window.h/cpp）**：在 `Scene::frame()` **最顶部、Frame 订阅者之前**用新增的**非消耗 peek**（`Window::mouse_pressed_peek/mouse_released_peek`，window.h/window.cpp 实现，读不清除）快照 down/up 边沿进局部量 `mouse_down_edge/mouse_up_edge`，分发处改用它。peek 不消费标志，因此 **Scene 分发者与 Frame 订阅者共享同一按下/抬起边沿**：控件树正常收到 down/up，应用拖拽逻辑仍读到原有 press。`dispatch_mouse=false`（应用自处理）时 peek 短路为 false，不下发、也不干扰应用自读。
+- **根因B（apps，scene_multiwin.cpp）**：主循环条件 `while ((!winA.should_close() || !winB.should_close()) && ...)` 用 `||`，须两窗口都 `should_close` 才退出 → 点一个窗口关闭后该窗口虽置了 should_close 但循环继续逐帧绘制，表现为「没关闭、必须两个都点才退出」。
+- **修复（scene_multiwin.cpp）**：改为 `while (winA.should_close()==false && winB.should_close()==false && ...)` ——**任一**窗口点关闭即整体退出（用户要求「各个窗口独立关闭」）。关闭的窗口由 GLFW 即时销毁，循环随之退出，不再对已关窗口 make_current/frame/swap。
+- **回归清单（逐项核对，防错误复发）**：
+  1. **标题栏三键**（image_viewer/scene_multiwin/video_player 等未消费边沿冲突场景）：移动出红/白 hover 反馈正常，**点击最大化/最小化/关闭均即时生效**（关闭→窗口关闭、最小化→iconify、最大化→全屏/还原 toggle），任一不再「无响应」。
+  2. **应用自处理鼠标**（`dispatch_mouse=false` 或 Frame 订阅者读 `mouse_pressed`，如 image_viewer 拖拽平移、video 拖进度）：原有 press/down/released 语义不回归——Frame 订阅者仍能读到按下边沿触发拖拽；Scene 不再抢占/漏发。
+  3. **demo/api_demo 标题栏**（此前已验证关闭有效）：peek 短路不影响其 `set_icon`+`load_icon_font` 标题栏及按钮响应，关闭/最小化/最大化仍按触摸命中工作。
+  4. **键盘/滚轮** 分发顺序不改（仍 Frame 订阅者之后）——仅鼠标 down/up 提前快照，滚动与按键行为不变。
+  5. **多窗口 scene_multiwin**：任一窗口标题栏关闭即整体退出；两窗口各自独立渲染/独立上下文不被破坏；`--smoke` 仍按时长退出。
+- **验证**：x64-all media ON Release / x64-debug media OFF Debug 构建通过。image_viewer 带临时日志复测关闭按钮，完整链路 `on_mouse_down → hit Btn=Close → trigger(Close) → on_close_ → set_should_close(true)`，进程退出（修复前该链路完全不触发）。6 exe `--smoke 3` 全 exit 0 + layui_test Release `--smoke 3` exit 0。graphgen 生成 + `--check` 0 错误 0 警告。scene_multiwin 实机验证：点窗口 A 关闭即整体退出。
+- **影响范围**：`ui/src/scene.cpp`、`gl/include/ui/gl/window.h`、`gl/src/window.cpp`、`apps/scene_multiwin.cpp`、`docs/CHANGELOG.md`。
+
 ## UI-172: 标题栏三键图标改为 ui 库自载 iconfont——未 set_icon/load_icon_font 的应用（arial 等）三键不再缺字形，且 exe_directory 集中化（2026-09-01）
 - **类型**：缺陷修复（ui 库 ui/src/titlebar.cpp + 公共工具收敛）
 - **严重度**：中（image_viewer / scene_multiwin / video_player 等仅 `titlebar().set_font`（arial.ttf）而不 `load_icon_font`/`set_icon` 的应用，标题条三键以 arial `draw_text` 画 `—/□/⧉/×`，而 **arial.ttf 缺 `□`(U+25A1)/`⧉`(U+29C9) 等字形** → 最大化/还原/关闭显示成空白豆腐块、观感损坏）

@@ -119,6 +119,16 @@ bool Window::mouse_released(int button) {
     return v;
 }
 
+bool Window::mouse_pressed_peek(int button) const {
+    if (button < 0 || button > 2) return false;
+    return mouse_pressed_[button];
+}
+
+bool Window::mouse_released_peek(int button) const {
+    if (button < 0 || button > 2) return false;
+    return mouse_released_[button];
+}
+
 void Window::cursor_pos_cb(GLFWwindow* w, double x, double y) {
     Window* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
     if (!self) return;
