@@ -3,6 +3,18 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-182: 按钮列命中区与绘制宽度不一致——点击「测试」像没响应（ui/src/table.cpp）（2026-09-02）
+- **级别**：渲染/交互缺陷（与 UI-179 同根，UI-179 仅修绘制段未修命中段）。audio_text 实测：程序启动后**先**打开 va_text_translate（文本翻译）工作台→点「配置」弹出配置表，其操作列「测试」按钮文字异常（缺字）+ 点击无响应；再关掉后打开 va_translate（翻译）「配置」弹窗，其「测试」同样点击无响应。但启动后**先**打开 va_translate 的「配置」则正常。
+- **原因**：单例详情窗口（g_pluginDetail）内部只有一份 Font/Atlas，跨所有插件开关、跨文本翻译工作台与配置表始终复用（非"多个弹窗没有处理机制"）。CJK 字形懒烘焙 + `ensure_dynamic` 每帧配额（`kBakeBudgetPerWindow`）：`measure_text → char_width → ensure_dynamic` 走配额，字形未烘上时退「方块字近似宽」。UI-179 只在**绘制段** `draw_buttons` 强制 `prebake_text`（进真实宽），而点击**命中段**（`Table::on_mouse_down` is_button 分支）反算按钮位置时仍用未烘焙 measure 的方块宽——绘制位置与命中区宽度不一致 → 按钮「画在 A 处、可点区在 B 处」→ 点击落在空处像没响应。首次打开 va_translate 时空 Atlas 恰好烘上（绘制/命中同用真实宽）故正常；先开文本翻译其工作台先烘大量 CJK，配置表「测试」在某帧落配额被挤掉，命中段持续用方块宽 → 顺序依赖且不随重启以内方式恢复。
+- **修复**：`Table::on_mouse_down` 按钮命中段、反算按钮位置前，先对 `btn_labels_` 逐个 `font_->prebake_text(...)`，使命中段与绘制段（UI-179）用同一真实字形宽，消除绘制/命中分歧。
+- **回归清单（改动前核对）**：
+  1. 任意表按钮列（含先开工作台再切配置表的顺序）点击后能正确命中对应 `on_action`，不再「画在 A 处、可点区在 B 处」；
+  2. prebake_text 幂等不标脏，不破坏 UI-156/UI-175 脏帧门控停帧语义；
+  3. 非 CJK / 纯 ASCII 按钮（View/Edit/Delete）命中行为不变；
+  4. 先开文本翻译→配置，再开翻译→配置，两者「测试」均正常显示且可点击。
+- **验证**：`ui_ui` Release 重建（build/install）+ `cmake --install` 刷新 install/lib/ui_ui.lib（19:42）；重链 voice_assistant.exe（19:45）；graphgen --check 0 错 0 警。
+- **影响范围**：`ui/src/table.cpp`
+
 ## UI-179: 按钮列文字「测试」等短 CJK 缺字根治——绘制时 prebake_text 兜底烘焙（ui/src/table.cpp）（2026-09-02）
 - **级别**：渲染缺陷（与 UI-157 同源，未根治变体）。audio_text 实测：插件与市场>翻译>配置表操作列「测试」按钮文字时灵时不灵缺字（按钮底色在、文字不在），重启后又恢复。
 - **原因**：`ensure_dynamic` 带逐帧烘焙配额（`kBakeBudgetPerWindow`，见 gl/src/font.cpp），配额耗尽返回 `nullptr`、仅挂 `pending_cps_`；`draw_text_impl` 对未烘焙字形只推进光标不画像素。UI-157 的 `prebake_visible_text` 只在 `rebuild_rows` 末尾覆盖 `btn_labels_`；当按钮 label 在预烘焙之后才设置，或字体图集重建后未被重新补烘时，「测试」等短 CJK 落入配额限流被同帧大量新字形挤掉 → 缺字；重启后图集重建 + 首次 build 预烘焙成功 → 恢复（与「时灵时不灵 + 重启恢复」吻合）。

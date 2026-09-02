@@ -1060,6 +1060,12 @@ bool Table::on_mouse_down(float x, float y, int button) {
         // 操作列（行内按钮）：命中某个按钮 → 触发 on_action
         if (col >= 0 && is_button(col)) {
             if (btn_labels_.size() && font_) {
+                // UI-182：命中前先对按钮 label 强制 prebake，保证 measure_text 用与
+                // draw_buttons 相同的真实字形宽反算命中区。否则绘制段 prebake（UI-179）
+                // 烘焙后进真实宽，而命中段仍按未烘焙的方块近似宽算偏移——两者分歧导致
+                // 按钮画在 A 处、可点区在 B 处，点击像「没响应」。
+                for (int i = 0; i < (int)btn_labels_.size(); ++i)
+                    font_->prebake_text(btn_labels_[i].c_str());
                 // 反算该行按钮实际中心 x，命中到具体按钮
                 const float cy = bounds_.y + header_h() + row * row_h() - body_->scroll_offset() + row_h() * 0.5f;
                 const float ry = bounds_.y + header_h() + row * row_h() - body_->scroll_offset();
