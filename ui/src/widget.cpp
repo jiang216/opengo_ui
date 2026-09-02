@@ -70,12 +70,13 @@ void Widget::set_enabled(bool en) {
 
 void Widget::mark_dirty() {
     dirty_ = true;
-    Widget* p = parent_;
-    while (p) {
-        if (p->dirty_children_) break;
-        p->dirty_children_ = true;
-        p = p->parent_;
-    }
+    // UI-175：无条件上溯到根——每级祖先 dirty_children_ 置 true。
+    // 不做「遇 dirty_children_ 已 true 即短路」的优化：UI-156 的 finish_draw_dirty 会因
+    // 「隐藏且仍脏」的子控件（draw 跳过不可见子树）使容器 dirty_children_ 长期保持 true，
+    // 短路将在此 break，更高祖先（root）收不到标记 → root.is_dirty() 恒 false → 帧级门控
+    // 跳过整帧渲染 → 滚动/开关/下拉状态写入内存却无重绘，需一次外部交互（面板外点击/移入
+    // 标题栏触发其它分支标脏）才整帧刷新。树深有限，无条件置位开销可忽略。
+    for (Widget* p = parent_; p; p = p->parent_) p->dirty_children_ = true;
 }
 
 // UI-136：全树递归置脏。字形逐帧烘焙后 xadvance 由近似变真实，仅根置脏不足以让

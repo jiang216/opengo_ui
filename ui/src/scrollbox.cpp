@@ -272,9 +272,10 @@ void ScrollBox::draw(Renderer& renderer) {
         scrollbar::draw(renderer, t, track_rect(), thumb_rect(), sb_, over_bar());
     }
     // 帧末去标：与基类一致（finish_draw_dirty 保留隐藏脏子节点的 dirty_children_，
-    // 见 widget.cpp）。覆写 draw 若不清理 dirty_children_，该容器将永远被视为
-    // “有脏子节点”，使 mark_dirty() 的短路优化在沿父链上抛时在此 break，子控件
-    // 标脏永远到不了 root，帧级门控将跳过整帧渲染（设置页等 ScrollBox 内容点击/悬停不刷新）。
+    // 见 widget.cpp）。覆写 draw 若不清理自身的 dirty_children_，该容器将永远被视为
+    // “有脏子节点”（隐藏且脏的子控件 draw 跳过、脏标记常驻）。此状态不阻断重绘——
+    // mark_dirty() 已改为无条件上溯 root（UI-175），但本容器仍应按时去标，避免隐藏脏子
+    // 清除后遗留的 dirty_children_ 造成帧级门控持续触发布局遍历。
     finish_draw_dirty();
 }
 

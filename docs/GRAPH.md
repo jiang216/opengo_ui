@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 175（BUG 167 / DOC 6 / META 2）
-- 边: 374
+- 节点: 176（BUG 168 / DOC 6 / META 2）
+- 边: 375
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1170,6 +1170,12 @@
 - 反链(1):
   - `DOC:README` (checklist) — 回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译；左侧列用 `ScrollBox`+`VBox` 流式堆叠：起始 y 让出内容区原点下方（标题条+菜单栏），整列可滚动、随窗口高度同步
 
+### BUG:UI-175 · UI-175: mark_dirty 父链传播去短路——根治「隐藏脏子」阻断重绘致滚动/开关/下拉滞后（ui/src/widget.cpp）（2026-09-02）
+
+- 路径: `docs/CHANGELOG.md#ui-175-markdirty-父链传播去短路根治隐藏脏子阻断重绘致滚动开关下拉滞后uisrcwidgetcpp2026-09-02`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#标脏上溯去短路（阻断根治）：`Widget::mark_dirty()` 父链传播不再依赖 `dirty_children_` 状态短路（`for(p; p && !p->dirty_children_; ...) 提前 break` 已被 UI-156 「隐藏且仍脏子节点常驻 `dirty_children_=true`」破坏——短路使容器内子控件标脏永远到不了 root、帧级门控跳过整帧渲染，滚动/开关/下拉状态写入却无重绘，需一次外部交互才整帧刷新）。改为无条件沿父链上溯 root（树深有限、开销可忽略；静止树无 mark_dirty 调用则空转停帧不变）。回归保证：任何控件状态变更当帧重绘、隐藏脏子不阻断传播、`set_visible(true)` 重显经 mark_dirty 传播触发重排无 0,0 闪帧（UI-156 语义保持）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1431,6 +1437,7 @@
 | `BUG:UI-172` | BUG | UI-172: 标题栏三键图标改为 ui 库自载 iconfont——未 set_icon/load_icon_font 的应用（arial 等）三键不再缺字形，且 exe_directory 集中化（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-173` | BUG | UI-173: 鼠标按下/抬起边沿被 Frame 订阅者抢先消费，Scene 控件树收不到 down/up → 标题栏三键（及其它控件点击）全部无响应；多窗口循环须两窗口都关才退出（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-174` | BUG | UI-174: 修复 opengl_ui_demo 左侧列卡片与顶栏重叠 + 无滚动（apps/main.cpp）（2026-09-01） | `docs/CHANGELOG.md` |
+| `BUG:UI-175` | BUG | UI-175: mark_dirty 父链传播去短路——根治「隐藏脏子」阻断重绘致滚动/开关/下拉滞后（ui/src/widget.cpp）（2026-09-02） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1689,6 +1696,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-171` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-172` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-173` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-175` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

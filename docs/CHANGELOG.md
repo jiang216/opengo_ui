@@ -3,6 +3,22 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-175: mark_dirty 父链传播去短路——根治「隐藏脏子」阻断重绘致滚动/开关/下拉滞后（ui/src/widget.cpp）（2026-09-02）
+- **级别**：缺陷修复（ui 库）。audio_text TB-003 关联：app 链接本库后「所有带滚动的页面滚动一下不生效，移开坐标/点击面板外部区域才执行」跨页复现，开关+下拉同病（8/27 UI-137 同类症状复发、范围扩大）。
+- **根因**：`Widget::mark_dirty()` 的父链传播带短路优化——`for (p = parent_; p && !p->dirty_children_; p = p->parent_) p->dirty_children_ = true;`，遇到 `dirty_children_` 已 true 的祖先即 break。但 **UI-156 的 `finish_draw_dirty()` 会因「隐藏且仍脏」的子控件（draw 跳过不可见子树、脏标记常驻无法清除）使所在容器 `dirty_children_` 长期保持 true**，短路前提被破坏：
+  1. 切页/条件显隐场景（app 侧 `PageContainer::switch_to` 与设置页模型表/按钮行直接写 `visible=false`，`ensure_built` 的 `set_bounds`/`layout()` 又对页面标脏）使树上必然存在 hidden+dirty 子节点；
+  2. 其容器（PageContainer/ScrollBox）`dirty_children_` 持久 true → 该容器内任何子控件（滚轮/开关/下拉/悬停）的 `mark_dirty` 上溯在此 break，**链永远到不了 root** → `root.is_dirty()==false` → 帧级门控跳过整帧渲染；
+  3. 状态已写入内存但无重绘，直到一次能绕过短路点的交互（移入标题栏 hover 标脏走 mainFrame 直链、面板外点击关 popup 触发 `remove_child → mark_dirty` 直连 root）才整帧刷新——用户见「滚动一下停留在原位置，移开坐标/点击面板外部区域才执行」。
+- **修复**（`ui/src/widget.cpp`）：`mark_dirty()` 改为**无条件沿父链上溯到根**（每级祖先 `dirty_children_` 置 true），不再依赖 `dirty_children_` 状态短路。树深有限（~10 级），逐次标脏多 `O(链长)` 次赋值，开销可忽略；空闲 `root.is_dirty()` 判定与停帧不受影响（静止树无 mark_dirty 调用）。同步更新 `ui/src/scrollbox.cpp` 覆写 draw 尾部去标注释（原「短路在此 break」描述不再成立，解释保留隐藏脏子与门控的关系）。
+- **回归清单（逐项核对，防错误复发）**：
+  1. **即时刷新**：帧级门控下任意控件状态变更（滚轮滚动、开关点击、下拉选择、悬停高亮、滚动条拖拽）后**当帧重绘**，无需第二次外部交互。
+  2. **隐藏脏子不阻断传播**：容器内存在「隐藏且仍脏」子节点（切页旧页、条件隐藏行/模型表）时，同容器其它子树标脏仍能上溯 root 触发重绘。
+  3. **重显无闪帧**：`set_visible(true)` 重显仍经 `mark_dirty` 传播触发父容器重排，无 (0,0) 闪帧（UI-156 语义保持）。
+  4. **空闲停帧**：完全静止（无交互、无烘焙）时 root 不脏，`is_dirty()` 门控跳过渲染，CPU 回落（glfwWaitEventsTimeout 阻塞）。
+  5. 各 exe（demo/layui_test/smoke）Release 构建通过、`--smoke 3` exit 0；不破坏 UI-154 add_child/remove_child 标脏、UI-156 set_visible 重显标脏语义。
+- **验证**：Release 构建通过（ui_ui.lib 14:59 重建并安装）；app 侧（audio_text）链接新版库修复跨页滚动/开关/下拉滞后（TB-003 回归清单人工实机核对）。
+- **影响范围**：`ui/src/widget.cpp`、`ui/src/scrollbox.cpp`、`docs/CHANGELOG.md`（图谱由 graphgen 重新生成）。
+
 ## UI-174: 修复 opengl_ui_demo 左侧列卡片与顶栏重叠 + 无滚动（apps/main.cpp）（2026-09-01）
 - **级别**：缺陷修复（apps 测试/示例程序，非 ui 库）。左侧列是示例程序的演示排布问题，按 AGENTS 归因改 `apps/main.cpp`，ui 库能力（ScrollBox/VBox、content_origin_y、Resized 钩子）已具备，无需改动 ui 库。
 - **根因**：`apps/main.cpp` 左列 4 个控件（`left` VBox、`layui_card`、`m17b_card`、`m17d_card`）用**硬编码绝对 y = 20/356/940** 直接挂 `root`，**未加 `container.content_origin_y()`**（标题条高 30）。于是：
