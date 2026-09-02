@@ -2580,6 +2580,8 @@ parent->add_child(tb);
 | `void set_cell_event_col(int col)` | —— 列点击事件（layui 单元格事件 cellEvent.html，如签名列 event:'setSign'）—— |
 | `int cell_event_col() const` |  |
 | `void set_on_cell_event(std::function<void(int visible_row, int col)> cb)` |  |
+| `void set_cell_tooltip(std::function<std::string(int data_row, int col)> cb)` | —— 单元格 tooltip（UI-177）—— 注册悬停回调：行控件悬停某列时按（数据行号, 列号）查询完整文本；返回空串不显示 tooltip。 |
+| `std::string cell_tooltip_at(int visible_row, float x) const` | 行控件内部调用：根空间横坐标命中的单元格 tooltip（未注册回调返回空） |
 | `void set_init_sort(int col, bool asc)` | —— 初始排序（layui initSort）—— |
 | `void reload(const std::vector<std::vector<std::string>>& new_rows)` | —— 数据重载（layui reload）—— |
 | `void set_on_row_double_click(std::function<void(int visible_row)> cb)` | —— 行双击回调（layui onrow）—— |

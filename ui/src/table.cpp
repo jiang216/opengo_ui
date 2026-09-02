@@ -43,6 +43,16 @@ public:
     void set_font(Font* font) { font_ = font; }
     void set_theme(const Theme* theme) { theme_ = theme; }
 
+    // UI-177：行内悬停——命中可截断列时置完整文本 tooltip（变化才标脏）
+    bool on_mouse_move(float x, float y) override {
+        const std::string tip = owner_->cell_tooltip_at(index_, x);
+        if (tip != tooltip()) {
+            set_tooltip(tip.c_str());
+            mark_dirty();  // tooltip 变更触发一帧重绘（帧级门控依赖显式标脏）
+        }
+        return false;  // 保持缺省 hover 语义
+    }
+
     float preferred_height() const override { return owner_->row_h(); }
 
     void on_draw(Renderer& renderer) override {
@@ -940,6 +950,15 @@ float Table::col_x(int c) const {
     float cx = bounds_.x;
     for (int i = 0; i < c && i < (int)cols_.size(); ++i) cx += col_width(i);
     return cx;
+}
+
+std::string Table::cell_tooltip_at(int visible_row, float x) const {
+    if (!cell_tooltip_ || visible_row < 0 || visible_row >= (int)visible_rows_.size()) return {};
+    const int col = col_hit(x);
+    if (col < 0) return {};
+    const int data = data_row_of(visible_row);
+    if (data < 0 || data >= (int)rows_.size()) return {};
+    return cell_tooltip_(data, col);
 }
 
 bool Table::on_mouse_down(float x, float y, int button) {

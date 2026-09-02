@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-02T15:14:13+08:00",
+  "generatedAt": "2026-09-02T16:24:42+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-177": {
+      "id": "BUG:UI-177",
+      "type": "BUG",
+      "label": "UI-177: Table 单元格 tooltip——行内悬停可截断列显示完整文本（ui/src/table.cpp + ui/include/ui/ui/table.h）（2026-09-02）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-177-table-单元格-tooltip行内悬停可截断列显示完整文本uisrctablecpp--uiincludeuiuitableh2026-09-02"
+    },
     "BUG:UI-175": {
       "id": "BUG:UI-175",
       "type": "BUG",
@@ -2760,7 +2767,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-078",
       "kind": "checklist",
-      "context": "回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）"
+      "context": "回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；`set_cell_tooltip(cb)` 注册悬停回调（行控件 `on_mouse_move` 查询命中单元格完整文本，设 tooltip + `mark_dirty()`；未注册回调不显示 tooltip）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-177",
+      "kind": "checklist",
+      "context": "回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；`set_cell_tooltip(cb)` 注册悬停回调（行控件 `on_mouse_move` 查询命中单元格完整文本，设 tooltip + `mark_dirty()`；未注册回调不显示 tooltip）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3484,6 +3497,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-177": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；`set_cell_tooltip(cb)` 注册悬停回调（行控件 `on_mouse_move` 查询命中单元格完整文本，设 tooltip + `mark_dirty()`；未注册回调不显示 tooltip）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）"
+      }
+    ],
     "BUG:UI-175": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -5087,7 +5107,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）"
+        "context": "回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；`set_cell_tooltip(cb)` 注册悬停回调（行控件 `on_mouse_move` 查询命中单元格完整文本，设 tooltip + `mark_dirty()`；未注册回调不显示 tooltip）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）"
       }
     ],
     "BUG:UI-079": [

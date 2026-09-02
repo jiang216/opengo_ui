@@ -3,6 +3,22 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-177: Table 单元格 tooltip——行内悬停可截断列显示完整文本（ui/src/table.cpp + ui/include/ui/ui/table.h）（2026-09-02）
+- **级别**：功能新增（ui 库 Table）。audio_text M-014/UI-176 关联：表格对超长单元格文本无 scissor/clip，未启用截断的列会把文本横向溢出画进相邻单元格；`set_truncate_cols` 为破坏性字符估算、`set_measure_text_cols` 渲染时精确省略但**省略后完整文本无从查看**。应用层需在悬停可截断列时显示完整内容。
+- **改动**：
+  1. `Table` 新增 `set_cell_tooltip(std::function<std::string(int data_row, int col)>)`：应用层注册"某数据行某列"的完整文本查询回调（返回空串则不显示 tooltip）。
+  2. `Table` 新增 `cell_tooltip_at(int visible_row, float x)`：按根空间横坐标 `col_hit(x)` 命中列 + `data_row_of` 换算数据行，委托回调返回完整文本。
+  3. `TableRow` 覆写 `on_mouse_move`：悬停时查询命中单元格的 tooltip，文本变化才 `set_tooltip` + `mark_dirty()`（帧级门控需显式标脏才触发一帧重绘），返回 false 保持缺省 hover 语义。
+- **注意**：`dispatch_mouse_move` 向子节点传递同一根空间坐标（非子局部坐标），故行控件用同一 `x` 调 `col_hit` 即可正确命中列；列不做横向滚动，纵向滚动不影响列命中。
+- **回归清单（改动前后核对）**：
+  1. 注册 `set_cell_tooltip` 的表格，悬停可截断列显示完整文本 tooltip；未注册回调的表格行悬停无 tooltip（默认行为不变）。
+  2. 悬停不可截断列/空白/按钮列不显示 tooltip（回调返回空）。
+  3. 行 hover 高亮语义不受影响（返回 false）；tooltip 文本在单元格间移动时即时切换。
+  4. 排序/分页/reload/滚动后悬停仍命中正确的数据行单元格（data_row_of 换算有效）。
+  5. Release 构建通过；`ui_ui.lib` 重建并安装；`pip` fetch 的 demo `--smoke` 不回归既有 Table 交互。
+- **验证**：`ui_ui` Release 重建 + `cmake --install`（install/lib/ui_ui.lib + install/include/ui/ui/table.h 更新）；opengl_UI graphgen --check 0 错 0 警。
+- **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`
+
 ## UI-175: mark_dirty 父链传播去短路——根治「隐藏脏子」阻断重绘致滚动/开关/下拉滞后（ui/src/widget.cpp）（2026-09-02）
 - **级别**：缺陷修复（ui 库）。audio_text TB-003 关联：app 链接本库后「所有带滚动的页面滚动一下不生效，移开坐标/点击面板外部区域才执行」跨页复现，开关+下拉同病（8/27 UI-137 同类症状复发、范围扩大）。
 - **根因**：`Widget::mark_dirty()` 的父链传播带短路优化——`for (p = parent_; p && !p->dirty_children_; p = p->parent_) p->dirty_children_ = true;`，遇到 `dirty_children_` 已 true 的祖先即 break。但 **UI-156 的 `finish_draw_dirty()` 会因「隐藏且仍脏」的子控件（draw 跳过不可见子树、脏标记常驻无法清除）使所在容器 `dirty_children_` 长期保持 true**，短路前提被破坏：

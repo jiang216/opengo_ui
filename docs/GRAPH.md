@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 176（BUG 168 / DOC 6 / META 2）
-- 边: 375
+- 节点: 177（BUG 169 / DOC 6 / META 2）
+- 边: 376
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -621,7 +621,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-078-数据表格分阶段克隆-2合计行头部工具栏单元格事件操作列2026-08-18`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；`set_cell_tooltip(cb)` 注册悬停回调（行控件 `on_mouse_move` 查询命中单元格完整文本，设 tooltip + `mark_dirty()`；未注册回调不显示 tooltip）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）
 
 ### BUG:UI-079 · UI-079: ScrollBox 切页滚动条闪烁修复（2026-08-18）
 
@@ -1176,6 +1176,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#标脏上溯去短路（阻断根治）：`Widget::mark_dirty()` 父链传播不再依赖 `dirty_children_` 状态短路（`for(p; p && !p->dirty_children_; ...) 提前 break` 已被 UI-156 「隐藏且仍脏子节点常驻 `dirty_children_=true`」破坏——短路使容器内子控件标脏永远到不了 root、帧级门控跳过整帧渲染，滚动/开关/下拉状态写入却无重绘，需一次外部交互才整帧刷新）。改为无条件沿父链上溯 root（树深有限、开销可忽略；静止树无 mark_dirty 调用则空转停帧不变）。配套 `finish_draw_dirty()` 帧末去标改全清（隐藏脏子不再常驻中间容器 `dirty_children_`，避免每渲染周期污染；隐藏子重显 0,0 闪帧由 `set_visible(true)` 传播 mark_dirty + 下一帧布局重排保障）。回归保证：任何控件状态变更当帧重绘、隐藏脏子不阻断传播、`set_visible(true)` 重显经 mark_dirty 传播触发重排无 0,0 闪帧（UI-156 语义保持）
 
+### BUG:UI-177 · UI-177: Table 单元格 tooltip——行内悬停可截断列显示完整文本（ui/src/table.cpp + ui/include/ui/ui/table.h）（2026-09-02）
+
+- 路径: `docs/CHANGELOG.md#ui-177-table-单元格-tooltip行内悬停可截断列显示完整文本uisrctablecpp--uiincludeuiuitableh2026-09-02`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；`set_cell_tooltip(cb)` 注册悬停回调（行控件 `on_mouse_move` 查询命中单元格完整文本，设 tooltip + `mark_dirty()`；未注册回调不显示 tooltip）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1438,6 +1444,7 @@
 | `BUG:UI-173` | BUG | UI-173: 鼠标按下/抬起边沿被 Frame 订阅者抢先消费，Scene 控件树收不到 down/up → 标题栏三键（及其它控件点击）全部无响应；多窗口循环须两窗口都关才退出（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-174` | BUG | UI-174: 修复 opengl_ui_demo 左侧列卡片与顶栏重叠 + 无滚动（apps/main.cpp）（2026-09-01） | `docs/CHANGELOG.md` |
 | `BUG:UI-175` | BUG | UI-175: mark_dirty 父链传播去短路——根治「隐藏脏子」阻断重绘致滚动/开关/下拉滞后（ui/src/widget.cpp）（2026-09-02） | `docs/CHANGELOG.md` |
+| `BUG:UI-177` | BUG | UI-177: Table 单元格 tooltip——行内悬停可截断列显示完整文本（ui/src/table.cpp + ui/include/ui/ui/table.h）（2026-09-02） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1697,6 +1704,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-172` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-173` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-175` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-177` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

@@ -59,6 +59,13 @@ public:
     void set_measure_text_cols(const std::vector<int>& cols) { measure_text_cols_.assign(cols.begin(), cols.end()); mark_dirty(); }
     bool is_measure_text_col(int col) const { return std::find(measure_text_cols_.begin(), measure_text_cols_.end(), col) != measure_text_cols_.end(); }
 
+    // —— 单元格 tooltip（悬停显示完整文本，UI-177）——
+    // 命中可截断列时，行控件按悬停列查询完整文本并置为行 tooltip；返回空串则不显示。
+    // 参数：数据行号（rows_ 下标）, 列号。应用层借此提供"省略后的完整内容"。
+    void set_cell_tooltip(std::function<std::string(int data_row, int col)> cb) { cell_tooltip_ = std::move(cb); mark_dirty(); }
+    // 行控件调用：可视行号 + 根空间横坐标 → 计算命中列的 tooltip 文本（未注册回调返回空）
+    std::string cell_tooltip_at(int visible_row, float x) const;
+
     void set_font(Font* font);
     void set_theme(const Theme* theme);
     void set_on_sort(std::function<void(int col, bool asc)> cb) { on_sort_ = std::move(cb); }
@@ -281,6 +288,9 @@ private:
     // 列点击事件
     int cell_event_col_ = -1;
     std::function<void(int, int)> on_cell_event_;
+
+    // 单元格 tooltip（UI-177）：悬停命中列的完整文本查询回调
+    std::function<std::string(int, int)> cell_tooltip_;
 
     // 单元格表单切换（UI-129）
     std::function<void(int, int, bool)> on_cell_form_;
