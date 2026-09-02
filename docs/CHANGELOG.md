@@ -3,6 +3,17 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-183: 回滚 UI-179/UI-182「测试」按钮缺字/点击无响应修复——GPU 像素回读证明无渲染缺陷，系 12px 小字号 OCR/视觉误判（ui/src/table.cpp）（2026-09-02）
+- **级别**：修复回调（更正性回滚）。audio_text 重启实测（opengl_UI 侧 glReadPixels 回读按钮区明暗墨迹像素）证明：无论「先开文本翻译→配置」还是「先开翻译→配置」，va_text_translate 与 va_translate 配置表操作列按钮区**都正常渲染文字墨迹**（broken 与 working 两序的 bright/dark 墨迹像素数量几乎一致，绝非空白）；font_diag 亦证明两序中「测/试」字形烘焙与绘制路径完全一致、atlas 未满。此前观察到的「空白」是 12px 小字号下 OCR/人眼无法稳定判读所致，**并非真实渲染缺陷**。
+- **原因（为何回滚）**：UI-179（`draw_buttons` 绘制段 prebake）与 UI-182（`on_mouse_down` 命中段 prebake）是针对「测试」缺字/点击无响应的预防性兜底修复；经 GPU 像素回读逐项排除 atlas 满、字形未烘、绘制/命中宽度分歧后，确认该缺陷在渲染层并不存在（两序墨迹像素一致），故两处 prebake 属「幻象修复」，予以回滚以免掩盖真实问题与增加无谓开销。
+- **修复（回滚动作）**：撤销 `ui/src/table.cpp` 中 UI-179（draw_buttons 按钮 label 前 `font_->prebake_text`）与 UI-182（on_mouse_down 命中段按钮 label 逐个 prebake）两处改动，恢复为仅依赖既有 UI-157 `prebake_visible_text` 的原有路径（table.cpp 与 ecb4675~1 状态一致）。
+- **回归清单（回滚后核对）**：
+  1. 表按钮列文字（含先开工作台再切配置表顺序）显示行为与 ecb4675~1 基线一致；
+  2. 按钮列点击命中 `on_action` 行为不变；
+  3. 不引入额外烘焙/标脏开销（回到回滚前语义）。
+- **验证**：`ui_ui` Release 重建 + `cmake --install` 刷新 install/lib/ui_ui.lib；回滚 diff 与 ecb4675~1 基线一致；graphgen --check 0 错 0 警。
+- **影响范围**：`ui/src/table.cpp`；关联 audio_text UI-183/UI-188 条目。
+
 ## UI-182: 按钮列命中区与绘制宽度不一致——点击「测试」像没响应（ui/src/table.cpp）（2026-09-02）
 - **级别**：渲染/交互缺陷（与 UI-179 同根，UI-179 仅修绘制段未修命中段）。audio_text 实测：程序启动后**先**打开 va_text_translate（文本翻译）工作台→点「配置」弹出配置表，其操作列「测试」按钮文字异常（缺字）+ 点击无响应；再关掉后打开 va_translate（翻译）「配置」弹窗，其「测试」同样点击无响应。但启动后**先**打开 va_translate 的「配置」则正常。
 - **原因**：单例详情窗口（g_pluginDetail）内部只有一份 Font/Atlas，跨所有插件开关、跨文本翻译工作台与配置表始终复用（非"多个弹窗没有处理机制"）。CJK 字形懒烘焙 + `ensure_dynamic` 每帧配额（`kBakeBudgetPerWindow`）：`measure_text → char_width → ensure_dynamic` 走配额，字形未烘上时退「方块字近似宽」。UI-179 只在**绘制段** `draw_buttons` 强制 `prebake_text`（进真实宽），而点击**命中段**（`Table::on_mouse_down` is_button 分支）反算按钮位置时仍用未烘焙 measure 的方块宽——绘制位置与命中区宽度不一致 → 按钮「画在 A 处、可点区在 B 处」→ 点击落在空处像没响应。首次打开 va_translate 时空 Atlas 恰好烘上（绘制/命中同用真实宽）故正常；先开文本翻译其工作台先烘大量 CJK，配置表「测试」在某帧落配额被挤掉，命中段持续用方块宽 → 顺序依赖且不随重启以内方式恢复。

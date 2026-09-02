@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-02T19:52:36+08:00",
+  "generatedAt": "2026-09-02T22:09:41+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-183": {
+      "id": "BUG:UI-183",
+      "type": "BUG",
+      "label": "UI-183: 回滚 UI-179/UI-182「测试」按钮缺字/点击无响应修复——GPU 像素回读证明无渲染缺陷，系 12px 小字号 OCR/视觉误判（ui/src/table.cpp）（2026-09-02）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-183-回滚-ui-179ui-182测试按钮缺字点击无响应修复gpu-像素回读证明无渲染缺陷系-12px-小字号-ocr视觉误判uisrctablecpp2026-09-02"
+    },
     "BUG:UI-182": {
       "id": "BUG:UI-182",
       "type": "BUG",
@@ -2803,6 +2810,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-183",
+      "kind": "checklist",
+      "context": "回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；`set_cell_tooltip(cb)` 注册悬停回调（行控件 `on_mouse_move` 查询命中单元格完整文本，设 tooltip + `mark_dirty()`；未注册回调不显示 tooltip）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-026",
       "kind": "checklist",
       "context": "回归清单#Icon（layui-icon）：`layui_icons.h` 自动生成 195 个类名→码点常量（主区 U+E600..ECFF + 2.13.x 非私用区 U+1005..1007，非法 C++ 标识符加 `ic_` 前缀）+ `from_class()` 查表；`Font::load_icon_font()` 双段烘培同图集 + `draw_icon()` 中心绘制；`Icon` 控件按类名渲染（无 theme/set_color 时回退白色）"
@@ -3523,6 +3536,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-183": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；`set_cell_tooltip(cb)` 注册悬停回调（行控件 `on_mouse_move` 查询命中单元格完整文本，设 tooltip + `mark_dirty()`；未注册回调不显示 tooltip）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）"
+      }
+    ],
     "BUG:UI-182": [
       {
         "from": "DOC:ARCHITECTURE",
