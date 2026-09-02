@@ -10,6 +10,7 @@
   2. 其容器（PageContainer/ScrollBox）`dirty_children_` 持久 true → 该容器内任何子控件（滚轮/开关/下拉/悬停）的 `mark_dirty` 上溯在此 break，**链永远到不了 root** → `root.is_dirty()==false` → 帧级门控跳过整帧渲染；
   3. 状态已写入内存但无重绘，直到一次能绕过短路点的交互（移入标题栏 hover 标脏走 mainFrame 直链、面板外点击关 popup 触发 `remove_child → mark_dirty` 直连 root）才整帧刷新——用户见「滚动一下停留在原位置，移开坐标/点击面板外部区域才执行」。
 - **修复**（`ui/src/widget.cpp`）：`mark_dirty()` 改为**无条件沿父链上溯到根**（每级祖先 `dirty_children_` 置 true），不再依赖 `dirty_children_` 状态短路。树深有限（~10 级），逐次标脏多 `O(链长)` 次赋值，开销可忽略；空闲 `root.is_dirty()` 判定与停帧不受影响（静止树无 mark_dirty 调用）。同步更新 `ui/src/scrollbox.cpp` 覆写 draw 尾部去标注释（原「短路在此 break」描述不再成立，解释保留隐藏脏子与门控的关系）。
+- **配套**（`ui/src/widget.cpp` + `ui/include/ui/ui/widget.h`）：`finish_draw_dirty()` 由「隐藏且仍脏子节点保留 `dirty_children_=true`」改为**全清**（`dirty_=false; dirty_children_=false;`）——`mark_dirty()` 无条件上溯后保留不再必要，且「隐藏子重显 0,0 闪帧」已由 `set_visible(true)` 的 mark_dirty 传播 + 父容器下一帧布局重排保障（UI-156 语义保持）。全清避免中间容器 `dirty_children_` 常驻 true，使每次渲染帧后可见子树整树干净、root 空闲可停帧不卡顿。
 - **回归清单（逐项核对，防错误复发）**：
   1. **即时刷新**：帧级门控下任意控件状态变更（滚轮滚动、开关点击、下拉选择、悬停高亮、滚动条拖拽）后**当帧重绘**，无需第二次外部交互。
   2. **隐藏脏子不阻断传播**：容器内存在「隐藏且仍脏」子节点（切页旧页、条件隐藏行/模型表）时，同容器其它子树标脏仍能上溯 root 触发重绘。

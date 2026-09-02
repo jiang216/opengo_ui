@@ -36,8 +36,10 @@ public:
     // ---- 脏标记机制：空闲时跳过无变子树绘制，降低 CPU/GPU 占用 ----
     bool is_dirty() const { return dirty_ || dirty_children_; }
     void mark_dirty();
-    // 帧末清脏（去标）：仅当自身及所有可见子控件本轮均已绘制时置 false，
-    // 不抹除仍隐藏未绘的脏子节点留下的 dirty_children_，否则重标传播中断（UI-156）。
+    // 帧末清脏（去标）：self 本轮已绘制，清 dirty_ 与 dirty_children_（UI-175 全清）。
+    // 隐藏且仍脏的子控件不画不清，但不再驻留本容器 dirty_children_——mark_dirty() 已
+    // 无条件上溯 root，隐藏子重显经 set_visible(true) 传播 mark_dirty 触发父容器重排，
+    // 无 (0,0) 闪帧（UI-156 语义保持，见 widget.cpp finish_draw_dirty 注释）。
     void finish_draw_dirty();
     // 全树递归置脏（UI-136）：字形逐帧烘焙导致 xadvance 变化后，由根节点 advance
     // 调用，强制所有 Label 以真实宽度重新换行/布局（近似宽度 → 真实宽度）

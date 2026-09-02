@@ -1174,7 +1174,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-175-markdirty-父链传播去短路根治隐藏脏子阻断重绘致滚动开关下拉滞后uisrcwidgetcpp2026-09-02`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#标脏上溯去短路（阻断根治）：`Widget::mark_dirty()` 父链传播不再依赖 `dirty_children_` 状态短路（`for(p; p && !p->dirty_children_; ...) 提前 break` 已被 UI-156 「隐藏且仍脏子节点常驻 `dirty_children_=true`」破坏——短路使容器内子控件标脏永远到不了 root、帧级门控跳过整帧渲染，滚动/开关/下拉状态写入却无重绘，需一次外部交互才整帧刷新）。改为无条件沿父链上溯 root（树深有限、开销可忽略；静止树无 mark_dirty 调用则空转停帧不变）。回归保证：任何控件状态变更当帧重绘、隐藏脏子不阻断传播、`set_visible(true)` 重显经 mark_dirty 传播触发重排无 0,0 闪帧（UI-156 语义保持）
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#标脏上溯去短路（阻断根治）：`Widget::mark_dirty()` 父链传播不再依赖 `dirty_children_` 状态短路（`for(p; p && !p->dirty_children_; ...) 提前 break` 已被 UI-156 「隐藏且仍脏子节点常驻 `dirty_children_=true`」破坏——短路使容器内子控件标脏永远到不了 root、帧级门控跳过整帧渲染，滚动/开关/下拉状态写入却无重绘，需一次外部交互才整帧刷新）。改为无条件沿父链上溯 root（树深有限、开销可忽略；静止树无 mark_dirty 调用则空转停帧不变）。配套 `finish_draw_dirty()` 帧末去标改全清（隐藏脏子不再常驻中间容器 `dirty_children_`，避免每渲染周期污染；隐藏子重显 0,0 闪帧由 `set_visible(true)` 传播 mark_dirty + 下一帧布局重排保障）。回归保证：任何控件状态变更当帧重绘、隐藏脏子不阻断传播、`set_visible(true)` 重显经 mark_dirty 传播触发重排无 0,0 闪帧（UI-156 语义保持）
 
 ### DOC:API_REFERENCE · API_REFERENCE
 

@@ -87,17 +87,14 @@ void Widget::mark_dirty_all() {
     for (Widget* c : children_) c->mark_dirty_all();
 }
 
-// UI-156：帧末去标（收敛到唯一实现，取代原 clear_dirty 死代码）。self 本轮已绘制；
-// 但若存在「隐藏且仍脏」的子节点（draw 跳过不可见子树故其 dirty_ 未清），dirty_children_
-// 保持 true——否则父容器清后重标传播中断，隐藏脏子控件再显示时会停在旧/0,0 坐标成一帧闪。
+// UI-175：帧末去标改为全清。此前（UI-156）为避免「隐藏且仍脏的子控件再显示时父容器
+// skip layout 停在 0,0 闪帧」，对隐藏脏子保留 dirty_children_=true——但该保留使容器
+// dirty_children_ 常驻 true，当时依赖 mark_dirty() 的短路优化，会在容器直接 break 阻断
+// 上抛（滚动/开关/下拉不刷新）。mark_dirty() 已改为无条件上溯 root 后，保留不再必要：
+// 隐藏子重显经 set_visible(true) 传播 mark_dirty → 父容器下一帧 layout 重排，无 0,0 闪帧
+//（UI-156 语义保持）。全清使每次渲染帧后可见子树整树干净，root 空闲可停帧不卡顿。
 void Widget::finish_draw_dirty() {
     dirty_ = false;
-    for (Widget* c : children_) {
-        if (!c->visible && (c->dirty_ || c->dirty_children_)) {
-            dirty_children_ = true;
-            return;
-        }
-    }
     dirty_children_ = false;
 }
 
