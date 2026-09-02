@@ -211,6 +211,13 @@ private:
             {1.0f, 0.34f, 0.13f, 1.0f},    // 删除 #ff5722
         };
         for (int i = 0; i < n; ++i) {
+            // UI-179：绘制时兜底强行烘焙按钮文字字形（幂等、不标脏）。UI-157 的
+            // prebake_visible_text 只在 rebuild_rows 时覆盖 btn_labels_；当按钮 label
+            // 在预烘焙之后才设置、或 atlas 重建后未补烘时，「测试」等短 CJK 文字会
+            // 落入 ensure_dynamic 的每帧配额限流被挤掉，draw_text 只推进光标不画字，
+            // 出现「按钮底色在、文字缺」且重启后才恢复。此处绘制前直接 prebake_text
+            // 未吃配额强制烘焙；已烘焙码点 dyn_.count 短路，无常驻开销。
+            font_->prebake_text(owner_->button_label(i).c_str());
             const float bw = font_->measure_text(owner_->button_label(i).c_str()) + 20.f;
             const Vec4 col = btns[std::min(i, 2)];
             r.draw_quad({bx, by, bw, btn_h}, col);

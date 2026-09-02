@@ -3,6 +3,18 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-179: 按钮列文字「测试」等短 CJK 缺字根治——绘制时 prebake_text 兜底烘焙（ui/src/table.cpp）（2026-09-02）
+- **级别**：渲染缺陷（与 UI-157 同源，未根治变体）。audio_text 实测：插件与市场>翻译>配置表操作列「测试」按钮文字时灵时不灵缺字（按钮底色在、文字不在），重启后又恢复。
+- **原因**：`ensure_dynamic` 带逐帧烘焙配额（`kBakeBudgetPerWindow`，见 gl/src/font.cpp），配额耗尽返回 `nullptr`、仅挂 `pending_cps_`；`draw_text_impl` 对未烘焙字形只推进光标不画像素。UI-157 的 `prebake_visible_text` 只在 `rebuild_rows` 末尾覆盖 `btn_labels_`；当按钮 label 在预烘焙之后才设置，或字体图集重建后未被重新补烘时，「测试」等短 CJK 落入配额限流被同帧大量新字形挤掉 → 缺字；重启后图集重建 + 首次 build 预烘焙成功 → 恢复（与「时灵时不灵 + 重启恢复」吻合）。
+- **修复**：`draw_buttons` 绘制循环内、measure/draw 每个按钮 label 前先 `font_->prebake_text(...)`。该接口幂等（已烘焙码点 `dyn_.count` 短路、ASCII/图标/`missing_` 均跳过）、不吃配额强制烘焙、**不 mark_dirty**（区别于 `prebake_visible_text`），对既有路径零常驻开销，对异常路径根治缺字。
+- **回归清单（改动前核对）**：
+  1. 任意表按钮列文字（含动态 label、图集重建后）首帧即完整渲染，底色与文字同现；
+  2. prebake_text 不触发 mark_dirty，不破坏 UI-156/UI-175 脏帧门控停帧语义；
+  3. 已烘焙码点绘制路径零额外开销（仅 map 查找短路）；
+  4. 非 CJK 表（纯 ASCII 按钮如 View/Edit/Delete）行为不变。
+- **验证**：`ui_ui` Release 重建 + `cmake --install` 刷新 install/lib/ui_ui.lib；重链 voice_assistant.exe 后反复开关 va_translate/va_text_translate 配置窗口确认「测试」恒显示；graphgen --check 0 错 0 警。
+- **影响范围**：`ui/src/table.cpp`
+
 ## UI-177: Table 单元格 tooltip——行内悬停可截断列显示完整文本（ui/src/table.cpp + ui/include/ui/ui/table.h）（2026-09-02）
 - **级别**：功能新增（ui 库 Table）。audio_text M-014/UI-176 关联：表格对超长单元格文本无 scissor/clip，未启用截断的列会把文本横向溢出画进相邻单元格；`set_truncate_cols` 为破坏性字符估算、`set_measure_text_cols` 渲染时精确省略但**省略后完整文本无从查看**。应用层需在悬停可截断列时显示完整内容。
 - **改动**：
