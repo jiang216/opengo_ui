@@ -155,6 +155,10 @@ private:
     int event_key_ = 0;
     float event_scroll_dx_ = 0.f;
     float event_scroll_dy_ = 0.f;
+
+    // UI-185：鼠标按下边沿已分发但释放边沿未到达的持续帧数（用于检测 SetCapture 拦截
+    // GLFW_RELEASE 导致的卡住状态）。每帧递增，超过阈值则强制补发 dispatch_mouse_up。
+    int mouse_down_stuck_frames_ = 0;
 };
 
 }  // namespace ui

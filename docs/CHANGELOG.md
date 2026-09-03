@@ -22,6 +22,24 @@
 - **验证**：layui_test Release (Ninja) 重建通过；`--smoke 3` exit 0（page switches ok）；graphgen --check 0 错 0 警。
 - **影响范围**：`gl/include/ui/gl/window.h`、`gl/src/window.cpp`、`ui/src/scene.cpp`、`ui/include/ui/ui/widget.h`、`ui/src/widget.cpp`
 
+## UI-185: dispatch_mouse_up 捕获者路径提前清空 pressed_ 致 TitleBar 按钮失效 + 捕获卡住状态恢复（ui/src/widget.cpp + ui/src/scene.cpp + ui/include/ui/ui/scene.h）（2026-09-03）
+- **级别**：缺陷修复（ui 库）。layui_test 实测：标题栏按钮（组件/笔记/生态/2.13.9/主题开关）点击后回调不触发，且无边框窗口拖动时若 GLFW_RELEASE 被 SetCapture 拦截，`pressed_`/`dragging_` 永久卡住表现为「按下不释放」。
+- **根因**：
+  - **主因（ui/src/widget.cpp）**：`Widget::dispatch_mouse_up` 捕获者优先路径中，`cap->pressed_ = false` 在 `cap->on_mouse_up()` **之前**执行。`TitleBar::on_mouse_up` 依赖 `if (pressed_ != Btn::None)` 判断按钮释放，但 `pressed_` 已被基类提前清空为 `Btn::None` → 按钮的 `trigger()` 永不执行。同时 `dispatch_mouse_up` 返回 false，捕获虽被释放但按钮逻辑已丢失。
+  - **次因（ui/src/scene.cpp）**：`Scene::frame()` 仅在 `mouse_released_peek(0)` 为真时才调用 `dispatch_mouse_up`。当 `SetCapture` 拦截 `WM_LBUTTONUP`（Windows 无边框窗口拖动）或 `focus_cb`/`cursor_enter_cb` 未触发（非 Windows 无边框窗口拖动）时，`mouse_released_peek` 恒假 → `dispatch_mouse_up` 永不执行 → `dragging_`/`pressed_` 永久卡住。
+- **修复**：
+  - **A. dispatch_mouse_up 捕获者路径（widget.cpp）**：移除抢占式 `cap->pressed_ = false`，改为先调用 `cap->on_mouse_up(x, y, button)`，再由基类在 `was_pressed && !handled` 时清态并标脏。让 `TitleBar::on_mouse_up` 自行管理 `pressed_`（`Btn::None` 判断生效），Slider/ScrollBox 等未管理 `pressed_` 的控件由基类兜底清态。
+  - **B. 卡住状态恢复（scene.cpp + scene.h）**：新增 `mouse_down_stuck_frames_` 计数器。当 `window_.mouse_down(0) && !mouse_up_edge && root_.capture_widget()` 时递增；超过阈值 3 帧则强制 `root_.dispatch_mouse_up()` 清除卡住状态并复位计数器。非捕获/无按下/已释放场景均重置计数器，避免正常拖拽误触发。
+- **回归清单（改动后核对）**：
+  1. layui_test 标题栏按钮（组件/笔记/生态/2.13.9/主题开关）点击回调正常触发
+  2. 标题栏按钮按下高亮在抬起时正确清除
+  3. 无边框窗口拖动（标题条空白区按下拖动）释放后 `dragging_` 正常复位
+  4. `--smoke` 冒烟逐页切换无崩溃、exit 0；`--click` 合成点击注入仍正常触发
+  5. Slider/ScrollBox 等捕获拖拽控件的按下/抬起状态正常
+  6. `set_visible(false)` 隐藏控件后再显示不再残留按下高亮（UI-184 回归）
+- **验证**：layui_test Release (Ninja) 重建通过；`--smoke 3` exit 0；graphgen --check 0 错 0 警。
+- **影响范围**：`ui/src/widget.cpp`、`ui/src/scene.cpp`、`ui/include/ui/ui/scene.h`、`docs/CHANGELOG.md`
+
 ## UI-183: 回滚 UI-179/UI-182「测试」按钮缺字/点击无响应修复——GPU 像素回读证明无渲染缺陷，系 12px 小字号 OCR/视觉误判（ui/src/table.cpp）（2026-09-02）
 - **级别**：修复回调（更正性回滚）。audio_text 重启实测（opengl_UI 侧 glReadPixels 回读按钮区明暗墨迹像素）证明：无论「先开文本翻译→配置」还是「先开翻译→配置」，va_text_translate 与 va_translate 配置表操作列按钮区**都正常渲染文字墨迹**（broken 与 working 两序的 bright/dark 墨迹像素数量几乎一致，绝非空白）；font_diag 亦证明两序中「测/试」字形烘焙与绘制路径完全一致、atlas 未满。此前观察到的「空白」是 12px 小字号下 OCR/人眼无法稳定判读所致，**并非真实渲染缺陷**。
 - **原因（为何回滚）**：UI-179（`draw_buttons` 绘制段 prebake）与 UI-182（`on_mouse_down` 命中段 prebake）是针对「测试」缺字/点击无响应的预防性兜底修复；经 GPU 像素回读逐项排除 atlas 满、字形未烘、绘制/命中宽度分歧后，确认该缺陷在渲染层并不存在（两序墨迹像素一致），故两处 prebake 属「幻象修复」，予以回滚以免掩盖真实问题与增加无谓开销。

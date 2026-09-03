@@ -5,9 +5,10 @@
 
 ## 统计
 
-- 节点: 181（BUG 173 / DOC 6 / META 2）
+- 节点: 182（BUG 174 / DOC 6 / META 2）
 - 边: 380
-- lint: 0 错误 / 0 警告
+- lint: 0 错误 / 1 警告
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
 
 ## 反链索引
 
@@ -1206,6 +1207,11 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#鼠标按下释放兜底（防「按下不释放」）：① 控件级/整窗拖拽 Windows 经 `SetCapture`（`Window::acquire/release_mouse_capture`，`Scene::frame` 依 `root.capture_widget()` 同步）保证移出窗口/失焦释放仍回调本窗口 → `dispatch_mouse_up` 正常复位；② 失焦/光标离开时有键按下 → `Window::mouse_capture_lost_` 暴露为抬起边沿 → 下一帧补发 up → `Scene::settle_mouse_reset` 收尾清标记+复位 `mouse_down_`，自愈悬死态；③ `set_visible(false)` 清 `pressed_/hovered_` 并摘 root `capture_/modal_`（对齐 set_enabled UI-167⑦）——隐藏控件不得残留按下高亮/独占捕获
 
+### BUG:UI-185 · UI-185: dispatch_mouse_up 捕获者路径提前清空 pressed_ 致 TitleBar 按钮失效 + 捕获卡住状态恢复（ui/src/widget.cpp + ui/src/scene.cpp + ui/include/ui/ui/scene.h）（2026-09-03）
+
+- 路径: `docs/CHANGELOG.md#ui-185-dispatchmouseup-捕获者路径提前清空-pressed-致-titlebar-按钮失效--捕获卡住状态恢复uisrcwidgetcpp--uisrcscenecpp--uiincludeuiuisceneh2026-09-03`
+- 反链: 无
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1473,6 +1479,7 @@
 | `BUG:UI-182` | BUG | UI-182: 按钮列命中区与绘制宽度不一致——点击「测试」像没响应（ui/src/table.cpp）（2026-09-02） | `docs/CHANGELOG.md` |
 | `BUG:UI-183` | BUG | UI-183: 回滚 UI-179/UI-182「测试」按钮缺字/点击无响应修复——GPU 像素回读证明无渲染缺陷，系 12px 小字号 OCR/视觉误判（ui/src/table.cpp）（2026-09-02） | `docs/CHANGELOG.md` |
 | `BUG:UI-184` | BUG | UI-184: 鼠标「按下不释放」——移出窗口/失焦释放丢失致 pressed_/capture_ 悬死 + set_visible 隐藏未清交互态（gl/src/window.cpp + gl/include/ui/gl/window.h + ui/src/scene.cpp + ui/src/widget.cpp）（2026-09-03） | `docs/CHANGELOG.md` |
+| `BUG:UI-185` | BUG | UI-185: dispatch_mouse_up 捕获者路径提前清空 pressed_ 致 TitleBar 按钮失效 + 捕获卡住状态恢复（ui/src/widget.cpp + ui/src/scene.cpp + ui/include/ui/ui/scene.h）（2026-09-03） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |

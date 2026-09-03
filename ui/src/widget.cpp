@@ -392,14 +392,19 @@ bool Widget::dispatch_mouse_down(float x, float y, int button) {
 }
 
 bool Widget::dispatch_mouse_up(float x, float y, int button) {
-    // 模态：事件仅路由给模态子树，模态外一律屏蔽
+    // 模态：事件仅路由给模态子树
     if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_up(x, y, button);
     // 捕获者优先：鼠标抬起路由给捕获者并释放捕获
     Widget* cap = root()->capture_;
     if (cap && cap != this) {
-        if (cap->pressed_) cap->mark_dirty();  // 抬起 → 释放按下态高亮
-        cap->pressed_ = false;
+        const bool was_pressed = cap->pressed_;
         const bool handled = cap->on_mouse_up(x, y, button);
+        // 捕获者 on_mouse_up 自行管理 pressed_ 状态（如 TitleBar 按钮逻辑）。
+        // 若 on_mouse_up 未处理且捕获者此前处于按下态，则清除按下态并重绘。
+        if (was_pressed && !handled) {
+            cap->pressed_ = false;
+            cap->mark_dirty();
+        }
         cap->release_mouse_capture();
         return handled;
     }
