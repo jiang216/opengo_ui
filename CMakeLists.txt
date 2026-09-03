@@ -13,12 +13,15 @@ endif()
 # ---- 发布构建优化（阶段4）：LTO + 高优化等级 ----
 # GCC/Clang 用 -O3 + 显式 LTO；MSVC 用 /O2（已含 LTCG 由 CMAKE_INTERPROCEDURAL_OPTIMIZATION 控制）。
 # 统一收敛各类静态库/可执行目标，reduce 迭代产出体积并提升运行性能。
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+# 注意：多配置生成器（Visual Studio）下 CMAKE_BUILD_TYPE 仅 configure 时求值，
+# 必须用生成器表达式按实际构建配置分发优化标志，否则 /O2 会泄漏到 Debug 配置
+# 与 MSVC 自动追加的 /RTC1 冲突（error D8016）。
+if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
     if(MSVC)
-        add_compile_options(/O2)
+        add_compile_options("$<$<CONFIG:Release>:/O2>")
     else()
-        add_compile_options(-O3)
+        add_compile_options("$<$<CONFIG:Release>:-O3>")
     endif()
 endif()
 

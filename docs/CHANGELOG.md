@@ -4774,3 +4774,16 @@ regression.ps1 全 PASS。
 - reload() 后回到第 1 页（原语义保持）。
 - 树形表格 page_count 仍按 tree_visible_ 过滤后计数。
 
+## UI-186: MSVC Debug 构建 error D8016 /O2 与 /RTC1 不兼容（CMakeLists.txt）（2026-09-03）
+- **级别**：缺陷修复（ui 库：根 CMakeLists.txt）。VS 中选 Debug x64 重新生成全部失败，7 个项目均报 `cl : 命令行 error D8016: "/O2"和"/RTC1"命令行选项不兼容`。
+- **根因**：根 `CMakeLists.txt` 第 16 行 `CMAKE_BUILD_TYPE` 默认为 `Release`，`add_compile_options(/O2)` 在 configure 时无条件全局添加到所有配置。Visual Studio 是多配置生成器，`CMAKE_BUILD_TYPE` 仅 configure 时求值一次，导致 `/O2` 泄漏到 Debug 配置，与 MSVC Debug 默认的 `/RTC1`（运行时错误检查）互斥冲突。
+- **修复**：
+  1. 条件改为 `CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_CONFIGURATION_TYPES`，兼容单配置（Ninja/Make）和多配置（VS）生成器。
+  2. `add_compile_options` 改用生成器表达式 `$<$<CONFIG:Release>:/O2>`（MSVC）/ `$<$<CONFIG:Release>:-O3>`（GCC/Clang），确保优化标志仅在 Release 配置生效。
+- **回归清单（改动后核对）**：
+  1. VS Debug x64 构建通过，不再报 D8016 错误
+  2. VS Release x64 构建仍使用 /O2 优化
+  3. Ninja/Make 单配置生成器行为不变
+- **验证**：VS Debug x64 重新生成全部成功（2 成功，0 失败）。
+- **影响范围**：根 `CMakeLists.txt` 第 13-26 行。
+

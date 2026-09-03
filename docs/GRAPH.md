@@ -5,10 +5,11 @@
 
 ## 统计
 
-- 节点: 182（BUG 174 / DOC 6 / META 2）
+- 节点: 183（BUG 175 / DOC 6 / META 2）
 - 边: 380
-- lint: 0 错误 / 1 警告
+- lint: 0 错误 / 2 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
 
 ## 反链索引
 
@@ -1212,6 +1213,11 @@
 - 路径: `docs/CHANGELOG.md#ui-185-dispatchmouseup-捕获者路径提前清空-pressed-致-titlebar-按钮失效--捕获卡住状态恢复uisrcwidgetcpp--uisrcscenecpp--uiincludeuiuisceneh2026-09-03`
 - 反链: 无
 
+### BUG:UI-186 · UI-186: MSVC Debug 构建 error D8016 /O2 与 /RTC1 不兼容（CMakeLists.txt）（2026-09-03）
+
+- 路径: `docs/CHANGELOG.md#ui-186-msvc-debug-构建-error-d8016-o2-与-rtc1-不兼容cmakeliststxt2026-09-03`
+- 反链: 无
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1480,6 +1486,7 @@
 | `BUG:UI-183` | BUG | UI-183: 回滚 UI-179/UI-182「测试」按钮缺字/点击无响应修复——GPU 像素回读证明无渲染缺陷，系 12px 小字号 OCR/视觉误判（ui/src/table.cpp）（2026-09-02） | `docs/CHANGELOG.md` |
 | `BUG:UI-184` | BUG | UI-184: 鼠标「按下不释放」——移出窗口/失焦释放丢失致 pressed_/capture_ 悬死 + set_visible 隐藏未清交互态（gl/src/window.cpp + gl/include/ui/gl/window.h + ui/src/scene.cpp + ui/src/widget.cpp）（2026-09-03） | `docs/CHANGELOG.md` |
 | `BUG:UI-185` | BUG | UI-185: dispatch_mouse_up 捕获者路径提前清空 pressed_ 致 TitleBar 按钮失效 + 捕获卡住状态恢复（ui/src/widget.cpp + ui/src/scene.cpp + ui/include/ui/ui/scene.h）（2026-09-03） | `docs/CHANGELOG.md` |
+| `BUG:UI-186` | BUG | UI-186: MSVC Debug 构建 error D8016 /O2 与 /RTC1 不兼容（CMakeLists.txt）（2026-09-03） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |

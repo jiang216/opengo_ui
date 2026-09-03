@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-03T14:14:45+08:00",
+  "generatedAt": "2026-09-03T15:03:43+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -1223,6 +1223,13 @@
       "label": "UI-123: Table auto_page_size 扣除分页条高度 + set_paginated 保持页码（2026-08-22）",
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-123-table-autopagesize-扣除分页条高度--setpaginated-保持页码2026-08-22"
+    },
+    "BUG:UI-186": {
+      "id": "BUG:UI-186",
+      "type": "BUG",
+      "label": "UI-186: MSVC Debug 构建 error D8016 /O2 与 /RTC1 不兼容（CMakeLists.txt）（2026-09-03）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-186-msvc-debug-构建-error-d8016-o2-与-rtc1-不兼容cmakeliststxt2026-09-03"
     },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
@@ -5553,6 +5560,7 @@
         "context": "回归清单#Table `auto_page_size()` 按可视高自动计算每页行数（扣除表头+分页条高度）；`set_paginated(true,n)` 总页数缩小时保持当前页（钳制不回跳第 1 页）；应用侧手算 pageSize 公式可整体替换"
       }
     ],
+    "BUG:UI-186": [],
     "META:CHANGELOG": [
       {
         "from": "META:CHANGELOG",
@@ -5822,7 +5830,8 @@
   "lint": {
     "errors": [],
     "warnings": [
-      "孤儿条目（无任何文档引用）: BUG:UI-185"
+      "孤儿条目（无任何文档引用）: BUG:UI-185",
+      "孤儿条目（无任何文档引用）: BUG:UI-186"
     ]
   }
 }
