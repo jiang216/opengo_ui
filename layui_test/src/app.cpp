@@ -477,6 +477,9 @@ int main(int argc, char** argv) {
             pages[current_page].destroy)
             pages[current_page].destroy(host);
         root.close_popups();
+        preview.set_on_scroll({});   // 切页前先清除上一页的滚动回调，
+                                     // 否则回调中捕获的旧页控件（如 fixbar bar）
+                                     // 已被 clear_children 释放，导致悬空调用崩溃。
         preview.clear_children();
         preview.reset_scroll();  // 切页滚动位置复位（UI-047：不残留旧页偏移）
         preview.set_spacing(16.f);  // 复位默认预览间距；页面 build 内可覆盖（如栅格页 10）

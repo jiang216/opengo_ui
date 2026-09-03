@@ -58,7 +58,7 @@ public:
     // 递归释放全部子树：逐个 remove_child + delete（含深层子节点），调用后 children() 为空。
     // 调用者持有子树所有权时使用（切页释放/列表重建）；不释放调用者自身。
     // 注意：任何指向已删除子控件的指针立即失效（UI-039 回归保证）。
-    void clear_children();
+    virtual void clear_children();
     // 销毁自身（含整个子树）：从父节点摘除后递归释放子树并 delete 自身。
     // 等价于「父节点 remove_child + 子树 clear_children + delete 自身」一条龙，
     // 用于销毁单个控件及其子树（切页清理根级弹窗等）。

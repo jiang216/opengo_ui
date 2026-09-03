@@ -66,6 +66,21 @@
 - **验证**：layui_test Release (MSBuild) 重建通过；`--smoke 3` exit 0；graphgen --check 0 错 0 警。
 - **影响范围**：`ui/src/widget.cpp`、`docs/CHANGELOG.md`
 
+## UI-188: ScrollBox clear_children 未失效滚动回调致悬空调用崩溃（ui/src/scrollbox.cpp + ui/include/ui/ui/scrollbox.h + ui/include/ui/ui/widget.h）（2026-09-03）
+- **级别**：缺陷修复（ui 库）。layui_test 实测：切页时 `render_page()` 调用 `preview.clear_children()` 释放子控件（含 `add_pinned()` 加入的 `bar`），随后 `preview.reset_scroll()` → `set_scroll(0.f)` → 触发仍驻留的 `on_scroll_()` 回调，回调中 `bar->set_visible()` 通过已释放的 `bar*` 虚调用崩溃（同 0xC0000005 读 vtable[1]）。
+- **根因**：`ScrollBox` 的 `on_scroll_` / `on_bottom_` 回调可捕获子控件指针（如 `fixbar_page.cpp:76` 的 `[&host, bar](){ bar->set_visible(...); }`）。`add_pinned()` 调用 `add_child(w)` 把锚定子控件加入 `children_`，因此 `clear_children()` 会销毁该子控件，但回调中的悬挂指针未被清理。`clear_children()` 为非虚方法，基类不通知子类回调失效。
+- **修复**：
+  - **`Widget::clear_children()` 改为虚方法**（widget.h:61）：允许子类在销毁子树前清理自身持有的回调引用。
+  - **`ScrollBox::clear_children()` 覆写**（scrollbox.cpp）：在调用 `Widget::clear_children()` 前将 `on_scroll_` 和 `on_bottom_` 置空，使回调无法在子控件销毁后被触发。`set_on_scroll(nullptr)` / `set_on_scroll_to_bottom(nullptr)` 已有「切页清理防悬空引用」文档约定，此覆写将清理动作内聚至生命周期操作中。
+- **回归清单（改动后核对）**：
+  1. 切页时 `clear_children()` 释放 ScrollBox 子控件后，`reset_scroll()` / `set_scroll()` 不触发已销毁控件的回调
+  2. `add_pinned()` 加入的锚定子控件随 `clear_children()` 释放后，`on_scroll_` 不引用已销毁 `bar*`
+  3. 正常滚动回调（未切页时）仍正常触发，行为不变
+  4. `--smoke` 逐页切换、`--click` 合成点击注入不崩溃
+  5. ComboBox/PanelWindow/标题栏拖拽等既有交互回归 UI-184/185/187
+- **验证**：layui_test RelWithDebInfo (MSBuild /MAP) 重建通过；`--smoke 120` 不再崩溃（之前每帧重复 10x crash at fixbar_page.cpp:76）；graphgen --check 0 错 0 警。
+- **影响范围**：`ui/include/ui/ui/widget.h`、`ui/include/ui/ui/scrollbox.h`、`ui/src/scrollbox.cpp`、`docs/CHANGELOG.md`
+
 ## UI-183: 回滚 UI-179/UI-182「测试」按钮缺字/点击无响应修复——GPU 像素回读证明无渲染缺陷，系 12px 小字号 OCR/视觉误判（ui/src/table.cpp）（2026-09-02）
 - **级别**：修复回调（更正性回滚）。audio_text 重启实测（opengl_UI 侧 glReadPixels 回读按钮区明暗墨迹像素）证明：无论「先开文本翻译→配置」还是「先开翻译→配置」，va_text_translate 与 va_translate 配置表操作列按钮区**都正常渲染文字墨迹**（broken 与 working 两序的 bright/dark 墨迹像素数量几乎一致，绝非空白）；font_diag 亦证明两序中「测/试」字形烘焙与绘制路径完全一致、atlas 未满。此前观察到的「空白」是 12px 小字号下 OCR/人眼无法稳定判读所致，**并非真实渲染缺陷**。
 - **原因（为何回滚）**：UI-179（`draw_buttons` 绘制段 prebake）与 UI-182（`on_mouse_down` 命中段 prebake）是针对「测试」缺字/点击无响应的预防性兜底修复；经 GPU 像素回读逐项排除 atlas 满、字形未烘、绘制/命中宽度分歧后，确认该缺陷在渲染层并不存在（两序墨迹像素一致），故两处 prebake 属「幻象修复」，予以回滚以免掩盖真实问题与增加无谓开销。

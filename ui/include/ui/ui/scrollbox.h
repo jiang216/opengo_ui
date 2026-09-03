@@ -35,6 +35,8 @@ public:
     void set_scroll_offset(float offset) {  set_scroll(offset); mark_dirty(); }
     // 滚动回顶部（切页/内容重建后复位滚动位置，防止残留旧页滚动偏移）
     void reset_scroll();
+    // 清除全部子树前先失效滚动回调（防回调捕获已销毁子控件指针致悬空调用）
+    void clear_children() override;
     // 标记子树变化（clear_children/add_child 后调用），抑制滚动条绘制直到下一次 on_layout()。
     // UI-156：必须同时 mark_dirty()——needs_layout_ 只在 on_layout()（受 Widget 脏门控
     // `dirty_ || dirty_children_` 保护）里被消费清掉，若不标脏 root 可能保持 clean，

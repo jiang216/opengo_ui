@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-03T16:34:14+08:00",
+  "generatedAt": "2026-09-03T18:03:13+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -26,6 +26,13 @@
       "label": "UI-187: 控件树释放后 root.capture_/root.modal_ 残留悬空指针致 dispatch 虚调用崩溃（ui/src/widget.cpp）（2026-09-03）",
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-187-控件树释放后-rootcapturerootmodal-残留悬空指针致-dispatch-虚调用崩溃uisrcwidgetcpp2026-09-03"
+    },
+    "BUG:UI-188": {
+      "id": "BUG:UI-188",
+      "type": "BUG",
+      "label": "UI-188: ScrollBox clear_children 未失效滚动回调致悬空调用崩溃（ui/src/scrollbox.cpp + ui/include/ui/ui/scrollbox.h + ui/include/ui/ui/widget.h）（2026-09-03）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-188-scrollbox-clearchildren-未失效滚动回调致悬空调用崩溃uisrcscrollboxcpp--uiincludeuiuiscrollboxh--uiincludeuiuiwidgeth2026-09-03"
     },
     "BUG:UI-183": {
       "id": "BUG:UI-183",
@@ -3579,6 +3586,7 @@
     ],
     "BUG:UI-185": [],
     "BUG:UI-187": [],
+    "BUG:UI-188": [],
     "BUG:UI-183": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -5840,7 +5848,8 @@
     "warnings": [
       "孤儿条目（无任何文档引用）: BUG:UI-185",
       "孤儿条目（无任何文档引用）: BUG:UI-186",
-      "孤儿条目（无任何文档引用）: BUG:UI-187"
+      "孤儿条目（无任何文档引用）: BUG:UI-187",
+      "孤儿条目（无任何文档引用）: BUG:UI-188"
     ]
   }
 }

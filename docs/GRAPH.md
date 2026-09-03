@@ -5,12 +5,13 @@
 
 ## 统计
 
-- 节点: 184（BUG 176 / DOC 6 / META 2）
+- 节点: 185（BUG 177 / DOC 6 / META 2）
 - 边: 380
-- lint: 0 错误 / 3 警告
+- lint: 0 错误 / 4 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-187
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-188
 
 ## 反链索引
 
@@ -1224,6 +1225,11 @@
 - 路径: `docs/CHANGELOG.md#ui-187-控件树释放后-rootcapturerootmodal-残留悬空指针致-dispatch-虚调用崩溃uisrcwidgetcpp2026-09-03`
 - 反链: 无
 
+### BUG:UI-188 · UI-188: ScrollBox clear_children 未失效滚动回调致悬空调用崩溃（ui/src/scrollbox.cpp + ui/include/ui/ui/scrollbox.h + ui/include/ui/ui/widget.h）（2026-09-03）
+
+- 路径: `docs/CHANGELOG.md#ui-188-scrollbox-clearchildren-未失效滚动回调致悬空调用崩溃uisrcscrollboxcpp--uiincludeuiuiscrollboxh--uiincludeuiuiwidgeth2026-09-03`
+- 反链: 无
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1494,6 +1500,7 @@
 | `BUG:UI-185` | BUG | UI-185: dispatch_mouse_up 捕获者路径提前清空 pressed_ 致 TitleBar 按钮失效 + 捕获卡住状态恢复（ui/src/widget.cpp + ui/src/scene.cpp + ui/include/ui/ui/scene.h）（2026-09-03） | `docs/CHANGELOG.md` |
 | `BUG:UI-186` | BUG | UI-186: MSVC Debug 构建 error D8016 /O2 与 /RTC1 不兼容（CMakeLists.txt）（2026-09-03） | `docs/CHANGELOG.md` |
 | `BUG:UI-187` | BUG | UI-187: 控件树释放后 root.capture_/root.modal_ 残留悬空指针致 dispatch 虚调用崩溃（ui/src/widget.cpp）（2026-09-03） | `docs/CHANGELOG.md` |
+| `BUG:UI-188` | BUG | UI-188: ScrollBox clear_children 未失效滚动回调致悬空调用崩溃（ui/src/scrollbox.cpp + ui/include/ui/ui/scrollbox.h + ui/include/ui/ui/widget.h）（2026-09-03） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |

@@ -50,6 +50,9 @@ endif()
 file(GLOB LAYUI_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/pages/*.cpp)
 add_executable(layui_test ${LAYUI_TEST_SOURCES})
 target_link_libraries(layui_test PRIVATE ${_LAYUI_TEST_LIB})
+# 链接映射（RelWithDebInfo）：产出 layui_test.map（函数名→RVA 文本），
+# 用于离线把访问冲突的 PC 解析为函数名+行（lldb 9 读 MSVC PDB 符号为 0 的备用路径）。
+target_link_options(layui_test PRIVATE $<$<CONFIG:RelWithDebInfo>:/MAP /MAPINFO:LINES>)
 
 # ---- 依赖拷贝：glfw3.dll + iconfont.ttf + logo.png + avatar 到可执行目录（VS 调试/直接运行开箱可用） ----
 if(_LAYUI_TEST_DLL_DIR)

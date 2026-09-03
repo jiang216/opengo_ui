@@ -58,6 +58,12 @@ void ScrollBox::set_scroll(float value) {
     check_bottom();
 }
 
+void ScrollBox::clear_children() {
+    on_scroll_ = nullptr;
+    on_bottom_ = nullptr;
+    Widget::clear_children();
+}
+
 void ScrollBox::reset_scroll() {
     mark_dirty();
         set_scroll(0.f);
