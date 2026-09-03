@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-03T15:40:08+08:00",
+  "generatedAt": "2026-09-03T16:20:55+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -19,6 +19,13 @@
       "label": "UI-185: dispatch_mouse_up 捕获者路径提前清空 pressed_ 致 TitleBar 按钮失效 + 捕获卡住状态恢复（ui/src/widget.cpp + ui/src/scene.cpp + ui/include/ui/ui/scene.h）（2026-09-03）",
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-185-dispatchmouseup-捕获者路径提前清空-pressed-致-titlebar-按钮失效--捕获卡住状态恢复uisrcwidgetcpp--uisrcscenecpp--uiincludeuiuisceneh2026-09-03"
+    },
+    "BUG:UI-187": {
+      "id": "BUG:UI-187",
+      "type": "BUG",
+      "label": "UI-187: 控件树释放后 root.capture_/root.modal_ 残留悬空指针致 dispatch 虚调用崩溃（ui/src/widget.cpp）（2026-09-03）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-187-控件树释放后-rootcapturerootmodal-残留悬空指针致-dispatch-虚调用崩溃uisrcwidgetcpp2026-09-03"
     },
     "BUG:UI-183": {
       "id": "BUG:UI-183",
@@ -3571,6 +3578,7 @@
       }
     ],
     "BUG:UI-185": [],
+    "BUG:UI-187": [],
     "BUG:UI-183": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -5831,7 +5839,8 @@
     "errors": [],
     "warnings": [
       "孤儿条目（无任何文档引用）: BUG:UI-185",
-      "孤儿条目（无任何文档引用）: BUG:UI-186"
+      "孤儿条目（无任何文档引用）: BUG:UI-186",
+      "孤儿条目（无任何文档引用）: BUG:UI-187"
     ]
   }
 }

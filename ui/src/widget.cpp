@@ -170,6 +170,15 @@ void Widget::add_child(Widget* child) {
 void Widget::remove_child(Widget* child) {
     for (auto it = children_.begin(); it != children_.end(); ++it) {
         if (*it == child) {
+            // 移除子树前，清 root 的 capture_/modal_ 引用若指向该子树内任意控件，
+            // 防止子树随后被释放时 root 残留悬空指针（UI-187 根因修复）。
+            Widget* r = root();
+            if (r) {
+                for (Widget* p = r->capture_; p; p = p->parent_)
+                    if (p == child) { r->capture_ = nullptr; break; }
+                for (Widget* p = r->modal_; p; p = p->parent_)
+                    if (p == child) { r->modal_ = nullptr; break; }
+            }
             (*it)->parent_ = nullptr;
             children_.erase(it);
             on_children_changed();
@@ -180,9 +189,18 @@ void Widget::remove_child(Widget* child) {
 }
 
 void Widget::clear_children() {
+    Widget* r = root();
     std::vector<Widget*> kids = std::move(children_);
     children_.clear();
     for (Widget* k : kids) {
+        // 释放子树前，清 root 的 capture_/modal_ 引用若指向该子树内任意控件，
+        // 防止子树随后被 delete 时 root 残留悬空指针（UI-187 根因修复）。
+        if (r) {
+            for (Widget* p = r->capture_; p; p = p->parent_)
+                if (p == k) { r->capture_ = nullptr; break; }
+            for (Widget* p = r->modal_; p; p = p->parent_)
+                if (p == k) { r->modal_ = nullptr; break; }
+        }
         k->parent_ = nullptr;
         k->clear_children();  // 递归释放 k 的整个子树
         delete k;
@@ -399,13 +417,17 @@ bool Widget::dispatch_mouse_up(float x, float y, int button) {
     if (cap && cap != this) {
         const bool was_pressed = cap->pressed_;
         const bool handled = cap->on_mouse_up(x, y, button);
-        // 捕获者 on_mouse_up 自行管理 pressed_ 状态（如 TitleBar 按钮逻辑）。
-        // 若 on_mouse_up 未处理且捕获者此前处于按下态，则清除按下态并重绘。
-        if (was_pressed && !handled) {
-            cap->pressed_ = false;
-            cap->mark_dirty();
+        // 回调可能已销毁/脱离捕获者；从实际 root 重验并清捕获（cap->release_mouse_capture()
+        // 在控件脱树后返回错误 root，导致清除失败）。Fix A/B 保证 root.capture_ 在
+        // 任何 delete 前已清空，此处守卫避免对已释放 cap 的二次触碰。
+        Widget* r = root();
+        if (r->capture_ == cap) {
+            if (was_pressed && !handled) {
+                cap->pressed_ = false;
+                cap->mark_dirty();
+            }
+            r->capture_ = nullptr;
         }
-        cap->release_mouse_capture();
         return handled;
     }
     // 快照遍历：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
