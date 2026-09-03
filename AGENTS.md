@@ -18,6 +18,8 @@
 - 运行时图片等资产：build 期 POST_BUILD 拷贝 `logo.png` / `iconfont.ttf` / `glfw3.dll` 到 exe 目录，
   配合 ui 库 `Image::load_from_file` 的 **exe 目录回退**（[UI-048](docs/CHANGELOG.md#ui-048-image-资产定位依赖-cwd--加载噪音错误2026-08-16)）
   即可不依赖 CWD 加载；需新素材优先从上述镜像库取，**禁止**在测试程序内堆叠 CWD 相对路径回退链。
+- **无 ocr 屏幕 GUI 工具**：本项目（仓库 `.opencode/skills/`）**不提供** `ocr_capture_ocr` / `ocr_mouse_action` / `ocr_list_windows` / `ocr_activate_window` 等屏幕 OCR/鼠标操作工具，
+  亦不提供 `ai_ocr_tools` MCP 类 GUI 工具集成。UI 交互验证一律用测试程序自带编排参数：`--smoke` / `--click x,y` / `--shot-page <idx>` / `--page <idx>` / `--shot-scroll`；不得虚构或引用此类 GUI 工具。
 
 ### 改动工作流（强制，防错误复发）
 
