@@ -188,18 +188,12 @@ void Scene::frame(float dt) {
     // 帧后派发：HUD / Tooltip / 状态文本直绘（GL 上下文与 renderer 仍处于可用态）
     notify_phase(ScenePhase::PostDraw, dt);
 
-    // UI-185：鼠标按下状态恢复——当捕获者存在且鼠标仍按下但本轮未检测到释放边沿时，
-    // 说明 GLFW_RELEASE 被 SetCapture 拦截或 focus/cursor 回调未触发，导致
-    // dispatch_mouse_up 永不执行，控件 pressed_ 永久卡住。超过阈值强制补发
-    // dispatch_mouse_up 以清除卡住状态。
-    if (dispatch_mouse && window_.mouse_down(0) && !mouse_up_edge && root_.capture_widget()) {
-        mouse_down_stuck_frames_++;
-        if (mouse_down_stuck_frames_ > 3) {
-            root_.dispatch_mouse_up(window_.mouse_x(), window_.mouse_y(), 0);
-            mouse_down_stuck_frames_ = 0;
-        }
-    } else {
-        mouse_down_stuck_frames_ = 0;
+    // UI-185：鼠标按下状态恢复——当捕获者存在但 OS 层面按键已抬起（!mouse_down(0)），
+    // 说明释放边沿丢失，捕获者/控件 pressed_ 永久卡住。强制补发 dispatch_mouse_up
+    // 以清除卡住状态。拖拽期间鼠标仍按住（mouse_down(0)==true），条件不成立，
+    // 不会误中断合法拖拽（UI-185 回归修正）。
+    if (dispatch_mouse && !window_.mouse_down(0) && root_.capture_widget()) {
+        root_.dispatch_mouse_up(window_.mouse_x(), window_.mouse_y(), 0);
     }
 }
 
