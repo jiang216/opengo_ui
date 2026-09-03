@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 180（BUG 172 / DOC 6 / META 2）
-- 边: 379
+- 节点: 181（BUG 173 / DOC 6 / META 2）
+- 边: 380
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1200,6 +1200,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 合计/工具栏/操作（数据表格分阶段克隆 2）：`set_total_row(bool)`+`set_total_col(col)`+`set_total_row_text()` 表尾合计行（首列文案 + total_col 对当前页求和，随皮肤分隔线，on_draw 固定于数据区底部）；`add_button_column(title,width,labels,events)` 行内操作按钮列（ColKind::Button，查看/编辑/删除 原生绘制，on_mouse_down 反算按钮中心命中 → `set_on_action(visible_row,event)`）；`set_cell_event_col(col)`+`set_on_cell_event(visible_row,col)` 单元格点击事件（mirror cellEvent.html 签名列）；`set_cell_tooltip(cb)` 注册悬停回调（行控件 `on_mouse_move` 查询命中单元格完整文本，设 tooltip + `mark_dirty()`；未注册回调不显示 tooltip）；对应 mirror table/totalRow、toolbar、cellEvent、operate 四个子页一比一（table_data3_page order 47）
 
+### BUG:UI-184 · UI-184: 鼠标「按下不释放」——移出窗口/失焦释放丢失致 pressed_/capture_ 悬死 + set_visible 隐藏未清交互态（gl/src/window.cpp + gl/include/ui/gl/window.h + ui/src/scene.cpp + ui/src/widget.cpp）（2026-09-03）
+
+- 路径: `docs/CHANGELOG.md#ui-184-鼠标按下不释放移出窗口失焦释放丢失致-pressedcapture-悬死--setvisible-隐藏未清交互态glsrcwindowcpp--glincludeuiglwindowh--uisrcscenecpp--uisrcwidgetcpp2026-09-03`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#鼠标按下释放兜底（防「按下不释放」）：① 控件级/整窗拖拽 Windows 经 `SetCapture`（`Window::acquire/release_mouse_capture`，`Scene::frame` 依 `root.capture_widget()` 同步）保证移出窗口/失焦释放仍回调本窗口 → `dispatch_mouse_up` 正常复位；② 失焦/光标离开时有键按下 → `Window::mouse_capture_lost_` 暴露为抬起边沿 → 下一帧补发 up → `Scene::settle_mouse_reset` 收尾清标记+复位 `mouse_down_`，自愈悬死态；③ `set_visible(false)` 清 `pressed_/hovered_` 并摘 root `capture_/modal_`（对齐 set_enabled UI-167⑦）——隐藏控件不得残留按下高亮/独占捕获
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1466,6 +1472,7 @@
 | `BUG:UI-179` | BUG | UI-179: 按钮列文字「测试」等短 CJK 缺字根治——绘制时 prebake_text 兜底烘焙（ui/src/table.cpp）（2026-09-02） | `docs/CHANGELOG.md` |
 | `BUG:UI-182` | BUG | UI-182: 按钮列命中区与绘制宽度不一致——点击「测试」像没响应（ui/src/table.cpp）（2026-09-02） | `docs/CHANGELOG.md` |
 | `BUG:UI-183` | BUG | UI-183: 回滚 UI-179/UI-182「测试」按钮缺字/点击无响应修复——GPU 像素回读证明无渲染缺陷，系 12px 小字号 OCR/视觉误判（ui/src/table.cpp）（2026-09-02） | `docs/CHANGELOG.md` |
+| `BUG:UI-184` | BUG | UI-184: 鼠标「按下不释放」——移出窗口/失焦释放丢失致 pressed_/capture_ 悬死 + set_visible 隐藏未清交互态（gl/src/window.cpp + gl/include/ui/gl/window.h + ui/src/scene.cpp + ui/src/widget.cpp）（2026-09-03） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1729,6 +1736,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-179` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-182` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-183` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-184` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

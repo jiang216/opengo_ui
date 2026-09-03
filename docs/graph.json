@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-02T22:09:41+08:00",
+  "generatedAt": "2026-09-03T12:44:33+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-184": {
+      "id": "BUG:UI-184",
+      "type": "BUG",
+      "label": "UI-184: 鼠标「按下不释放」——移出窗口/失焦释放丢失致 pressed_/capture_ 悬死 + set_visible 隐藏未清交互态（gl/src/window.cpp + gl/include/ui/gl/window.h + ui/src/scene.cpp + ui/src/widget.cpp）（2026-09-03）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-184-鼠标按下不释放移出窗口失焦释放丢失致-pressedcapture-悬死--setvisible-隐藏未清交互态glsrcwindowcpp--glincludeuiglwindowh--uisrcscenecpp--uisrcwidgetcpp2026-09-03"
+    },
     "BUG:UI-183": {
       "id": "BUG:UI-183",
       "type": "BUG",
@@ -2306,6 +2313,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-184",
+      "kind": "checklist",
+      "context": "回归清单#鼠标按下释放兜底（防「按下不释放」）：① 控件级/整窗拖拽 Windows 经 `SetCapture`（`Window::acquire/release_mouse_capture`，`Scene::frame` 依 `root.capture_widget()` 同步）保证移出窗口/失焦释放仍回调本窗口 → `dispatch_mouse_up` 正常复位；② 失焦/光标离开时有键按下 → `Window::mouse_capture_lost_` 暴露为抬起边沿 → 下一帧补发 up → `Scene::settle_mouse_reset` 收尾清标记+复位 `mouse_down_`，自愈悬死态；③ `set_visible(false)` 清 `pressed_/hovered_` 并摘 root `capture_/modal_`（对齐 set_enabled UI-167⑦）——隐藏控件不得残留按下高亮/独占捕获"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-009",
       "kind": "checklist",
       "context": "回归清单#Slider 滑块：拖拽/点击改值 + 左右键微调 + Home/End 极值；轨道 + 填充 + 聚焦手柄"
@@ -3536,6 +3549,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-184": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#鼠标按下释放兜底（防「按下不释放」）：① 控件级/整窗拖拽 Windows 经 `SetCapture`（`Window::acquire/release_mouse_capture`，`Scene::frame` 依 `root.capture_widget()` 同步）保证移出窗口/失焦释放仍回调本窗口 → `dispatch_mouse_up` 正常复位；② 失焦/光标离开时有键按下 → `Window::mouse_capture_lost_` 暴露为抬起边沿 → 下一帧补发 up → `Scene::settle_mouse_reset` 收尾清标记+复位 `mouse_down_`，自愈悬死态；③ `set_visible(false)` 清 `pressed_/hovered_` 并摘 root `capture_/modal_`（对齐 set_enabled UI-167⑦）——隐藏控件不得残留按下高亮/独占捕获"
+      }
+    ],
     "BUG:UI-183": [
       {
         "from": "DOC:ARCHITECTURE",

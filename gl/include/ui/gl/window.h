@@ -81,6 +81,13 @@ public:
     void end_drag();
     bool is_dragging() const { return dragging_; }
 
+    // ---- OS 级鼠标捕获（UI-184：移出窗口/失焦释放丢失兜底）----
+    // Windows 下用 SetCapture/ReleaseCapture：控件级拖拽期间把 WM_LBUTTONUP 锁定投递给
+    // 本窗口，即使指针移出客户区/失焦释放也能收到 GLFW_RELEASE → pressed_/capture_ 复位，
+    // 根治「窗口内按下、移出窗口外释放，控件一直停在按下态」。非 Windows 空操作。
+    void acquire_mouse_capture();
+    void release_mouse_capture();
+
     // ---- 光标形状 ----
     void set_cursor(CursorType type);  // 统一光标接口
     void set_cursor_arrow();
@@ -120,6 +127,9 @@ public:
     // 见 scene.cpp 鼠标分发）——「生产者-消费方」与「分配者-控件树」可用非消耗读各取所需。
     bool mouse_pressed_peek(int button) const;
     bool mouse_released_peek(int button) const;
+    // UI-184：Scene 鼠标分发后调用——清除失焦/光标离开触发的「释放丢失待复位」标记，
+    // 并将对应键的按下状态复位为 false（peek 非消耗读由调用方每帧读一次后在此收尾）。
+    void settle_mouse_reset();
     // 边沿触发：本轮 poll 内滚轮滚动量（dx,dy，读一次后清零）
     float scroll_dx();
     float scroll_dy();
@@ -149,6 +159,8 @@ private:
     static void key_cb(GLFWwindow* w, int key, int scancode, int action, int mods);
     static void char_cb(GLFWwindow* w, unsigned int codepoint);
     static void drop_cb(GLFWwindow* w, int count, const char** paths);
+    static void focus_cb(GLFWwindow* w, int focused);
+    static void cursor_enter_cb(GLFWwindow* w, int entered);
 
     GLFWwindow* window_ = nullptr;
     int width_ = 0;
@@ -159,6 +171,12 @@ private:
     bool mouse_down_[3] = {false, false, false};
     bool mouse_pressed_[3] = {false, false, false};
     bool mouse_released_[3] = {false, false, false};
+    // UI-184：失焦/光标离开时仍有键处于按下 → 视为释放丢失，把该键标记为待复位
+    //（下次 Scene::frame 经 mouse_released_ 读到 up → dispatch_mouse_up → 清 pressed_/capture_）。
+    bool mouse_capture_lost_[3] = {false, false, false};
+    // UI-184：当前是否已持有 OS 级鼠标捕获（SetCapture）。仅在状态变化时调用 Win32 API，
+    // 避免每帧重复 SetCapture/ReleaseCapture 的开销与干扰。
+    bool os_mouse_captured_ = false;
     float scroll_dx_ = 0.f;
     float scroll_dy_ = 0.f;
     bool key_state_[512] = {false};

@@ -48,6 +48,20 @@ void Widget::set_bounds(float x, float y, float w, float h) {
 void Widget::set_visible(bool on) {
     if (visible == on) return;
     visible = on;
+    if (!on) {
+        // UI-184：隐藏即清交互残留——与 set_enabled(false)（UI-167⑦）对齐。隐藏期间
+        // dispatch_mouse_up 遍历会跳过不可见子控件（widget.cpp dispatch_mouse_up 顶部
+        // `if (!child->visible ...) continue;`），若按下后被隐藏，pressed_/hovered_ 将永
+        // 不复位，重新显示时残留「按下不释放」高亮。此处显式清态并从根节点摘除
+        // capture_/modal_ 引用（防隐藏控件继续独占鼠标捕获/输入拦截）。
+        pressed_ = false;
+        hovered_ = false;
+        if (Widget* r = root(); r) {
+            if (r->capture_ == this) r->capture_ = nullptr;
+            if (r->modal_ == this) r->modal_ = nullptr;
+        }
+        blur();
+    }
     mark_dirty();  // UI-156：重标——显隐变更向上传播，使父容器下一帧重排（见 widget.h 说明）
 }
 

@@ -4,6 +4,8 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #if defined(_WIN32)
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 #include <windows.h>
 #endif
 
@@ -76,6 +78,8 @@ Window::Window(int width, int height, const char* title)
     glfwSetKeyCallback(window_, &Window::key_cb);
     glfwSetCharCallback(window_, &Window::char_cb);
     glfwSetDropCallback(window_, &Window::drop_cb);
+    glfwSetWindowFocusCallback(window_, &Window::focus_cb);
+    glfwSetCursorEnterCallback(window_, &Window::cursor_enter_cb);
 }
 
 Window::~Window() {
@@ -114,8 +118,14 @@ bool Window::mouse_pressed(int button) {
 
 bool Window::mouse_released(int button) {
     if (button < 0 || button > 2) return false;
-    const bool v = mouse_released_[button];
+    // UI-184：除真实 release 边沿外，失焦/光标离开触发的「释放丢失待复位」也视作抬起，
+    // 供按边沿消费的调用方及时复位 pressed_/capture_（自愈卡死态）。
+    const bool v = mouse_released_[button] || mouse_capture_lost_[button];
     mouse_released_[button] = false;
+    if (mouse_capture_lost_[button]) {
+        mouse_capture_lost_[button] = false;
+        mouse_down_[button] = false;
+    }
     return v;
 }
 
@@ -126,7 +136,17 @@ bool Window::mouse_pressed_peek(int button) const {
 
 bool Window::mouse_released_peek(int button) const {
     if (button < 0 || button > 2) return false;
-    return mouse_released_[button];
+    // UI-184：同 mouse_released，失焦/光标离开的带复位标记也向 peek 读者暴露为抬起边沿。
+    return mouse_released_[button] || mouse_capture_lost_[button];
+}
+
+void Window::settle_mouse_reset() {
+    for (int i = 0; i < 3; ++i) {
+        if (mouse_capture_lost_[i]) {
+            mouse_capture_lost_[i] = false;
+            mouse_down_[i] = false;
+        }
+    }
 }
 
 void Window::cursor_pos_cb(GLFWwindow* w, double x, double y) {
@@ -146,6 +166,50 @@ void Window::mouse_button_cb(GLFWwindow* w, int button, int action, int mods) {
     } else if (action == GLFW_RELEASE) {
         self->mouse_down_[button] = false;
         self->mouse_released_[button] = true;
+    }
+}
+
+// UI-184：Windows 下用 SetCapture 把后续 WM_LBUTTONUP 锁定投递给本窗口，即使指针移出
+// 客户区/失焦释放也能收到 GLFW_RELEASE → pressed_/capture_ 复位，根治「移出窗口释放丢失」。
+void Window::acquire_mouse_capture() {
+    if (!window_ || os_mouse_captured_) return;
+    os_mouse_captured_ = true;
+#if defined(_WIN32)
+    HWND hwnd = glfwGetWin32Window(window_);
+    if (hwnd) SetCapture(hwnd);
+#else
+    (void)0;
+#endif
+}
+
+void Window::release_mouse_capture() {
+    if (!window_ || !os_mouse_captured_) return;
+    os_mouse_captured_ = false;
+#if defined(_WIN32)
+    HWND hwnd = glfwGetWin32Window(window_);
+    if (hwnd) ReleaseCapture();
+#else
+    (void)0;
+#endif
+}
+
+// 焦点丢失：若仍有键处于按下，则该按下/释放序列可能已脱离本窗口投递（失焦后 OS 捕获被转移），
+// 把对应键标记为「释放丢失待复位」。下次 Scene::frame 由 mouse_released_ 读到 up → 分发
+// dispatch_mouse_up → 清 pressed_/capture_，自愈卡死态（UI-184）。
+void Window::focus_cb(GLFWwindow* w, int focused) {
+    Window* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
+    if (!self || focused) return;  // 获得焦点不处理
+    for (int i = 0; i < 3; ++i) {
+        if (self->mouse_down_[i]) self->mouse_capture_lost_[i] = true;
+    }
+}
+
+// 光标离开：同理，若仍有键按下且指针已移出，释放极可能落在窗口外不回调本窗口 → 置复位标记。
+void Window::cursor_enter_cb(GLFWwindow* w, int entered) {
+    Window* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
+    if (!self || entered) return;  // 进入不处理
+    for (int i = 0; i < 3; ++i) {
+        if (self->mouse_down_[i]) self->mouse_capture_lost_[i] = true;
     }
 }
 
@@ -434,6 +498,7 @@ void Window::start_drag(float mouse_x, float mouse_y) {
     drag_off_y_ = mouse_y;
 #endif
     dragging_ = true;
+    acquire_mouse_capture();  // UI-184：整窗拖动也持 OS 捕获，移出窗口释放不丢
 }
 
 void Window::update_drag(float mouse_x, float mouse_y) {
@@ -452,7 +517,10 @@ void Window::update_drag(float mouse_x, float mouse_y) {
 #endif
 }
 
-void Window::end_drag() { dragging_ = false; }
+void Window::end_drag() {
+    dragging_ = false;
+    release_mouse_capture();  // UI-184：拖动结束释放 OS 捕获
+}
 
 // ---- 光标形状 ----
 

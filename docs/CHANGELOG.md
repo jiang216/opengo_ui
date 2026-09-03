@@ -3,6 +3,25 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-184: 鼠标「按下不释放」——移出窗口/失焦释放丢失致 pressed_/capture_ 悬死 + set_visible 隐藏未清交互态（gl/src/window.cpp + gl/include/ui/gl/window.h + ui/src/scene.cpp + ui/src/widget.cpp）（2026-09-03）
+- **级别**：缺陷修复（ui 库：gl 窗口层 + ui 控件/Scene 层）。layui_test 实测：在窗口内按下某可交互控件后**移到窗口外释放**，控件一直停在「按下」高亮态（pressed_ 恒 true），表现为「按下不释放」。
+- **根因**：
+  - **主因（gl 层，移出/失焦释放丢失）**：ui 层完全依赖 GLFW 的 release **边沿**来复位 `pressed_`/`capture_`。无边框 GLFW 窗口靠 OS 隐式鼠标捕获，一旦指针移出窗口或失焦（Alt-Tab/点击其它窗口），后续 `WM_LBUTTONUP`/`GLFW_RELEASE` 不再回调本窗口 → `mouse_released_` 恒 false → `dispatch_mouse_up` 永不执行 → 按下控件/捕获者状态**永不复位**。控件级拖拽（Slider/ScrollBox/TextArea/PanelWindow 用 `Widget::capture_mouse`）未做任何 OS 级捕获，`Window::start_drag`（整窗拖动）也未 SetCapture，故移出即丢。
+  - **次因（ui 层，隐藏残留）**：`Widget::set_visible(false)` 只翻转 `visible`，**不清** `pressed_/hovered_` 也不摘 root `capture_/modal_`。而 `dispatch_mouse_up` 递归会跳过不可见子节点（`if (!child->visible ...) continue;`）→ 按下后被隐藏的控件 `pressed_` 永不复位，重新显示时残留「按下不释放」高亮。`set_enabled(false)` 已在 UI-167⑦ 处理同类，`set_visible` 路径遗漏。
+- **修复（ui 库，A+B+set_visible 清交互态）**：
+  - **A. Windows SetCapture 根治移出丢释放（gl）**：`Window` 新增 `acquire_mouse_capture()/release_mouse_capture()`（`_WIN32` 下 `SetCapture(glfwGetWin32Window)/ReleaseCapture`，带 `os_mouse_captured_` 去抖只在状态变化时调 API）；`Scene::frame` 鼠标分发后依 `root.capture_widget()` 是否为空同步调用两者（有捕获者→SetCapture，释放在窗口外仍回调本窗口→正常复位）；`Window::start_drag/end_drag` 也包一层（整窗拖动同受益）。`Widget` 新增只读访问器 `capture_widget()`。
+  - **B. 失焦/离开防御性自愈（gl+scene）**：`Window` 注册 `glfwSetWindowFocusCallback`+`glfwSetCursorEnterCallback`：失焦/光标离开时若有键仍按下，置 `mouse_capture_lost_[i]`；`mouse_released_peek/mouse_released` 把该标记暴露为抬起边沿 → 下一帧 `Scene::frame` 读到 up → `dispatch_mouse_up` → 清 `pressed_/capture_`；`Scene` 分发后调 `settle_mouse_reset()` 收尾（清标记 + 复位 `mouse_down_`）。
+  - **C. set_visible 清交互态（ui）**：`Widget::set_visible(false)` 时清 `pressed_/hovered_`、从根节点摘 `capture_/modal_` 引用并 `blur()`（对齐 set_enabled，UI-167⑦）。
+- **回归清单（改动后核对）**：
+  1. 控件级拖拽（Slider 滑块/ScrollBox 滚动条/TextArea 框选/PanelWindow 标题）按住拖出窗口释放，控件不残留按下高亮，`capture_` 正常清空；
+  2. 整窗拖动（标题条/TitleBar）拖出窗口释放不丢，窗口不卡死拖动态；
+  3. 失焦（Alt-Tab）或光标离开时按住的控件自动解除按下/捕获态，再回到窗口交互正常；
+  4. `--smoke` 冒烟逐页切换无崩溃、exit 0；`--click` 合成点击注入仍正常触发点击（UI-173/UI-183 语义不变）；
+  5. `set_visible(false)` 隐藏控件后再 `set_visible(true)` 显示，不再残留按下高亮；隐藏期间不再独占鼠标捕获/模态拦截；
+  6. 正常按下-释放（光标始终在窗口内）行为不变：按下高亮、抬起复位、点击回调照常。
+- **验证**：layui_test Release (Ninja) 重建通过；`--smoke 3` exit 0（page switches ok）；graphgen --check 0 错 0 警。
+- **影响范围**：`gl/include/ui/gl/window.h`、`gl/src/window.cpp`、`ui/src/scene.cpp`、`ui/include/ui/ui/widget.h`、`ui/src/widget.cpp`
+
 ## UI-183: 回滚 UI-179/UI-182「测试」按钮缺字/点击无响应修复——GPU 像素回读证明无渲染缺陷，系 12px 小字号 OCR/视觉误判（ui/src/table.cpp）（2026-09-02）
 - **级别**：修复回调（更正性回滚）。audio_text 重启实测（opengl_UI 侧 glReadPixels 回读按钮区明暗墨迹像素）证明：无论「先开文本翻译→配置」还是「先开翻译→配置」，va_text_translate 与 va_translate 配置表操作列按钮区**都正常渲染文字墨迹**（broken 与 working 两序的 bright/dark 墨迹像素数量几乎一致，绝非空白）；font_diag 亦证明两序中「测/试」字形烘焙与绘制路径完全一致、atlas 未满。此前观察到的「空白」是 12px 小字号下 OCR/人眼无法稳定判读所致，**并非真实渲染缺陷**。
 - **原因（为何回滚）**：UI-179（`draw_buttons` 绘制段 prebake）与 UI-182（`on_mouse_down` 命中段 prebake）是针对「测试」缺字/点击无响应的预防性兜底修复；经 GPU 像素回读逐项排除 atlas 满、字形未烘、绘制/命中宽度分歧后，确认该缺陷在渲染层并不存在（两序墨迹像素一致），故两处 prebake 属「幻象修复」，予以回滚以免掩盖真实问题与增加无谓开销。

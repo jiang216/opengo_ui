@@ -124,6 +124,14 @@ void Scene::frame(float dt) {
             else
                 root_.dispatch_mouse_up(mx, my, 0);
         }
+        // UI-184：鼠标分发后收尾——
+        // ① 释放丢失（失焦/光标离开时有键按下）的复位标记已由 mouse_released_peek 本轮
+        //    读到 up 并分发，此处确认清除并举证把对应键按下状态复位为 false；
+        // ② 依 root 捕获者状态同步 OS 级鼠标捕获：有捕获者 → SetCapture（移出窗口释放仍
+        //    回调本窗口 → dispatch_mouse_up 正常复位），否则 ReleaseCapture。
+        window_.settle_mouse_reset();
+        if (root_.capture_widget()) window_.acquire_mouse_capture();
+        else window_.release_mouse_capture();
     }
     if (dispatch_scroll) {
         event_scroll_dx_ = window_.scroll_dx();

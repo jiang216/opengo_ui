@@ -102,6 +102,9 @@ public:
     // 此后鼠标 move/up 即使指针离开控件范围也路由给捕获者；up 后自动释放
     void capture_mouse();
     void release_mouse_capture();
+    // 当前鼠标捕获者（仅根节点持有；无捕获返回 nullptr）。供宿主/Scene 依其状态同步
+    // OS 级鼠标捕获（UI-184）。
+    Widget* capture_widget() const { return capture_; }
 
     // ---- 弹出层（M9）：根节点维护弹出面板（下拉/菜单），点击外部自动关闭 ----
     // 打开弹出面板（owner 内点击不关闭它；面板绘制在控件树最上层）
