@@ -220,6 +220,7 @@ int main(int argc, char** argv) {
     double smoke_seconds = 0.0;
     const char* shot_path = nullptr;
     int shot_page = -1;
+    int start_page = -1;
     float shot_scroll = 0.f;
     std::vector<std::pair<float, float>> click_points;  // --click x,y（可重复）
     bool list_pages = false;
@@ -232,6 +233,8 @@ int main(int argc, char** argv) {
             shot_path = argv[++i];
         else if (std::strcmp(argv[i], "--shot-page") == 0 && i + 1 < argc)
             shot_page = std::atoi(argv[++i]);
+        else if (std::strcmp(argv[i], "--page") == 0 && i + 1 < argc)
+            start_page = std::atoi(argv[++i]);
         else if (std::strcmp(argv[i], "--shot-scroll") == 0 && i + 1 < argc)
             shot_scroll = (float)std::atof(argv[++i]);
         else if (std::strcmp(argv[i], "--click") == 0 && i + 1 < argc) {
@@ -565,6 +568,8 @@ int main(int argc, char** argv) {
     }
     place_content();    // 定界内容区（第二列默认隐藏，content 起点 = kSidebarW）
     if (!pages.empty()) navigate(0);
+    // --page <n>：启动即导航指定页并**持续运行**（真实鼠标/失焦复现用，区别于 --shot-page 截完即退）
+    if (start_page >= 0 && start_page < (int)pages.size()) navigate(start_page);
     // --shot-page <n>：截图指定页（首帧即该页），供脚本化像素验证
     if (shot_page >= 0 && shot_page < (int)pages.size()) {
         navigate(shot_page);
