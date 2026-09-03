@@ -27,9 +27,11 @@
 - **根因**：
   - **主因（ui/src/widget.cpp）**：`Widget::dispatch_mouse_up` 捕获者优先路径中，`cap->pressed_ = false` 在 `cap->on_mouse_up()` **之前**执行。`TitleBar::on_mouse_up` 依赖 `if (pressed_ != Btn::None)` 判断按钮释放，但 `pressed_` 已被基类提前清空为 `Btn::None` → 按钮的 `trigger()` 永不执行。同时 `dispatch_mouse_up` 返回 false，捕获虽被释放但按钮逻辑已丢失。
   - **次因（ui/src/scene.cpp）**：`Scene::frame()` 仅在 `mouse_released_peek(0)` 为真时才调用 `dispatch_mouse_up`。当 `SetCapture` 拦截 `WM_LBUTTONUP`（Windows 无边框窗口拖动）或 `focus_cb`/`cursor_enter_cb` 未触发（非 Windows 无边框窗口拖动）时，`mouse_released_peek` 恒假 → `dispatch_mouse_up` 永不执行 → `dragging_`/`pressed_` 永久卡住。
+  - **深层根因（gl/src/window.cpp）**：`settle_mouse_reset()` 仅清除 `mouse_capture_lost_[]` 和 `mouse_down_[]`，**从未清除 `mouse_released_[]` 和 `mouse_pressed_[]` 边沿标志位**。GLFW 回调设 `mouse_released_[button]=true` 后，该标志永久为 `true` → `mouse_up_edge` 在每帧都为 `true` → `dispatch_mouse_up` 每帧都调用（即使捕获已释放）→ `mouse_up_edge` 永远为 `true` → UI-185 安全网条件 `!mouse_up_edge` 永远不成立 → 安全网完全失效。同时 `mouse_pressed_[button]` 也永久为 `true` → 每帧都误判为按下边沿。**这才是此前 UI-185 修复后「按下不释放」问题仍未解决的根因**。
 - **修复**：
   - **A. dispatch_mouse_up 捕获者路径（widget.cpp）**：移除抢占式 `cap->pressed_ = false`，改为先调用 `cap->on_mouse_up(x, y, button)`，再由基类在 `was_pressed && !handled` 时清态并标脏。让 `TitleBar::on_mouse_up` 自行管理 `pressed_`（`Btn::None` 判断生效），Slider/ScrollBox 等未管理 `pressed_` 的控件由基类兜底清态。
   - **B. 卡住状态恢复（scene.cpp + scene.h）**：新增 `mouse_down_stuck_frames_` 计数器。当 `window_.mouse_down(0) && !mouse_up_edge && root_.capture_widget()` 时递增；超过阈值 3 帧则强制 `root_.dispatch_mouse_up()` 清除卡住状态并复位计数器。非捕获/无按下/已释放场景均重置计数器，避免正常拖拽误触发。
+  - **C. 边沿标志清除（gl/src/window.cpp）**：`settle_mouse_reset()` 增加清除 `mouse_released_[i]` 和 `mouse_pressed_[i]`。由于 `mouse_pressed_peek`/`mouse_released_peek` 为非消费读，Frame 订阅者在 `settle_mouse_reset()` 之前已读到边沿；`settle_mouse_reset()` 在 dispatch 之后清除，不影响共享语义。清除后 `mouse_up_edge` 仅在 GLFW_RELEASE 那一帧为 `true`，UI-185 安全网条件 `!mouse_up_edge` 恢复正常触发。
 - **回归清单（改动后核对）**：
   1. layui_test 标题栏按钮（组件/笔记/生态/2.13.9/主题开关）点击回调正常触发
   2. 标题栏按钮按下高亮在抬起时正确清除

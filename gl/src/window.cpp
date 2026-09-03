@@ -146,6 +146,12 @@ void Window::settle_mouse_reset() {
             mouse_capture_lost_[i] = false;
             mouse_down_[i] = false;
         }
+        // UI-185：peek 非消费读由 Scene::frame dispatch 段使用，
+        // 此处统一定期清除边沿标志，使下一帧 mouse_pressed_peek/
+        // mouse_released_peek 只反映本帧新发生的事件。清除在 dispatch
+        // 之后，Frame 订阅者已 peek 过，不影响共享语义。
+        mouse_released_[i] = false;
+        mouse_pressed_[i] = false;
     }
 }
 
