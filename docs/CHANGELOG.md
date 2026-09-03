@@ -43,22 +43,26 @@
 - **影响范围**：`ui/src/widget.cpp`、`ui/src/scene.cpp`、`ui/include/ui/ui/scene.h`、`docs/CHANGELOG.md`
 
 ## UI-187: 控件树释放后 root.capture_/root.modal_ 残留悬空指针致 dispatch 虚调用崩溃（ui/src/widget.cpp）（2026-09-03）
-- **级别**：缺陷修复（ui 库）。layui_test 实测：按下 ComboBox 下拉选项 / Slider 等捕获型控件后，若交互过程中控件或其祖先被 `remove_child` / `clear_children` / `set_visible(false)` 脱离或释放，随后 `dispatch_mouse_move`/`dispatch_mouse_up` 仍通过残留的 `root.capture_` 悬空指针走虚拟分发，读 vtable[1]（地址 0x8）触发 `0xC0000005` 访问冲突。
+- **级别**：缺陷修复（ui 库）。layui_test 实测：交互一段时间后（典型：拖拽 PanelWindow 标题栏 / 表格单元格编辑中捕获，随后所在窗口被 `destroy()` 或 `close_popups()` 释放），`dispatch_mouse_move` 通过残留的 `root.capture_` 悬空指针走虚拟分发，读 vtable[1]（地址 0x8）触发 `0xC0000005` 访问冲突。
 - **根因**：控件捕获后脱离 root 子树时，`root().capture_` / `root().modal_` 未同步清空，产生三类漏洞：
-  - **`clear_children()`**（widget.cpp:182）：直接 `delete` 子树，不清 `root.capture_`/`root.modal_` → 子树释放后 root 指针悬空。
+  - **`clear_children()`**（widget.cpp:191）：直接 `delete` 子树，不清 `root.capture_`/`root.modal_` → 子树释放后 root 指针悬空。
   - **`remove_child()`**（widget.cpp:170）：移除子节点后不清 root 引用 → 子树脱离 root 但 root 指针仍指向它（典型路径：`close_popups()` → `remove_child(popup)`）。
-  - **`release_mouse_capture()`**（widget.cpp:315）：脱树控件调 `root()` 返回自身而非真 root → `root().capture_ == this` 恒假 → 清除永远失败。
+  - **`release_mouse_capture()`**（widget.cpp:338）：脱树控件调 `root()` 返回自身而非真 root → `root().capture_ == this` 恒假 → 清除永远失败。
+  - **`flush_pending_destroys()` Pass 1**（widget.cpp:221）：延迟 `destroy()` 的第一遍仅清 `r->capture_ == w`（pending 自身是捕获者），不处理「捕获者是 pending 子树后代」；Pass 2 在已脱树的 `w` 上调用 `clear_children()`，`w->root()` 退到 `w` 自身，只能清 `w->capture_` 而非真正的 `root_->capture_` → **后代捕获悬空**（UI-187 真正复现场景）。
 - **修复**：
   - **A. `remove_child()`**：移除 `child` 前遍历 `root.capture_`/`root.modal_` 的 parent_ 链，若命中 `child` 或其后代，清空对应引用。
   - **B. `clear_children()`**：释放每棵子树前同路径清空 root 引用，再递归 `clear_children` + `delete`。
   - **C. `dispatch_mouse_up` 捕获路径**：回调后从实际 `root()` 重验 `r->capture_ == cap`，仅当仍相等才清 `r->capture_ = nullptr`；不再调用脱树后会失败的 `cap->release_mouse_capture()`。Fix A/B 保证 root.capture_ 在任何 `delete` 前已清空，此处守卫避免对已释放 `cap` 的二次触碰。
+  - **D. `flush_pending_destroys()` Pass 1**（widget.cpp:233）：在摘除 `w`（`w->parent_ = nullptr`）**之前**，遍历 `r->capture_`/`r->modal_` 的 parent_ 链，若命中 `w`（即捕获/模态是 `w` 或其后代），清空对应引用。必须在摘除前完成，否则 `w->root()` 退到 `w` 自身，查不到真正的 root 引用。
+  - **E. `dispatch_mouse_move` 捕获路径**（widget.cpp:349）：防御性重验 `root()->capture_ == cap`，与 C 同源；回调若同帧释放捕获者，落入普通命中逻辑而非崩溃。
 - **回归清单（改动后核对）**：
   1. ComboBox 点选项→`close_popups()` 脱离面板后，root.capture_ 不再残留，后续 `dispatch_mouse_move` 不崩溃
   2. 拖动 Slider/ScrollBox 期间切页（`clear_children` 释放捕获者）不崩溃
   3. 标题栏拖拽、按钮点击、下拉/菜单开合、PanelWindow 关闭均正常（回归 UI-184/185）
-  4. 点下拉在面板外关闭（`prune_popups`）正常
-  5. `--smoke` 逐页切换、`--click` 合成点击注入不崩溃
-  6. 正常按下-释放（光标始终在窗口内）行为不变：按下高亮、抬起复位、点击回调照常
+  4. 表格单元格编辑中（TextArea 捕获）销毁所在面板/窗口，`dispatch_mouse_move` 不崩溃
+  5. 点下拉在面板外关闭（`prune_popups`）正常
+  6. `--smoke` 逐页切换、`--click` 合成点击注入不崩溃
+  7. 正常按下-释放（光标始终在窗口内）行为不变：按下高亮、抬起复位、点击回调照常
 - **验证**：layui_test Release (MSBuild) 重建通过；`--smoke 3` exit 0；graphgen --check 0 错 0 警。
 - **影响范围**：`ui/src/widget.cpp`、`docs/CHANGELOG.md`
 

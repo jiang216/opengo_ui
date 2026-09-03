@@ -230,11 +230,17 @@ void Widget::flush_pending_destroys() {
     // clear_children），后遍历到 P 时 P 的 clear_children 会再次 delete C（double-free）。
     // 统一摘除后每棵 pending 子树的 children_ 仅含非 pending 成员，后续 clear_children
     // 只释放未被单独 destroy 的后代，消除双重释放风险。
+    // UI-187：清除根 capture_/modal_ 时，不仅处理 pending 自身为捕获/模态的情况，
+    // 还要处理「捕获者/模态者是 pending 子树后代」的情形（capture_/modal_ 沿 parent_
+    // 链上溯必经过 w）。必须在摘除 w（parent_=nullptr）之前完成，否则 root() 退到 w 自身。
     for (Widget* w : pending) {
         Widget* r = w->root();
         if (r) {
-            if (r->modal_ == w) r->modal_ = nullptr;
-            if (r->capture_ == w) r->capture_ = nullptr;
+            // 摘除前：若 root 的 capture_/modal_ 指向 w 或其后代，清空。
+            for (Widget* p = r->capture_; p; p = p->parent_)
+                if (p == w) { r->capture_ = nullptr; break; }
+            for (Widget* p = r->modal_; p; p = p->parent_)
+                if (p == w) { r->modal_ = nullptr; break; }
             // UI-071：从弹窗列表中移除自身；额外检查 owner：owner 销毁时 popup 面板
             // 也应关闭（隐藏）否则 prune_popups 访问已释放 owner 导致 UAF
             if (!r->popups_.empty()) {
@@ -340,11 +346,17 @@ bool Widget::dispatch_mouse_move(float x, float y) {
         return modal_->dispatch_mouse_move(x, y);
     }
     // 鼠标捕获优先：移动事件直接给捕获者（即使指针已移出其范围）
+    // UI-187 防御：回调可能同帧释放捕获者；从实际 root 重验并清悬挂引用。
     Widget* cap = root()->capture_;
     if (cap && cap != this) {
-        cap->hovered_ = true;
-        cap->mark_dirty();  // 捕获命中即重绘（帧级门控需要显式标脏）
-        return cap->on_mouse_move(x, y);
+        // 捕获者 on_mouse_move 可能触发 destroy()→flush_pending_destroys，
+        // 需重新确认 cap 仍是当前 root 的真实捕获者。
+        if (root()->capture_ == cap) {
+            cap->hovered_ = true;
+            cap->mark_dirty();  // 捕获命中即重绘（帧级门控需要显式标脏）
+            return cap->on_mouse_move(x, y);
+        }
+        // 捕获者已被释放：root 引用已在 flush 中清空，落入普通命中逻辑。
     }
     // 子节点在父之上，后添加的优先命中（禁用/隐藏的子节点不参与）
     // 快照遍历：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）。
