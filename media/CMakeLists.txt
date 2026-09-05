@@ -1,4 +1,7 @@
 # ---------- media（可选）：media -> ui_gl/ui_core 单向依赖 ----------
+if(OPENGUI_MEDIA_CORE)
+    add_subdirectory(core)
+endif()
 if(OPENGUI_MEDIA_FFMPEG)
     add_subdirectory(ffmpeg)
 endif()

@@ -26,7 +26,7 @@ if(OPENGUI_MEDIA_FFMPEG)
     target_compile_definitions(opengl_ui_api_demo PRIVATE OPENGUI_MEDIA_FFMPEG=1)
     # M16：视频播放器示例应用
     add_executable(opengl_ui_video_player ${CMAKE_CURRENT_SOURCE_DIR}/video_player.cpp)
-    target_link_libraries(opengl_ui_video_player PRIVATE ui_media_ffmpeg)
+    target_link_libraries(opengl_ui_video_player PRIVATE ui_media_ffmpeg ui_media_core)
     target_compile_definitions(opengl_ui_video_player PRIVATE OPENGUI_MEDIA_FFMPEG=1)
     # 开发工具：生成带音频测试视频（M14 遗留修复验证素材）
     add_executable(opengl_ui_gen_av ${CMAKE_SOURCE_DIR}/tools/gen_media/gen_av.cpp)
