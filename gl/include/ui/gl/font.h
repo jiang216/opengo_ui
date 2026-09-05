@@ -108,12 +108,21 @@ private:
     // 懒烘培 CJK 字形：查 dyn_ → 命中返回；cjk 字体未载入返回 nullptr；否则光栅化打包进图集
     const Glyph* ensure_dynamic(unsigned int cp) const;
     void bake_cjk(unsigned int cp) const;
+    // UI-192：当前 GL 上下文是否为图集创建时的上下文（跨窗口/多上下文门控）。
+    // 不匹配时必须挂起烘焙，严禁在错误上下文执行 glTexSubImage2D。
+    bool bake_allowed() const;
 
     // 图标字形查询：按码点落在 E600..E7FF / 1000..100F 哪一段返回对应字形，段外返回 nullptr
     const Glyph* icon_glyph(unsigned int cp) const;
 
     Texture* atlas_ = nullptr;
     Texture* icon_atlas_ = nullptr;
+    // UI-192：本字体图集创建/重创建时的当前 GLFW 上下文。多窗口（每窗口独立
+    // GL 上下文）下动态烘焙的 glTexSubImage2D 必须在该上下文执行，否则上传写入
+    // 错误命名空间，字形度量已记录但像素永缺（文字隐形、永不重烘焙）。
+    // 值在 load_from_file（atlas_ 重建）时强制刷新；load_icon_font 仅首次锚定
+    //（图标图集无动态上传，避免覆盖主图集锚点）。nullptr=未锚定，放行烘焙。
+    void* atlas_ctx_ = nullptr;
     Glyph glyphs_[kNumChars] = {};
     Glyph icon_glyphs_[kIconNum] = {};
     Glyph icon2_glyphs_[kIcon2Num] = {};

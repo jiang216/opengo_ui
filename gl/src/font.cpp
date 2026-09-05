@@ -2,6 +2,8 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb_truetype.h>
 
+#include <GLFW/glfw3.h>
+
 #include "ui/gl/font.h"
 #include "ui/gl/renderer.h"
 #include "ui/gl/texture.h"
@@ -248,6 +250,7 @@ bool Font::load_from_file(const char* path, float pixel_height) {
     delete atlas_;
     atlas_ = new Texture;
     atlas_->create(kAtlasW, kAtlasH, rgba.data());
+    atlas_ctx_ = (void*)glfwGetCurrentContext();  // UI-192：锚定动态烘焙所属上下文
 
     // 3) 字形度量 + 记录 ASCII 烘培占用区（懒烘培游标从其下开始）
     // stbtt_BakeFontBitmap 返回值为图集打包底边 y（bottom_y，18px 下约 18），非烘培字数；
@@ -399,11 +402,29 @@ bool Font::load_emoji_font_auto() {
     return false;
 }
 
+bool Font::bake_allowed() const {
+    // UI-192：动态字形烘焙（atlas_->update_sub → glTexSubImage2D）必须在本字体
+    // 图集所属 GL 上下文执行。多窗口应用每窗口独立 GL 上下文，且事件派发/测量
+    // 时常在别的窗口上下文 current 时触发（如 app 主循环帧尾把上下文切回主窗口，
+    // 独立窗口 update() 的派发阶段早于其自身的 MakeContextCurrent）。此时上传会
+    // 写进错误命名空间：字形度量已记入 dyn_、像素却永缺 → 文字隐形且不再重烘焙。
+    // 门控不匹配即挂起（ensure_dynamic 记 pending），渲染阶段（各窗口渲染前均已
+    // MakeContextCurrent 自有上下文）自然补烘焙。
+    if (!atlas_ctx_) return true;  // 未锚定（无窗口上下文/早期用法）保持原行为
+    return glfwGetCurrentContext() == atlas_ctx_;
+}
+
 const Font::Glyph* Font::ensure_dynamic(unsigned int cp) const {
     auto it = dyn_.find(cp);
     if (it != dyn_.end()) return &it->second;
     if (missing_.count(cp)) return nullptr;  // UI-128：确认缺失，防逐帧重试
     if (!cjk_ready_) return nullptr;
+    // UI-192：当前上下文非图集所属上下文 → 挂起烘焙（记 pending 保持渲染推进、
+    // 字形按方块宽近似），等到本窗口渲染阶段（正确上下文）再补烘焙。
+    if (!bake_allowed()) {
+        pending_cps_.insert(cp);
+        return nullptr;
+    }
     // UI-125：逐帧烘焙配额。首次打开新页面时一帧内可能遇到数十个新 CJK 码点，
     // 逐字 stbtt 光栅化 + glTexSubImage2D 上传会拉长单帧，vsync 下呈可感知闪烁。
     // 按 16ms 窗口限量烘焙，超配额本帧返回 nullptr（draw/measure 已有方块字宽
@@ -447,6 +468,7 @@ if (dyn_.count(cp)) continue;                                   // 已烘焙
 
 void Font::bake_cjk(unsigned int cp) const {
     if (atlas_full_logged_) return;
+    if (!bake_allowed()) return;  // UI-192 兜底：任何路径（prebake_text 等）严禁跨上下文上传
     // UI-128 回退链：先中文字体、再 emoji 字体，均显式 FindGlyphIndex>0 检查。
     // 此前不检查——字体查无此字时 stbtt 回退 .notdef（中文常为矩形框轮廓）被当
     // 正常字形烘入图集，emoji 等缺字码点稳定显示为 tofu 方块。两源皆无记入
