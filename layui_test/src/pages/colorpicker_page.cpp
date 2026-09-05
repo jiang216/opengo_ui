@@ -239,7 +239,7 @@ static void build(PageHost& host) {
     build_colorpicker(host);
 }
 
-static const PageDef kColorPickerPage{54, "交互", "颜色选择器", "颜色选择：SV/色相/透明度/预定义色", build, nullptr, false, nullptr, 0, "Colorpicker"};
+static const PageDef kColorPickerPage{55, "交互", "颜色选择器", "颜色选择：SV/色相/透明度/预定义色", build, nullptr, false, nullptr, 0, "Colorpicker"};
 
 static const bool kRegistered = []() {
     page::register_page(kColorPickerPage);

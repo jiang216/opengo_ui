@@ -266,7 +266,7 @@ static void build(PageHost& host) {
     build_transfer(host);
 }
 
-static const PageDef kTransferPage{55, "交互", "穿梭框", "穿梭框：待选/已选搬移", build, nullptr, false, nullptr, 0, "Transfer"};
+static const PageDef kTransferPage{56, "交互", "穿梭框", "穿梭框：待选/已选搬移", build, nullptr, false, nullptr, 0, "Transfer"};
 
 static const bool kRegistered = []() {
     page::register_page(kTransferPage);

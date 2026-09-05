@@ -180,7 +180,7 @@ static void build(PageHost& host) {
     build_rate(host);
 }
 
-static const PageDef kRatePage{57, "交互", "评分", "评分：基本/文字/半星/长度/只读/主题色", build, nullptr, false, nullptr, 0, "Rate"};
+static const PageDef kRatePage{58, "交互", "评分", "评分：基本/文字/半星/长度/只读/主题色", build, nullptr, false, nullptr, 0, "Rate"};
 
 static const bool kRegistered = []() {
     page::register_page(kRatePage);

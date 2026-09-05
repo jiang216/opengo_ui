@@ -243,7 +243,7 @@ static void build(PageHost& host) {
     build_sliders(host);
 }
 
-static const PageDef kSliderPage{56, "交互", "滑块", "滑块：基本/步长/范围/垂直/颜色/禁用", build, nullptr, false, nullptr, 0, "Slider"};
+static const PageDef kSliderPage{57, "交互", "滑块", "滑块：基本/步长/范围/垂直/颜色/禁用", build, nullptr, false, nullptr, 0, "Slider"};
 
 static const bool kRegistered = []() {
     page::register_page(kSliderPage);

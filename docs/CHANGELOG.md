@@ -3,6 +3,25 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-189: layui_test 新增「多级窗口」演示页——多 GLFW 窗口（各自独立 GL 上下文）逐层创建 4 层（layui_test/src/pages/multilevel_window_page.cpp）（2026-09-05）
+- **级别**：功能新增（测试程序 layui_test），无 ui 库改动，复用既有多窗口架构（UI-146 scene_page 子窗范式）。新增演示：多级窗口创建——每层 = 独立 GLFW 窗口 + 独立 GL 上下文 / Renderer / Scene / Font；第 1 层由页面按钮打开（主屏居中），每层窗口含「创建窗口」按钮 + 列表（3 行，每行 = 下拉菜单 Dropdown + 按钮 Button），点「创建窗口」锁定本窗创建按钮后从父窗位置向右下错位（cascade）创建同构下一层，共 4 层（最深层按钮置灰）。
+- **实现要点**：
+  - 注册 PageDef order=51（紧跟「弹出层」order 50），「交互」组后续页（日期与时间选择 52 / 文件上传 53 / 下拉菜单 54 / 颜色选择器 55 / 穿梭框 56 / 滑块 57 / 评分 58）整体顺移 +1，保持组内排序稳定；「弹出层」页保持原样。
+  - 每层窗口 = `ui::Window`（现 Window 默认无边框 + 独立 GL 上下文）+ 独立 `Renderer`（init + viewport）+ 独立 `Font`（arial 16 + `load_cjk_font_auto`，GL 纹理绑定本窗上下文）+ 独立 `Scene`（root background + 自绘 `TitleBar` 拖动 / 最小化 / 最大化 / X，TitleBar 图标字体自动从 exe 目录懒装载 UI-172）。
+  - 位置：第 1 层 `center_on_primary_monitor()` 主屏居中；更深层 `source.window().get_position()` 读父窗位置 + (52, 36) 错位（`Window::set_position`），逐层可见。
+  - 驱动：首次开窗时在主壳 Scene 的 **Frame 阶段订阅一次观察者**，每帧对所有打开中的窗口 `poll_events` → `should_close || !running` 则关闭摘除，否则 `make_current → scene->frame(dt) → swap_buffers`，结束后 `main.window().make_current()` 切回主壳上下文（interlacing）。多层窗口同时存在、各自独立渲染互不污染。
+  - 每窗交互：列表下拉 `set_on_select` / 按钮 `set_on_click` 回写窗内状态 Label；「创建窗口」点击后 `set_enabled(false)`（每窗至多一个子窗）；「关闭本窗口」/ TitleBar X / 窗内 Esc（`set_event_hook(Key)`）均 `request_exit()` → 下一帧驱动观察者关闭该窗。
+  - 生命周期：回调只捕获本窗长命对象（Scene/Font/theme）+ 值参数（UI-071/072），随窗销毁；驱动观察者每帧做**快照**迭代（遍历中点击「创建窗口」新开窗下一帧才被驱动）；切页 destroy 钩子统一 `unsubscribe` + 关闭全部窗口（防悬空与泄漏，UI-033/071）。
+- **回归清单（改动后核对）**：
+  1. 页面按钮弹出第 1 层独立 OS 窗口（主屏居中）；每层点「创建窗口」弹下一层窗口（从父窗错位），逐层深入至第 4 层，第 4 层按钮置灰不可点；每窗至多一个子窗；
+  2. 多层窗口可同时存在、位置逐层错位、各自独立渲染互不污染（每帧切回主壳上下文，主窗渲染正常）；
+  3. 每窗列表 3 行「下拉 + 按钮」均可操作，结果回写窗内状态 Label；下拉在窗内弹出/收起正常，不影响其它窗口；
+  4. 每窗 TitleBar 可拖动 / 最小化 / 最大化 / X 关闭；Esc 与「关闭本窗口」等效；关闭任意一层其它层不受影响；「全部关闭」清空全部窗口；
+  5. 子窗开启状态下切页 destroy 钩子全关 + unsubscribe；`--smoke` 逐页切换（含本页）无崩溃、exit 0；
+  6. 「交互」组导航顺序：弹出层→多级窗口→日期与时间选择→…→评分，组内排序稳定（order 51 不动、弹出层 order 50 原样）。
+- **验证**：构建验证 + `--list-pages` 确认新页在「交互」组、「弹出层」之后；`--smoke` 冒烟 exit 0；graphgen --check 0 错 0 警。
+- **影响范围**：`layui_test/src/pages/multilevel_window_page.cpp`（新增）、`layui_test/src/pages/{laydate,upload,dropdown,colorpicker,transfer,slider,rate}_page.cpp`（order +1）、`docs/CHANGELOG.md`
+
 ## UI-184: 鼠标「按下不释放」——移出窗口/失焦释放丢失致 pressed_/capture_ 悬死 + set_visible 隐藏未清交互态（gl/src/window.cpp + gl/include/ui/gl/window.h + ui/src/scene.cpp + ui/src/widget.cpp）（2026-09-03）
 - **级别**：缺陷修复（ui 库：gl 窗口层 + ui 控件/Scene 层）。layui_test 实测：在窗口内按下某可交互控件后**移到窗口外释放**，控件一直停在「按下」高亮态（pressed_ 恒 true），表现为「按下不释放」。
 - **根因**：

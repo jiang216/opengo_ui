@@ -348,7 +348,7 @@ static void build(PageHost& host) {
     build_upload(host);
 }
 
-static const PageDef kUploadPage{52, "交互", "文件上传", "文件上传：选择/列表/进度", build, nullptr, false, nullptr, 0, "Upload"};
+static const PageDef kUploadPage{53, "交互", "文件上传", "文件上传：选择/列表/进度", build, nullptr, false, nullptr, 0, "Upload"};
 
 static const bool kRegistered = []() {
     page::register_page(kUploadPage);

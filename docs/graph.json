@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-03T18:03:13+08:00",
+  "generatedAt": "2026-09-05T15:20:38+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-189": {
+      "id": "BUG:UI-189",
+      "type": "BUG",
+      "label": "UI-189: layui_test 新增「多级窗口」演示页——多 GLFW 窗口（各自独立 GL 上下文）逐层创建 4 层（layui_test/src/pages/multilevel_window_page.cpp）（2026-09-05）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-189-layuitest-新增多级窗口演示页多-glfw-窗口各自独立-gl-上下文逐层创建-4-层layuitestsrcpagesmultilevelwindowpagecpp2026-09-05"
+    },
     "BUG:UI-184": {
       "id": "BUG:UI-184",
       "type": "BUG",
@@ -3577,6 +3584,7 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-189": [],
     "BUG:UI-184": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -5849,7 +5857,8 @@
       "孤儿条目（无任何文档引用）: BUG:UI-185",
       "孤儿条目（无任何文档引用）: BUG:UI-186",
       "孤儿条目（无任何文档引用）: BUG:UI-187",
-      "孤儿条目（无任何文档引用）: BUG:UI-188"
+      "孤儿条目（无任何文档引用）: BUG:UI-188",
+      "孤儿条目（无任何文档引用）: BUG:UI-189"
     ]
   }
 }

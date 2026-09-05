@@ -378,7 +378,7 @@ static void build(PageHost& host) {
     build_laydate(host);
 }
 
-static const PageDef kLaydatePage{51, "交互", "日期与时间选择",
+static const PageDef kLaydatePage{52, "交互", "日期与时间选择",
                                   "日期时间选择器：弹层/static 两种模式 40 demo", build, nullptr, false, nullptr, 0, "Laydate"};
 
 static const bool kRegistered = []() {

@@ -361,7 +361,7 @@ static void build(PageHost& host) {
     }
 }
 
-static const PageDef kDropdownPage{53, "交互", "下拉菜单",
+static const PageDef kDropdownPage{54, "交互", "下拉菜单",
                                    "下拉菜单：触发器/菜单项/层级/分组/右键/对齐/风格", build, nullptr, false, nullptr, 0, "Dropdown"};
 
 static const bool kRegistered = []() {
