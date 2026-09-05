@@ -589,6 +589,7 @@ int main(int argc, char** argv) {
     auto last_switch = std::chrono::steady_clock::now();
     bool smoke_switched_any = false;
     bool clicks_injected = false;
+    int inject_wait = 0;  // 等首个完整布局帧后再注入（UI-190）：Frame 阶段先于 layout/dispatch，首帧点击必偏
 
     // 帧前：冒烟自动切页 + --click 合成点击注入（脚本化交互验证，点击会重建行控件）
     scene.subscribe(ui::ScenePhase::Frame, [&](ui::Scene&, float) {
@@ -599,15 +600,22 @@ int main(int argc, char** argv) {
             last_switch = std::chrono::steady_clock::now();
             smoke_switched_any = true;
         }
-        // 首次布局后注入合成点击（与旧主循环一致），再布局一次保证首帧截图正确
+        // 首次布局后注入合成点击（与旧主循环一致），再布局一次保证首帧截图正确。
+        // UI-190：Frame 观察者运行于 scene.frame() 的「分配输入（layout+dispatch）」之前，
+        // 首帧注入时页面控件尚未布局（bounds 仍是初值）会全部脱靶；延迟到第 2 帧（页面已
+        // 完成首帧布局）再注入，仍保持「单次点击」语义。
         if (!click_points.empty() && !clicks_injected) {
-            clicks_injected = true;
-            for (const auto& c : click_points) {
-                root.dispatch_mouse_move(c.first, c.second);
-                root.dispatch_mouse_down(c.first, c.second, 0);
-                root.dispatch_mouse_up(c.first, c.second, 0);
+            if (inject_wait >= 1) {
+                clicks_injected = true;
+                for (const auto& c : click_points) {
+                    root.dispatch_mouse_move(c.first, c.second);
+                    root.dispatch_mouse_down(c.first, c.second, 0);
+                    root.dispatch_mouse_up(c.first, c.second, 0);
+                }
+                root.layout();
+            } else {
+                ++inject_wait;
             }
-            root.layout();
         }
     });
 

@@ -3,6 +3,18 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-190: layui_test `--click` 合成点击在首帧（布局前）注入会全部脱靶——延迟到首个完整布局帧后注入（layui_test/src/app.cpp）（2026-09-05）
+- **级别**：缺陷修复（测试程序 layui_test 的脚本化编排 harness）。`--click x,y` 合成点击注入用于 UI-173/UI-183 起的自动化交互验证；实测配合 `--page` 打开新页时注入无效，导致脚本化点不到页内按钮（多级窗口页 UI-189 验证时暴露：`--page 38 --click` 后页面「打开第 1 层窗口」未触发，无日志输出）。
+- **根因**：注入逻辑挂主壳 `Scene` 的 **Frame 阶段观察者**，而 Frame 阶段运行于 `scene.frame()` 的「分配输入（layout + dispatch + advance）」**之前**（scene_page / UI-146 四阶段语义）。首帧注入时分发目标页面控件尚未布局，`bounds_` 仍是构造初值（如 HBox 行 y=0），`root.dispatch_mouse_*` 全部脱靶；注入后 `root.layout()` 只是补首帧截图，不影响注入结果。此前 `--click` 验证能命中，是因为目标长期驻留在已布局的固定控件上（标题栏/表头），新开页场景首帧必然漏。
+- **修复**：注入块增加 `inject_wait` 计数，第 1 帧（Frame 观察者先于 layout）跳过，等首帧布局完成后（第 2 帧观察者）再执行**单次**注入 + `root.layout()`。保持「单次点击」语义（不重复点击、不放大副作用）。
+- **回归清单（改动后核对）**：
+  1. `--page 38 --click 335,304 --smoke 5`：页内按钮被命中 → 弹出第 1 层独立 GLFW 窗口（`multilevel: window opened (level 1)` 日志）；smoke 切页触发 destroy 钩子后 `window closed (level 1)`；exit 0；
+  2. 既有 `--click` 验证语义不变：仍为单次点击注入，标题栏/表头等固定控件点击行为不变（UI-173/UI-183/UI-184/UI-185 回归项）；
+  3. `--shot-page <n>` 首帧截图不受影响（无 `--click` 时不触发注入路径）；`--smoke` 自动切页统计正常；
+  4. 无崩溃、无悬空；graphgen --check 0 错（孤儿警告与 HEAD 基线一致）。
+- **验证**：layui_test Release (Ninja) 重建通过；`--page 38 --click 335,304 --smoke 5` 输出 open/close 日志且 exit 0；graphgen --check 0 错。
+- **影响范围**：`layui_test/src/app.cpp`、`docs/CHANGELOG.md`
+
 ## UI-189: layui_test 新增「多级窗口」演示页——多 GLFW 窗口（各自独立 GL 上下文）逐层创建 4 层（layui_test/src/pages/multilevel_window_page.cpp）（2026-09-05）
 - **级别**：功能新增（测试程序 layui_test），无 ui 库改动，复用既有多窗口架构（UI-146 scene_page 子窗范式）。新增演示：多级窗口创建——每层 = 独立 GLFW 窗口 + 独立 GL 上下文 / Renderer / Scene / Font；第 1 层由页面按钮打开（主屏居中），每层窗口含「创建窗口」按钮 + 列表（3 行，每行 = 下拉菜单 Dropdown + 按钮 Button），点「创建窗口」锁定本窗创建按钮后从父窗位置向右下错位（cascade）创建同构下一层，共 4 层（最深层按钮置灰）。
 - **实现要点**：

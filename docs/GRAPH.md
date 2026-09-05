@@ -5,14 +5,15 @@
 
 ## 统计
 
-- 节点: 186（BUG 178 / DOC 6 / META 2）
+- 节点: 187（BUG 179 / DOC 6 / META 2）
 - 边: 380
-- lint: 0 错误 / 5 警告
+- lint: 0 错误 / 6 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-187
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-188
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-189
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-190
 
 ## 反链索引
 
@@ -1236,6 +1237,11 @@
 - 路径: `docs/CHANGELOG.md#ui-189-layuitest-新增多级窗口演示页多-glfw-窗口各自独立-gl-上下文逐层创建-4-层layuitestsrcpagesmultilevelwindowpagecpp2026-09-05`
 - 反链: 无
 
+### BUG:UI-190 · UI-190: layui_test `--click` 合成点击在首帧（布局前）注入会全部脱靶——延迟到首个完整布局帧后注入（layui_test/src/app.cpp）（2026-09-05）
+
+- 路径: `docs/CHANGELOG.md#ui-190-layuitest---click-合成点击在首帧布局前注入会全部脱靶延迟到首个完整布局帧后注入layuitestsrcappcpp2026-09-05`
+- 反链: 无
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1508,6 +1514,7 @@
 | `BUG:UI-187` | BUG | UI-187: 控件树释放后 root.capture_/root.modal_ 残留悬空指针致 dispatch 虚调用崩溃（ui/src/widget.cpp）（2026-09-03） | `docs/CHANGELOG.md` |
 | `BUG:UI-188` | BUG | UI-188: ScrollBox clear_children 未失效滚动回调致悬空调用崩溃（ui/src/scrollbox.cpp + ui/include/ui/ui/scrollbox.h + ui/include/ui/ui/widget.h）（2026-09-03） | `docs/CHANGELOG.md` |
 | `BUG:UI-189` | BUG | UI-189: layui_test 新增「多级窗口」演示页——多 GLFW 窗口（各自独立 GL 上下文）逐层创建 4 层（layui_test/src/pages/multilevel_window_page.cpp）（2026-09-05） | `docs/CHANGELOG.md` |
+| `BUG:UI-190` | BUG | UI-190: layui_test `--click` 合成点击在首帧（布局前）注入会全部脱靶——延迟到首个完整布局帧后注入（layui_test/src/app.cpp）（2026-09-05） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |

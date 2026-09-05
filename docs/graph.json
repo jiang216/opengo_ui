@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-05T15:20:38+08:00",
+  "generatedAt": "2026-09-05T15:21:31+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-190": {
+      "id": "BUG:UI-190",
+      "type": "BUG",
+      "label": "UI-190: layui_test `--click` 合成点击在首帧（布局前）注入会全部脱靶——延迟到首个完整布局帧后注入（layui_test/src/app.cpp）（2026-09-05）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-190-layuitest---click-合成点击在首帧布局前注入会全部脱靶延迟到首个完整布局帧后注入layuitestsrcappcpp2026-09-05"
+    },
     "BUG:UI-189": {
       "id": "BUG:UI-189",
       "type": "BUG",
@@ -3584,6 +3591,7 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-190": [],
     "BUG:UI-189": [],
     "BUG:UI-184": [
       {
@@ -5858,7 +5866,8 @@
       "孤儿条目（无任何文档引用）: BUG:UI-186",
       "孤儿条目（无任何文档引用）: BUG:UI-187",
       "孤儿条目（无任何文档引用）: BUG:UI-188",
-      "孤儿条目（无任何文档引用）: BUG:UI-189"
+      "孤儿条目（无任何文档引用）: BUG:UI-189",
+      "孤儿条目（无任何文档引用）: BUG:UI-190"
     ]
   }
 }
