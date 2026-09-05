@@ -209,6 +209,9 @@ private:
     void collect_focusables(std::vector<Widget*>& out);
     // 关闭未命中 x,y 的弹出面板（owner 内点击不关闭）
     void prune_popups(float x, float y);
+    // 命中打开弹出面板的最上层那个（popups_ 逆序：后开在顶）；无则 nullptr。
+    // 模态 + 下拉面板并存时用来让指针事件先落面板（面板挂在根下，非模态子树）。
+    Widget* topmost_popup_at(float x, float y);
     // 清除所有不在 keep 子树内的控件 hover 态（模态屏蔽时残留高亮清理）
     void clear_hover_outside(Widget* keep);
 

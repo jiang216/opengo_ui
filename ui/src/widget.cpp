@@ -218,6 +218,12 @@ void Widget::destroy() {
     set_visible(false);  // UI-156：显隐变更经 set_visible（内含 mark_dirty）
     g_pending_destroy.push_back(this);
 }
+namespace {
+// 供 flush_pending_destroys 提前判定 owner 是否 pending 子树后代；
+// 定义（in_subtree）在文件后部同一匿名命名空间内，先声明后使用。
+bool in_subtree(Widget* sub, Widget* node);
+}  // namespace
+
 void Widget::flush_pending_destroys() {
     if (g_pending_destroy.empty()) return;
     assert(!g_flushing && "flush_pending_destroys() called re-entrantly (during an ongoing flush)");
@@ -242,13 +248,16 @@ void Widget::flush_pending_destroys() {
             for (Widget* p = r->modal_; p; p = p->parent_)
                 if (p == w) { r->modal_ = nullptr; break; }
             // UI-071：从弹窗列表中移除自身；额外检查 owner：owner 销毁时 popup 面板
-            // 也应关闭（隐藏）否则 prune_popups 访问已释放 owner 导致 UAF
+            // 也应关闭（隐藏）否则 prune_popups 访问已释放 owner 导致 UAF。
+            // UI-191：owner 是 pending 子树后代时（如弹层内下拉，长驻 Table 由 clear_children
+            // 释放而非 destroy()），条目同样残留指向已 delete 的 panel/owner，一并清理，
+            // 否则下一帧 draw 的 popups_ 循环直读已释放内存。
             if (!r->popups_.empty()) {
                 std::vector<Popup> kept;
                 kept.reserve(r->popups_.size());
                 for (const Popup& p : r->popups_) {
                     if (p.popup == w) continue;
-                    if (p.owner == w) {
+                    if (p.owner && in_subtree(w, p.owner)) {
                         p.popup->set_visible(false);
                         continue;
                     }
@@ -340,8 +349,10 @@ void Widget::release_mouse_capture() {
 }
 
 bool Widget::dispatch_mouse_move(float x, float y) {
-    // 模态：事件仅路由给模态子树，模态外一律屏蔽，且清除模态外残留 hover 态
+    // 模态：事件仅路由给模态子树，模态外一律屏蔽，且清除模态外残留 hover 态。
+    // 例外：打开的下拉面板挂在根下（非模态子树），指针命中时先送面板（UI-191）。
     if (!parent_ && modal_ && modal_->visible) {
+        if (Widget* panel = topmost_popup_at(x, y)) return panel->dispatch_mouse_move(x, y);
         clear_hover_outside(modal_);
         return modal_->dispatch_mouse_move(x, y);
     }
@@ -390,8 +401,17 @@ bool Widget::dispatch_mouse_move(float x, float y) {
 }
 
 bool Widget::dispatch_mouse_down(float x, float y, int button) {
-    // 模态：事件仅路由给模态子树，模态外一律屏蔽
-    if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_down(x, y, button);
+    // 模态：事件仅路由给模态子树，模态外一律屏蔽。
+    // 例外：打开的下拉面板挂在根下（非模态子树），命中面板先送面板（UI-191）；
+    // 命中以外（如下拉点外/遮罩）先 prune 关闭下拉，再走模态子树（layui 语义）。
+    if (!parent_ && modal_ && modal_->visible) {
+        if (Widget* panel = topmost_popup_at(x, y)) {
+            prune_popups(x, y);
+            return panel->dispatch_mouse_down(x, y, button);
+        }
+        prune_popups(x, y);
+        return modal_->dispatch_mouse_down(x, y, button);
+    }
     prune_popups(x, y);
     // 快照遍历：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
     if (pass_hit_to_children(x, y)) {
@@ -422,8 +442,11 @@ bool Widget::dispatch_mouse_down(float x, float y, int button) {
 }
 
 bool Widget::dispatch_mouse_up(float x, float y, int button) {
-    // 模态：事件仅路由给模态子树
-    if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_up(x, y, button);
+    // 模态：事件仅路由给模态子树。例外：命中打开的下拉面板先送面板（UI-191）
+    if (!parent_ && modal_ && modal_->visible) {
+        if (Widget* panel = topmost_popup_at(x, y)) return panel->dispatch_mouse_up(x, y, button);
+        return modal_->dispatch_mouse_up(x, y, button);
+    }
     // 捕获者优先：鼠标抬起路由给捕获者并释放捕获
     Widget* cap = root()->capture_;
     if (cap && cap != this) {
@@ -472,8 +495,11 @@ bool Widget::dispatch_mouse_up(float x, float y, int button) {
 }
 
 bool Widget::dispatch_mouse_scroll(float x, float y, float dx, float dy) {
-    // 模态：事件仅路由给模态子树，模态外一律屏蔽
-    if (!parent_ && modal_ && modal_->visible) return modal_->dispatch_mouse_scroll(x, y, dx, dy);
+    // 模态：事件仅路由给模态子树。例外：命中打开的下拉面板先送面板（UI-191）
+    if (!parent_ && modal_ && modal_->visible) {
+        if (Widget* panel = topmost_popup_at(x, y)) return panel->dispatch_mouse_scroll(x, y, dx, dy);
+        return modal_->dispatch_mouse_scroll(x, y, dx, dy);
+    }
     // 快照遍历：子控件回调内可能 close_popups/remove_child 修改 children_，原地迭代会失效（UI-073）
     if (pass_hit_to_children(x, y)) {
         const int n = (int)children_.size();
@@ -496,8 +522,11 @@ bool Widget::dispatch_mouse_scroll(float x, float y, float dx, float dy) {
 }
 
 bool Widget::dispatch_drop(float x, float y, const std::vector<std::string>& paths) {
-    if (!parent_ && modal_ && modal_->visible)
+    // 模态：事件仅路由给模态子树。例外：命中打开的下拉面板先送面板（UI-191）
+    if (!parent_ && modal_ && modal_->visible) {
+        if (Widget* panel = topmost_popup_at(x, y)) return panel->dispatch_drop(x, y, paths);
         return modal_->dispatch_drop(x, y, paths);
+    }
     if (pass_hit_to_children(x, y)) {
         const int n = (int)children_.size();
         Widget* small[32];
@@ -801,6 +830,15 @@ void Widget::prune_popups(float x, float y) {
             ++it;
         }
     }
+}
+
+Widget* Widget::topmost_popup_at(float x, float y) {
+    Widget* r = root();
+    // 后开的面板画在顶层（draw 顺序 = 入表顺序），逆序取命中者
+    for (auto it = r->popups_.rbegin(); it != r->popups_.rend(); ++it) {
+        if (it->popup->visible && it->popup->contains(x, y)) return it->popup;
+    }
+    return nullptr;
 }
 
 namespace {
