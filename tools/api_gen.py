@@ -28,6 +28,7 @@ MODULES = [
     ("ui_core（纯 C++ 基础）", "ui/core", "core/include"),
     ("ui_gl（渲染 / 窗口 / 字体）", "ui/gl", "gl/include"),
     ("ui/ui 组件", "ui/ui", "ui/include"),
+    ("ui_media（可选模块）", "ui/media", "media/core/include"),
     ("ui_media（可选模块）", "ui/media", "media/ffmpeg/include"),
     ("ui_media（可选模块）", "ui/media", "media/opencv/include"),
 ]
@@ -555,7 +556,7 @@ parent->add_child(wf);
 // 仅当 media 启用（OPENGUI_MEDIA_FFMPEG=ON）时可用
 auto* vv = new ui::media::VideoView;
 vv->set_bounds(0, 0, 800, 450);
-if (!vv->open_source("movie.mp4")) return;
+if (!vv->open_source("movie.mp4")) return;   // 经 MediaPipeline 组装 FFmpeg 节点
 vv->play();
 vv->set_loop(true);
 vv->set_speed(2.f);                       // 0.1..4 倍速
@@ -564,6 +565,19 @@ vv->set_volume(0.8f);                     // 0..1 音量
 // 主线程每帧：vv->advance(dt)（swap 出帧后内部上传纹理）
 // 退出：vv->close_source();
 parent->add_child(vv);
+```""",
+    "ui/media/video_container.h":
+"""```cpp
+// 视频容器（UI-193）：边框 + 标题条 + 底部控制条 + 内置播放控件，依赖媒体管线
+ui::VideoContainer* vc = new ui::VideoContainer(0, 0, 560, 340);
+vc->set_font(&font);
+vc->set_theme(&theme);
+vc->set_title("媒体容器");
+vc->open_source("synthetic:8");           // 合成源（media/core，无需 FFmpeg）
+// vc->open_source("assets/test.mp4");    // 真实文件（需 media/ffmpeg 注册 ffmpeg 节点）
+host->add_child(vc);                       // 每帧 on_advance 自动推进并上传纹理
+vc->play(); vc->seek(4.f); vc->set_loop(true);
+vc->set_speed(1.f); vc->set_volume(0.8f);  // has_video/has_audio/position/duration 查询
 ```""",
     "ui/media/audio_out.h":
 """```cpp
@@ -1195,7 +1209,7 @@ def build():
     A("| core | `ui/core/*` | 无（纯 C++） |")
     A("| gl | `ui/gl/*` | core + 3rdparty（GLFW/GLAD/stb） |")
     A("| ui | `ui/ui/*` | gl + core |")
-    A("| media（可选） | `ui/media/*` | ui + gl + core + FFmpeg/OpenCV |")
+    A("| media（可选） | `ui/media/*` | ui + gl + core；合成源/管线无需第三方，FFmpeg/OpenCV 节点可选 |")
     A("")
 
     for idx, (mod_title, prefix, incroot) in enumerate(MODULES):

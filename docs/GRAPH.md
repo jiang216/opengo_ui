@@ -5,15 +5,14 @@
 
 ## 统计
 
-- 节点: 187（BUG 179 / DOC 6 / META 2）
-- 边: 380
-- lint: 0 错误 / 6 警告
+- 节点: 188（BUG 179 / DOC 7 / META 2）
+- 边: 389
+- lint: 0 错误 / 5 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-187
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-188
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-189
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-190
 
 ## 反链索引
 
@@ -1237,10 +1236,17 @@
 - 路径: `docs/CHANGELOG.md#ui-189-layuitest-新增多级窗口演示页多-glfw-窗口各自独立-gl-上下文逐层创建-4-层layuitestsrcpagesmultilevelwindowpagecpp2026-09-05`
 - 反链: 无
 
-### BUG:UI-190 · UI-190: layui_test `--click` 合成点击在首帧（布局前）注入会全部脱靶——延迟到首个完整布局帧后注入（layui_test/src/app.cpp）（2026-09-05）
+### BUG:UI-193 · UI-193: 媒体管线重构（MediaPipeline 节点化）与视频容器 VideoContainer —— VideoView 实现迁移到可运行期换节点的管线之上，layui_test 多媒体页（media/core、media/ffmpeg、layui_test/src/pages/media_page.cpp）（2026-09-05）
 
-- 路径: `docs/CHANGELOG.md#ui-190-layuitest---click-合成点击在首帧布局前注入会全部脱靶延迟到首个完整布局帧后注入layuitestsrcappcpp2026-09-05`
-- 反链: 无
+- 路径: `docs/CHANGELOG.md#ui-193-媒体管线重构mediapipeline-节点化与视频容器-videocontainer--videoview-实现迁移到可运行期换节点的管线之上layuitest-多媒体页mediacoremediaffmpeglayuitestsrcpagesmediapagecpp2026-09-05`
+- 反链(7):
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#管线节点可运行期按名更换：`set_*_name` + `MediaRegistry` 注册表装配；合成源与 FFmpeg 节点并存（同名重复注册忽略、不覆盖）；先 open 合成源再 open 真实文件不互相污染节点名
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#`VideoView` 公共 API 与行为语义保持不动（open/play/pause/seek/speed/volume/loop/step/advance/on_draw），实现整体迁到管线之上；FFmpeg 细节隔离节点实现
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#音频失败仅静音降级（`has_audio()==false`）不阻塞视频；音量实时作用于解码 PCM；winmm 队列在 seek/loop 时 flush
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#合成源帧内容仅依赖绝对位置（SMPTE 色条 + 底部进度条），`--shot-page` 截图确定性可回归；首帧立即交付不闪占位
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#每实例独立解码线程/纹理，多容器同窗口共存互不污染；容器/页面销毁（切页/退出）时线程 join 干净、无崩溃无泄漏
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#实播回归：`video_player --smoke N assets/test_av.mp4` 解码+音频正常、无日志错误、线程干净退出；media_load_test 各素材解码帧数不变
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#构建：`OPENGUI_MEDIA_CORE` 默认 OFF，纯 UI 工程不依赖媒体库；layui_test 以 media/core 合成源演示，无需 FFmpeg 即可构建运行；`api_gen.py` 覆盖新增公开头（video_container/pipeline/node/registry/ffmpeg_nodes）
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -1279,6 +1285,12 @@
   - `DOC:README` (mention) — OpenGL UI
   - `DOC:README` (mention) — 示例应用（M16 收官）
 
+### DOC:MEDIA_PIPELINE · MEDIA_PIPELINE
+
+- 路径: `docs/MEDIA_PIPELINE.md`
+- 反链(1):
+  - `META:CHANGELOG` (mention)
+
 ### DOC:PLAN · PLAN
 
 - 路径: `docs/PLAN.md`
@@ -1305,7 +1317,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(25):
+- 反链(26):
   - `META:CHANGELOG` (mention) — UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
@@ -1326,6 +1338,7 @@
   - `META:CHANGELOG` (mention) — UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22）
+  - `DOC:MEDIA_PIPELINE` (mention) — MediaPipeline 媒体管线与视频容器
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
   - `DOC:UI_API` (mention) — UI 库 API 手册
@@ -1514,10 +1527,11 @@
 | `BUG:UI-187` | BUG | UI-187: 控件树释放后 root.capture_/root.modal_ 残留悬空指针致 dispatch 虚调用崩溃（ui/src/widget.cpp）（2026-09-03） | `docs/CHANGELOG.md` |
 | `BUG:UI-188` | BUG | UI-188: ScrollBox clear_children 未失效滚动回调致悬空调用崩溃（ui/src/scrollbox.cpp + ui/include/ui/ui/scrollbox.h + ui/include/ui/ui/widget.h）（2026-09-03） | `docs/CHANGELOG.md` |
 | `BUG:UI-189` | BUG | UI-189: layui_test 新增「多级窗口」演示页——多 GLFW 窗口（各自独立 GL 上下文）逐层创建 4 层（layui_test/src/pages/multilevel_window_page.cpp）（2026-09-05） | `docs/CHANGELOG.md` |
-| `BUG:UI-190` | BUG | UI-190: layui_test `--click` 合成点击在首帧（布局前）注入会全部脱靶——延迟到首个完整布局帧后注入（layui_test/src/app.cpp）（2026-09-05） | `docs/CHANGELOG.md` |
+| `BUG:UI-193` | BUG | UI-193: 媒体管线重构（MediaPipeline 节点化）与视频容器 VideoContainer —— VideoView 实现迁移到可运行期换节点的管线之上，layui_test 多媒体页（media/core、media/ffmpeg、layui_test/src/pages/media_page.cpp）（2026-09-05） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
+| `DOC:MEDIA_PIPELINE` | DOC | MEDIA_PIPELINE | `docs/MEDIA_PIPELINE.md` |
 | `DOC:PLAN` | DOC | PLAN | `docs/PLAN.md` |
 | `DOC:README` | DOC | README | `docs/README.md` |
 | `DOC:UI_API` | DOC | UI_API | `docs/UI_API.md` |
@@ -1789,6 +1803,14 @@
 | `DOC:BUILD` | `BUG:UI-010` | checklist |
 | `DOC:BUILD` | `BUG:UI-119` | checklist |
 | `DOC:BUILD` | `BUG:UI-119` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
+| `DOC:MEDIA_PIPELINE` | `META:CHANGELOG` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
@@ -1886,6 +1908,7 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
+| `META:CHANGELOG` | `DOC:MEDIA_PIPELINE` | mention |
 | `META:CHANGELOG` | `DOC:README` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

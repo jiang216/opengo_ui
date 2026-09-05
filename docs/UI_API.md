@@ -69,7 +69,7 @@ while (!window.should_close()) {             // ⑥ 主循环：事件 → 布�
 | core | `ui/core/*` | 无（纯 C++） |
 | gl | `ui/gl/*` | core + 3rdparty（GLFW/GLAD/stb） |
 | ui | `ui/ui/*` | gl + core |
-| media（可选） | `ui/media/*` | ui + gl + core + FFmpeg/OpenCV |
+| media（可选） | `ui/media/*` | ui + gl + core；合成源/管线无需第三方，FFmpeg/OpenCV 节点可选 |
 
 ## 3、ui_core（纯 C++ 基础）（`ui/core`）
 
@@ -281,6 +281,8 @@ while (!window.should_close()) {
 | `void update_drag(float mouse_x, float mouse_y)` |  |
 | `void end_drag()` |  |
 | `bool is_dragging() const` |  |
+| `void acquire_mouse_capture()` | ---- OS 级鼠标捕获（UI-184：移出窗口/失焦释放丢失兜底）---- Windows 下用 SetCapture/ReleaseCapture：控件级拖拽期间把 WM_LBUTTONUP 锁定投递给 本窗口，即使指针移出客户区/失焦释放也能收到 GLFW_RELEASE → pressed_/capture_ 复位， 根治「窗口内按下、移出窗口外释放，控件一直停在按下态」。非 Windows 空操作。 |
+| `void release_mouse_capture()` |  |
 | `void set_cursor(CursorType type)` | ---- 光标形状 ---- 统一光标接口 |
 | `void set_cursor_arrow()` |  |
 | `void set_cursor_hand()` |  |
@@ -304,6 +306,9 @@ while (!window.should_close()) {
 | `bool mouse_down(int button) const` | button: 0=左键 1=右键 2=中键 |
 | `bool mouse_pressed(int button)` | 边沿触发：本轮 poll 内新按下/新抬起（读一次后清除） |
 | `bool mouse_released(int button)` |  |
+| `bool mouse_pressed_peek(int button) const` | 边沿触发(peek)：本轮 poll 内新按下/新抬起，但不清除标志。 供 Scene 在 Frame 订阅者之前快照同一边沿（避免最先读者的消费吞掉后续分发者的边沿， 见 scene.cpp 鼠标分发）——「生产者-消费方」与「分配者-控件树」可用非消耗读各取所需。 |
+| `bool mouse_released_peek(int button) const` |  |
+| `void settle_mouse_reset()` | UI-184：Scene 鼠标分发后调用——清除失焦/光标离开触发的「释放丢失待复位」标记， 并将对应键的按下状态复位为 false（peek 非消耗读由调用方每帧读一次后在此收尾）。 |
 | `float scroll_dx()` | 边沿触发：本轮 poll 内滚轮滚动量（dx,dy，读一次后清零） |
 | `float scroll_dy()` |  |
 | `bool key_down(int key) const` | 键盘（key 用 ui::Key 常量）：当前按住 / 本轮按下边沿 / 本轮抬起边沿 |
@@ -454,6 +459,7 @@ font.draw_icon(renderer, ui::layui_icon::ic_about, cx, cy, 18.f, theme.success);
 | `static unsigned decode_utf8(const char*& in)` | UTF-8 解码下一个码点；*in 指向字节，返回解码后的码点，*in 前进到下一字符（返回 0 表示结束/非法） |
 | `const Glyph* ensure_dynamic(unsigned int cp) const` | 懒烘培 CJK 字形：查 dyn_ → 命中返回；cjk 字体未载入返回 nullptr；否则光栅化打包进图集 |
 | `void bake_cjk(unsigned int cp) const` |  |
+| `bool bake_allowed() const` | UI-192：当前 GL 上下文是否为图集创建时的上下文（跨窗口/多上下文门控）。 不匹配时必须挂起烘焙，严禁在错误上下文执行 glTexSubImage2D。 |
 | `const Glyph* icon_glyph(unsigned int cp) const` | 图标字形查询：按码点落在 E600..E7FF / 1000..100F 哪一段返回对应字形，段外返回 nullptr |
 
 
@@ -492,10 +498,11 @@ b->destroy();
 | `explicit Widget(float x = 0, float y = 0, float w = 0, float h = 0)` |  |
 | `void set_bounds(float x, float y, float w, float h)` |  |
 | `const Rect& bounds() const` | 像素坐标，y 向下 |
+| `virtual void set_visible(bool on)` |  |
 | `virtual void set_enabled(bool en)` |  |
 | `bool is_dirty() const` | ---- 脏标记机制：空闲时跳过无变子树绘制，降低 CPU/GPU 占用 ---- |
 | `void mark_dirty()` |  |
-| `void clear_dirty()` |  |
+| `void finish_draw_dirty()` | 帧末清脏（去标）：self 本轮已绘制，清 dirty_ 与 dirty_children_（UI-175 全清）。 隐藏且仍脏的子控件不画不清，但不再驻留本容器 dirty_children_——mark_dirty() 已 无条件上溯 root，隐藏子重显经 set_visible(true) 传播 mark_dirty 触发父容器重排， 无 (0,0) 闪帧（UI-156 语义保持，见 widget.cpp finish_draw_dirty 注释）。 |
 | `void mark_dirty_all()` | 全树递归置脏（UI-136）：字形逐帧烘焙导致 xadvance 变化后，由根节点 advance 调用，强制所有 Label 以真实宽度重新换行/布局（近似宽度 → 真实宽度） |
 | `void add_class(const char* cls)` | ---- CSS 类名机制（M17a）：layui 语法入口，供样式层查询 ---- 支持空格分隔的多个类名（如 "layui-btn layui-btn-danger"） |
 | `void remove_class(const char* cls)` |  |
@@ -503,9 +510,9 @@ b->destroy();
 | `const std::vector<std::string>& classes() const` |  |
 | `void add_child(Widget* child)` | ---- 树结构 ---- |
 | `void remove_child(Widget* child)` |  |
-| `void clear_children()` | 递归释放全部子树：逐个 remove_child + delete（含深层子节点），调用后 children() 为空。 调用者持有子树所有权时使用（切页释放/列表重建）；不释放调用者自身。 注意：任何指向已删除子控件的指针立即失效（UI-039 回归保证）。 |
-| `void destroy()` | 销毁自身（含整个子树）：从父节点摘除后递归释放子树并 delete 自身。 等价于「父节点 remove_child + 子树 clear_children + delete 自身」一条龙， 用于销毁单个控件及其子树（切页清理根级弹窗等）。 注意：调用后本控件及子树内任何指针立即失效，不得再访问（UI-040 回归保证）； 无父节点时直接销毁子树与自身。  延迟销毁（UI-072）：destroy() 只把自身标记为待销毁（立即 visible=false）， 实际的「摘除 popups/父引用 + 释放子树 + delete」统一延迟到根节点帧末 flush_pending_destroys() 执行。这样在事件分发（dispatch_mouse_*）或遍历 （advance/draw/children_ 迭代）期间销毁自身不会产生悬空 this 与失效迭代器 （如 footer 回调 cleanup_windows 在 dispatch_mouse_down 内自毁窗口）。 |
-| `static void flush_pending_destroys()` | 帧末统一销毁被 destroy() 标记的控件（由根节点 advance 自动调用） |
+| `virtual void clear_children()` | 递归释放全部子树：逐个 remove_child + delete（含深层子节点），调用后 children() 为空。 调用者持有子树所有权时使用（切页释放/列表重建）；不释放调用者自身。 注意：任何指向已删除子控件的指针立即失效（UI-039 回归保证）。 |
+| `void destroy()` | 销毁自身（含整个子树）：从父节点摘除后递归释放子树并 delete 自身。 等价于「父节点 remove_child + 子树 clear_children + delete 自身」一条龙， 用于销毁单个控件及其子树（切页清理根级弹窗等）。 注意：调用后本控件及子树内任何指针立即失效，不得再访问（UI-040 回归保证）； 无父节点时直接销毁子树与自身。  延迟销毁（UI-072）：destroy() 只把自身标记为待销毁（立即 visible=false）， 实际的「摘除 popups/父引用 + 释放子树 + delete」统一延迟到根节点帧末 flush_pending_destroys() 执行。这样在事件分发（dispatch_mouse_*）或遍历 （advance/draw/children_ 迭代）期间销毁自身不会产生悬空 this 与失效迭代器 （如 footer 回调 cleanup_windows 在 dispatch_mouse_down 内自毁窗口）。  宿主契约：延迟销毁只在 flush_pending_destroys() 被调用时生效——它由根节点 advance()（Scene::frame() 每帧自动走）及 Scene::reset()/shutdown() 统一触发。 若自定义渲染循环绕过 Scene 且不调 root_.advance()，则 destroy() 永不冲刷 → 内存泄漏 + 隐藏控件仍可能被模态引用造成「僵尸模态」永久拦截输入。此类宿主 必须每帧调用 advance()（或 Scene::frame），或主动调用静态 flush_pending_destroys()。 |
+| `static void flush_pending_destroys()` | 帧末统一销毁被 destroy() 标记的控件（由根节点 advance 自动调用；自定义主循环 宿主可主动显式调用冲刷）。全局单一队列，多 Scene 共存时共享（UI-146 已收敛单 Scene）。 |
 | `Widget* parent() const` |  |
 | `const std::vector<Widget*>& children() const` |  |
 | `void bring_to_front()` | 置顶：把自身移到父节点子控件列表末尾（后添加者在绘制/命中上层），无父节点时无操作 |
@@ -517,6 +524,7 @@ b->destroy();
 | `virtual bool on_drop(float x, float y, const std::vector<std::string>& paths)` | 文件拖放：paths 为拖入的文件/文件夹路径列表 |
 | `void capture_mouse()` | 鼠标捕获（M5 拖拽）：on_mouse_down 返回 true 即自动捕获（如 Slider 拖动）， 此后鼠标 move/up 即使指针离开控件范围也路由给捕获者；up 后自动释放 |
 | `void release_mouse_capture()` |  |
+| `Widget* capture_widget() const` | 当前鼠标捕获者（仅根节点持有；无捕获返回 nullptr）。供宿主/Scene 依其状态同步 OS 级鼠标捕获（UI-184）。 |
 | `void open_popup(Widget* owner, Widget* popup)` | ---- 弹出层（M9）：根节点维护弹出面板（下拉/菜单），点击外部自动关闭 ---- 打开弹出面板（owner 内点击不关闭它；面板绘制在控件树最上层） |
 | `void close_popups()` | 关闭所有弹出面板 |
 | `void close_topmost_popup()` | 关闭最上层弹出面板（layer.escIndex 语义：Esc 关闭当前最上层窗口） |
@@ -557,7 +565,7 @@ b->destroy();
 | 数据成员 | 说明 |
 | --- | --- |
 | `Widget& operator=(const Widget&) = delete;` |  |
-| `bool visible = true;` |  |
+| `bool visible = true;` | 显隐态：直接写可见性会破坏脏标记「重标」闭环——端帧 draw 已把本容器 dirty_children_ 清 false，隐藏脏子控件再被显示时父容器会跳过 layout()， 新现身子控件停在旧/0,0 坐标成一帧闪（UI-156）。一律经 set_visible() 变更， 变化时 mark_dirty() 向上传播，保证下一帧重排。 |
 | `bool enabled = true;` | 禁用态（M22）：禁用控件不接收鼠标/键盘/焦点，Tab 遍历跳过，绘制层灰化显示 |
 | `bool focusable = false;` | ---- 焦点 / 键盘（M3 + M4 字符输入）---- |
 
@@ -621,7 +629,7 @@ scene.on(ui::SceneEvent::Key, [&](int key, int mods){ if (key==UI_KEY_ESCAPE) { 
 | `bool running() const` |  |
 | `void request_exit()` | 请求退出（Run 循环下一帧即止；如 demo_exit 按钮） |
 | `void reset()` | ---- 清理重置 ---- 关弹窗 + 排空延迟销毁队列 + 广播 Reset→Ready（重跑新一轮生命周期；先订阅 Reset/Ready 再调用） 不删子树（子节点可能为栈对象，见类注释） |
-| `void shutdown()` | 广播 Cleanup/Shutdown + flush_pending_destroys（析构自动调用；可手动提前） |
+| `void shutdown()` | 广播 Cleanup/Shutdown + flush_pending_destroys（析构自动调用；可手动提前）。 与 running_ 独立：request_exit() 只停 run 循环，shutdown() 仍会完整广播 Cleanup/Shutdown 阶段（此前 以 !running_ 提前 return 会吞掉收尾通知）。 幂等：多次调用只广播一次。 |
 
 | 数据成员 | 说明 |
 | --- | --- |
@@ -1428,6 +1436,7 @@ parent->add_child(cd);
 | `void set_total(float seconds)` |  |
 | `void restart()` |  |
 | `float preferred_height() const` |  |
+| `void on_advance(float dt) override` |  |
 | `void on_draw(Renderer& renderer) override` |  |
 
 
@@ -2380,7 +2389,8 @@ parent->add_child(sb);
 | `float scroll_offset() const` |  |
 | `void set_scroll_offset(float offset)` | 滚动到指定偏移（自动 clamp 到 [0, scroll_max]；脚本化截图/程序化定位用） |
 | `void reset_scroll()` | 滚动回顶部（切页/内容重建后复位滚动位置，防止残留旧页滚动偏移） |
-| `void mark_content_dirty()` | 标记子树变化（clear_children/add_child 后调用），抑制滚动条绘制直到下一次 on_layout() |
+| `void clear_children() override` | 清除全部子树前先失效滚动回调（防回调捕获已销毁子控件指针致悬空调用） |
+| `void mark_content_dirty()` | 标记子树变化（clear_children/add_child 后调用），抑制滚动条绘制直到下一次 on_layout()。 UI-156：必须同时 mark_dirty()——needs_layout_ 只在 on_layout()（受 Widget 脏门控 `dirty_ \|\| dirty_children_` 保护）里被消费清掉，若不标脏 root 可能保持 clean， on_layout() 永不触发、内容不重排、滚动条永远被抑制（重标缺口）。 |
 | `void set_on_scroll_to_bottom(std::function<void()> cb)` | 滚到内容底部时回调一次（再次离开底部再滚回底部会重新触发）。 传入 nullptr 清除回调（切页清理用，防悬空引用）。 |
 | `void rearm_bottom()` | 内容增长后由宿主调用：解除触底一次性武装并安排重检（UI-126 引入，UI-127 改分帧）。 场景：流加载续灌批次未把内容底推出触发区（用户已在底部无法再滚），不清 bottom_fired_ 将永不再触发——补齐 layui flow.load「DOM 插入后再查一次 reachBottom」 语义。UI-127 起不再同步重检（同步链会在 rebuild_rows 内递归级联多批、单帧工作量 暴增），改为置挂起标记、下一次 on_layout() 开头消费 check_bottom——每帧至多灌一批， 且回调重建的行控件在本次布局内即归位，无乱帧。 |
 | `void set_on_scroll(std::function<void()> cb)` | 通用滚动回调：每次 scroll_offset 变化时触发（用于关闭下拉面板等场景）。 |
@@ -2531,6 +2541,8 @@ parent->add_child(tb);
 | `bool is_truncate_col(int col) const` |  |
 | `void set_measure_text_cols(const std::vector<int>& cols)` | 指定哪些列用 measure_text 精确截断（渲染时逐行测量，替代纯字符估算） |
 | `bool is_measure_text_col(int col) const` |  |
+| `void set_cell_tooltip(std::function<std::string(int data_row, int col)> cb)` | —— 单元格 tooltip（悬停显示完整文本，UI-177）—— 命中可截断列时，行控件按悬停列查询完整文本并置为行 tooltip；返回空串则不显示。 参数：数据行号（rows_ 下标）, 列号。应用层借此提供"省略后的完整内容"。 |
+| `std::string cell_tooltip_at(int visible_row, float x) const` | 行控件调用：可视行号 + 根空间横坐标 → 计算命中列的 tooltip 文本（未注册回调返回空） |
 | `void set_font(Font* font)` |  |
 | `void set_theme(const Theme* theme)` |  |
 | `void set_on_sort(std::function<void(int col, bool asc)> cb)` |  |
@@ -2580,8 +2592,6 @@ parent->add_child(tb);
 | `void set_cell_event_col(int col)` | —— 列点击事件（layui 单元格事件 cellEvent.html，如签名列 event:'setSign'）—— |
 | `int cell_event_col() const` |  |
 | `void set_on_cell_event(std::function<void(int visible_row, int col)> cb)` |  |
-| `void set_cell_tooltip(std::function<std::string(int data_row, int col)> cb)` | —— 单元格 tooltip（UI-177）—— 注册悬停回调：行控件悬停某列时按（数据行号, 列号）查询完整文本；返回空串不显示 tooltip。 |
-| `std::string cell_tooltip_at(int visible_row, float x) const` | 行控件内部调用：根空间横坐标命中的单元格 tooltip（未注册回调返回空） |
 | `void set_init_sort(int col, bool asc)` | —— 初始排序（layui initSort）—— |
 | `void reload(const std::vector<std::vector<std::string>>& new_rows)` | —— 数据重载（layui reload）—— |
 | `void set_on_row_double_click(std::function<void(int visible_row)> cb)` | —— 行双击回调（layui onrow）—— |
@@ -3161,6 +3171,196 @@ parent->add_child(wf);
 
 ## 6、ui_media（可选模块）（`ui/media`）
 
+### `ui/media/video_container.h`
+
+**调用示例**：
+```cpp
+// 视频容器（UI-193）：边框 + 标题条 + 底部控制条 + 内置播放控件，依赖媒体管线
+ui::VideoContainer* vc = new ui::VideoContainer(0, 0, 560, 340);
+vc->set_font(&font);
+vc->set_theme(&theme);
+vc->set_title("媒体容器");
+vc->open_source("synthetic:8");           // 合成源（media/core，无需 FFmpeg）
+// vc->open_source("assets/test.mp4");    // 真实文件（需 media/ffmpeg 注册 ffmpeg 节点）
+host->add_child(vc);                       // 每帧 on_advance 自动推进并上传纹理
+vc->play(); vc->seek(4.f); vc->set_loop(true);
+vc->set_speed(1.f); vc->set_volume(0.8f);  // has_video/has_audio/position/duration 查询
+```
+
+**依赖 include**：`ui/core/math.h`、`ui/ui/widget.h`、`ui/media/pipeline/pipeline.h`
+
+**类 `VideoContainer`**
+（继承 `: Widget`）
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `VideoContainer(float x, float y, float w, float h)` |  |
+| `void set_font(Font* font)` |  |
+| `void set_theme(const Theme* theme)` |  |
+| `void set_title(const char* title)` |  |
+| `const std::string& title() const` |  |
+| `bool open_source(const char* descriptor)` | 打开描述串：文件路径或 "synthetic[:秒]"。失败返回 false（进入错误文案态，可重复 open）。 |
+| `void close_source()` |  |
+| `bool has_video() const` |  |
+| `void play()` | ---- 播放控制（同 MediaPipeline / VideoView）---- |
+| `void pause()` |  |
+| `void set_playing(bool playing)` |  |
+| `bool playing() const` |  |
+| `void set_loop(bool loop)` |  |
+| `bool loop() const` |  |
+| `void set_speed(float speed)` |  |
+| `float speed() const` |  |
+| `void step_frame()` |  |
+| `void seek(float seconds)` |  |
+| `double duration() const` |  |
+| `float position() const` |  |
+| `void set_volume(float volume)` |  |
+| `float volume() const` |  |
+| `bool has_audio() const` |  |
+| `bool synthetic() const` | 合成源自动启用标志（已 open 合成源） |
+| `void on_advance(float dt) override` |  |
+| `void on_draw(Renderer& renderer) override` |  |
+| `void on_layout() override` |  |
+
+
+### `ui/media/pipeline/node.h`
+
+**依赖 include**：`ui/core/math.h`、`atomic`、`cstdint`、`memory`、`string`、`vector`
+
+**类 `RgbaFrame`**
+
+| 数据成员 | 说明 |
+| --- | --- |
+| `int width = 0;` |  |
+| `int height = 0;` |  |
+| `double position = 0.0;` | 帧时间（秒）；无 PTS 时由解码器按 1/fps 推算 |
+| `std::vector<unsigned char> data;` | width*height*4 |
+
+**类 `PacketHandle`**
+
+| 数据成员 | 说明 |
+| --- | --- |
+| `bool is_video = true;` | true=视频包进 VideoDecoder；false=音频包进 AudioSink |
+| `void* opaque = nullptr;` |  |
+| `std::int64_t seq = 0;` | 帧序号（合成源用：解码器按 seq/fps 计算位置；FFmpeg 忽略） |
+
+**类 `MediaSource`**
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `virtual bool open(const char* descriptor) = 0` | 打开描述串（如文件路径 / "synthetic:4"）；失败返回 false（可重复调用） |
+| `virtual void close() = 0` |  |
+| `virtual bool has_video() const` |  |
+| `virtual bool has_audio() const` |  |
+| `virtual int width() const` | has_video() 时有效 |
+| `virtual int height() const` |  |
+| `virtual double fps() const` |  |
+| `virtual double duration() const` |  |
+| `virtual bool read_packet(PacketHandle& out) = 0` | 读取下一包到 out；返回 false 表示源已结束（EOF） |
+| `virtual void seek(double seconds) = 0` | 定位到 seconds（秒，0..duration）；解码器需另行 flush() |
+| `virtual bool eof() const` | 源是否已读到 EOF（供管线循环空转保护） |
+
+**类 `VideoDecoder`**
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `virtual bool bind(MediaSource& src) = 0` | 绑定源（读元信息建立解码器）；失败返回 false |
+| `virtual void push_packet(const PacketHandle& pkt) = 0` | 推入一个视频包；内部处理解码器缓冲满（EAGAIN 语义，与既有 VideoView 一致） |
+| `virtual bool pull_frame(RgbaFrame& out) = 0` | 尝试解出一帧写入 out（data 由调用方预分配真尺寸）；true 有帧 / false 无 （需继续推包、或源已 EOF 已 flush 仍未出帧——此时 eof() 判定结束） |
+| `virtual void finish_input() = 0` | 源读完（EOF）后调用一次：冲刷解码器之内缓冲帧（等价既有 avcodec_send_packet(null)） |
+| `virtual void flush() = 0` | seek/eof 循环时清解码器缓冲（等价既有 avcodec_flush_buffers） |
+| `virtual bool eof() const` | 是否已解码到末尾（pull_frame 不返回帧且内部 EOF 置位） |
+
+**类 `AudioSink`**
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `virtual bool bind(MediaSource& src) = 0` | 绑定源（读音频流参数建立解码器+输出设备）；失败返回 false（调用方视为静音） |
+| `virtual bool has_audio() const` |  |
+| `virtual void push_packet(const PacketHandle& pkt) = 0` | 推入一个音频包；内部完成解码+重采样+写设备（含 EAGAIN 腾空，与既有 VideoView 一致） |
+| `virtual void pause() = 0` |  |
+| `virtual void resume() = 0` |  |
+| `virtual void flush() = 0` | seek / eof 循环时复位：清解码器缓冲 + 清输出设备队列 |
+| `virtual void close() = 0` |  |
+| `virtual void set_volume_source(const std::atomic<float>* vol) = 0` | 音量注入（0..1）：解码线程写设备前实时读取应用 |
+
+
+### `ui/media/pipeline/pipeline.h`
+
+**依赖 include**：`ui/media/pipeline/node.h`、`ui/media/pipeline/registry.h`、`atomic`、`condition_variable`、`cstdint`、`mutex`、`string`、`thread`、`vector`
+
+**类 `MediaPipeline`**
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `MediaPipeline()` |  |
+| `void set_source_name(const char* name)` | ---- 节点选择（open 之前调用；默认 ffmpeg/ffmpeg/winmm）---- |
+| `void set_decoder_name(const char* name)` |  |
+| `void set_audio_name(const char* name)` |  |
+| `const char* source_name() const` |  |
+| `bool open(const char* descriptor)` | 打开描述串（如文件路径 / "synthetic:4"）。descriptor 以 "synthetic" 开头时 自动切换 test-pattern 源 + null 音频（合成源演示，不需 FFmpeg）。 |
+| `void close()` |  |
+| `bool has_video() const` |  |
+| `bool has_audio() const` |  |
+| `void play()` | ---- 播放控制（同 VideoView）---- |
+| `void pause()` |  |
+| `void set_playing(bool playing)` |  |
+| `bool playing() const` |  |
+| `void set_loop(bool loop)` |  |
+| `bool loop() const` |  |
+| `void set_speed(float speed)` |  |
+| `float speed() const` |  |
+| `void step_frame()` |  |
+| `void seek(float seconds)` |  |
+| `double duration() const` |  |
+| `float position() const` |  |
+| `void set_volume(float volume)` |  |
+| `float volume() const` |  |
+| `bool advance(float dt)` | ---- 主线程逐帧推进 ---- 返回 true 表示有最新一帧已就位（latest_rgba() 有效，需上传纹理）。语义同 VideoView::advance。 |
+| `const unsigned char* latest_rgba() const` |  |
+| `int latest_width() const` |  |
+| `int latest_height() const` |  |
+| `bool has_frame() const` |  |
+| `double fps() const` | 解码器信息（open 后有效） |
+
+| 数据成员 | 说明 |
+| --- | --- |
+| `MediaPipeline& operator=(const MediaPipeline&) = delete;` |  |
+
+
+### `ui/media/pipeline/registry.h`
+
+**依赖 include**：`ui/media/pipeline/node.h`、`functional`、`map`、`string`、`vector`
+
+**类 `NodeRegistry`**
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `void register_source(const char* name, SourceFactory f)` |  |
+| `void register_decoder(const char* name, DecoderFactory f)` |  |
+| `void register_audio(const char* name, AudioFactory f)` |  |
+| `MediaSource* make_source(const char* name) const` | 未注册返回 nullptr |
+| `VideoDecoder* make_decoder(const char* name) const` |  |
+| `AudioSink* make_audio(const char* name) const` |  |
+| `bool has_source(const char* name) const` |  |
+| `bool has_decoder(const char* name) const` |  |
+| `bool has_audio(const char* name) const` |  |
+| `std::vector<std::string> source_names() const` |  |
+| `std::vector<std::string> decoder_names() const` |  |
+| `std::vector<std::string> audio_names() const` |  |
+
+**自由函数**（命名空间 `ui` / `ui::layui`）：
+
+| 函数 | 功能说明 |
+| --- | --- |
+| `NodeRegistry& node_registry()` | 全局注册表（进程单例） |
+| `void register_core_nodes()` | 注册 media/core 自带节点（test-pattern / null）。MediaPipeline 构造时自动调用（幂等）， 显式暴露以防静态链接裁剪未引用 TU 导致合成源缺失。 |
+| `NodeRegistry& node_registry()` | 全局注册表（进程单例） |
+| `void register_core_nodes()` | 注册 media/core 自带节点（test-pattern / null）。MediaPipeline 构造时自动调用（幂等）， 显式暴露以防静态链接裁剪未引用 TU 导致合成源缺失。 |
+
+
+## 7、ui_media（可选模块）（`ui/media`）
+
 ### `ui/media/audio_out.h`
 
 **调用示例**：
@@ -3193,6 +3393,15 @@ ao->flush();                              // seek/循环回卷时清缓冲
 | `AudioOut& operator=(const AudioOut&) = delete;` |  |
 
 
+### `ui/media/ffmpeg_nodes.h`
+
+**自由函数**（命名空间 `ui` / `ui::layui`）：
+
+| 函数 | 功能说明 |
+| --- | --- |
+| `void register_ffmpeg_nodes()` | 注册 FFmpeg 实现节点（可在任意线程/任意调用次数安全执行） |
+
+
 ### `ui/media/video_view.h`
 
 **调用示例**：
@@ -3200,7 +3409,7 @@ ao->flush();                              // seek/循环回卷时清缓冲
 // 仅当 media 启用（OPENGUI_MEDIA_FFMPEG=ON）时可用
 auto* vv = new ui::media::VideoView;
 vv->set_bounds(0, 0, 800, 450);
-if (!vv->open_source("movie.mp4")) return;
+if (!vv->open_source("movie.mp4")) return;   // 经 MediaPipeline 组装 FFmpeg 节点
 vv->play();
 vv->set_loop(true);
 vv->set_speed(2.f);                       // 0.1..4 倍速
@@ -3211,7 +3420,7 @@ vv->set_volume(0.8f);                     // 0..1 音量
 parent->add_child(vv);
 ```
 
-**依赖 include**：`ui/ui/widget.h`、`atomic`、`condition_variable`、`cstdint`、`mutex`、`thread`、`vector`
+**依赖 include**：`ui/ui/widget.h`、`cstdint`
 
 **类 `VideoView`**
 （继承 `: Widget`）
@@ -3241,7 +3450,7 @@ parent->add_child(vv);
 | `void on_draw(Renderer& renderer) override` |  |
 
 
-## 7、ui_media（可选模块）（`ui/media`）
+## 8、ui_media（可选模块）（`ui/media`）
 
 ### `ui/media/image_view.h`
 

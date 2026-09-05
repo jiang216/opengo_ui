@@ -3,7 +3,29 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
-## UI-190: layui_test `--click` 合成点击在首帧（布局前）注入会全部脱靶——延迟到首个完整布局帧后注入（layui_test/src/app.cpp）（2026-09-05）
+## UI-193: 媒体管线重构（MediaPipeline 节点化）与视频容器 VideoContainer —— VideoView 实现迁移到可运行期换节点的管线之上，layui_test 多媒体页（media/core、media/ffmpeg、layui_test/src/pages/media_page.cpp）（2026-09-05）
+- **级别**：功能新增（ui 库 media/core + media/ffmpeg 重构），UI-015/UI-021/UI-033/UI-146 语义保持不动。新分层：`media/core`（节点接口 + 组装 + 合成源，**不依赖 FFmpeg**）与 `media/ffmpeg`（FFmpeg 实现节点，运行期注册）双静态库；新增带标题条/控制条/占位文案的视频容器 `ui::VideoContainer`；`VideoView` 公共 API 不变，实现整体迁到管线之上；layui_test 新增「多媒体」演示页（合成源 + 双容器），默认无需 FFmpeg 即可构建运行。
+- **背景 / 原单片实现问题**：旧 `VideoView` 解码线程 + RGBA 队列 + Texture 全在一个实现里，合成源/流源/多路音视频的扩展只能继续堆 if-else；同时 FFmpeg 类型（AVFormatContext/RGBAPacket）泄漏进公共头，拖累纯 UI 工程。UI-193 拍板四项决策：① 接受 media/core + media/ffmpeg 分层；② VideoView 实现迁到管线之上、公共 API 不动；③ 节点运行期按名更换；④ 本轮仅 FFmpeg 软件解码，预留 HW 接口。
+- **实现要点**：
+  - `media/core/include/ui/media/pipeline/node.h`：节点基类三件套 `Source / VideoDecoder / AudioSink`（构造传节点名，跨线程发帧走内部指令队列，`advance(frame)` 同步弹帧）；`PacketHandle` 不透明包装队列元素，**公共头不暴露 FFmpeg 类型**。
+  - `media/core/.../pipeline/registry.h`：`MediaRegistry` 进程单例（按名存 Source/Decoder/Sink 工厂），`node_registry()` 取全局实例；同名重复注册忽略 + 告警。`register_core_nodes()`（实现在 test_pattern_source.cpp）注册合成源 test-pattern/test-pattern/null，由 `MediaPipeline` 构造自动调用（防静态链接裁剪）。
+  - `media/core/.../pipeline/pipeline.h` + `pipeline.cpp`：`MediaPipeline` = 解码线程 + 播放控制（语义对齐 VideoView M7/M13/M14）。`resolve_node_names`（本次参数区分自动默认名 change 前的旧默认）每次 `open()` 独立解析默认节点名与 `set_source_name` 等注入的自定义名，杜绝先 open 合成源后 open 真实文件时的状态污染。首帧立即放行：`fps_==0 或本帧未到节奏时若尚无帧直接交付`（首帧不闪占位，截图回归确定性）。线程函数带快照退出哨兵、join 于析构；flush/seek 经内部指令回解码线程。
+  - `media/core/.../video_container.*`：`ui::VideoContainer`。私有：占位纹理（1×1）+ 视频纹理 + 无 `destroy_placeholder()`（占位与视频纹理同生命周期，`open_source` 时建）；`has_video()` 为公开自报（有真实帧才显示）；布局 `layout_controls()` 之标题条/控制条（bounds_.h 一栏或两栏，无首栏时控制条贴顶）；合成源占位文案 `STREAMING - synthetic video source`（单行，经 Font::draw_text 实测宽度换字体回退渲染，不截断）。
+  - `media/ffmpeg/.../ffmpeg_nodes.*`：`register_ffmpeg_nodes()`（幂等）注册 ffmpeg 源（另注册 "ffmpeg-source" 别名）/ ffmpeg 解码器 / winmm 音频。`FfmpegSource` 开文件 + 查流 + 音频选流与采样布局；`FfmpegVideoDecoder` 容纳 avcodec/sws/RGBABuffer（其 dtor 释放 codec ctx / sws ctx / 帧）——解码线程所有脏活都在节点内；`FfmpegAudioSink` 承载 swr s16 立体声 + winmm 输出（音频流不存在返回 false 即无音频，不阻塞视频）。
+  - `media/ffmpeg/.../video_view.*`：`VideoView` 改为薄封装——成员收敛为 `pipe_/texture_/has_frame_`（或等义），行为（open/play/pause/seek/speed/volume/loop/step/advance/on_draw 的 m1v 宽高比适配）转交 `MediaPipeline`，公共头与 `VideoView` 符号不变。
+  - 构建：`media/core/CMakeLists.txt`（`ui_media_core`，PUBLIC 依赖 `ui_ui`，install）；顶层 `option(OPENGUI_MEDIA_CORE ... OFF)` + gate；`media/ffmpeg` 链接 `ui_media_core`；layui_test 链接 `ui_media_core`（合成源演示），`media_page.cpp` 由 CMake GLOB 收录（`_LAYUI_TEST_LIB = ui_ui ui_media_core`）。
+  - layui_test 多媒体页：PageDef order=62（「展示」组，副标题 VideoContainer），导航索引 **48**。主容器开 `synthetic:8`、多容器 A/B 并排（HBox 分栏）、四个控制按钮（重新打开 / 跳到 4s / 播放-暂停 / 关闭），演示 `VideoContainer` 的控制条交互。纯合成源，不需要 FFmpeg 就能看效果。
+- **回归清单（改动后核对）**：
+  1. layui_test 全页 `--smoke` 自动切页：全部页面可切、退出干净；
+  2. `layui_test --page 48 --smoke N`：同页多容器（主容器 + A/B）同时渲染，切页销毁容器（close + join 解码线程）无崩溃、无挂起、无泄漏日志；
+  3. `layui_test --shot-page 48`（合成源）截图像素级校验：SMPTE 7 色条（白/黄/青/绿/品/红/蓝，横向顺序）+ 底部进度条；首帧即为画面非占位（`STREAMING` 文案不常驻）；
+  4. `video_player --smoke 6 assets\test_av.mp4`（真实 FFmpeg 节点）：`pipeline opened` + 音频流 + `decode thread start/exit` 干净，无日志错误，exit 0；
+  5. `media_load_test assets --play 1`：test.mp4 / test_av.mp4 / test_h264.mp4 解码帧数与基线（6 / 5 / 6）一致；
+  6. `demo/api_demo --smoke 4`：`has_video=1 has_audio=1`、视频控件可播放，VideoView 公共 API 迁移后行为与回归基线一致；
+  7. `python tools/api_gen.py --check` 0 差异；graphgen `--check` 0 错 0 警；
+  8. 纯 UI 工程（OPENGUI_MEDIA_CORE=OFF）不依赖媒体库仍可构建（gate 保留）。
+- **验证**：media 相关目标（demo/api_demo/scene_multiwin/media_load_test/image_viewer/video_player）VS x64-all Release 全构建通过；layui_test Ninja Release 构建通过；上述 1–6 逐条实测通过（其中 3 的像素统计：各色条约 2.2 万像素，条带横坐标约 457→1054、y≈248）；第 3 项首次截图暴露「首帧被节奏门控压在占位、截图即空面」→ 修复为首帧即时放行后复验通过。
+- **影响范围**：`media/core/include/ui/media/*`（node/registry/pipeline/video_container 头）+`media/core/src/*`、`media/ffmpeg/include/ui/media/video_view.h`、`media/ffmpeg/src/*`（ffmpeg_nodes/video_view/audio_out）、各 CMakeLists（根/media/media-ffmpeg/media-core/apps/layui_test）、`layui_test/src/pages/media_page.cpp`、`tools/api_gen.py`、`docs/UI_API.md`、`docs/MEDIA_PIPELINE.md`、`docs/CHANGELOG.md`
 - **级别**：缺陷修复（测试程序 layui_test 的脚本化编排 harness）。`--click x,y` 合成点击注入用于 UI-173/UI-183 起的自动化交互验证；实测配合 `--page` 打开新页时注入无效，导致脚本化点不到页内按钮（多级窗口页 UI-189 验证时暴露：`--page 38 --click` 后页面「打开第 1 层窗口」未触发，无日志输出）。
 - **根因**：注入逻辑挂主壳 `Scene` 的 **Frame 阶段观察者**，而 Frame 阶段运行于 `scene.frame()` 的「分配输入（layout + dispatch + advance）」**之前**（scene_page / UI-146 四阶段语义）。首帧注入时分发目标页面控件尚未布局，`bounds_` 仍是构造初值（如 HBox 行 y=0），`root.dispatch_mouse_*` 全部脱靶；注入后 `root.layout()` 只是补首帧截图，不影响注入结果。此前 `--click` 验证能命中，是因为目标长期驻留在已布局的固定控件上（标题栏/表头），新开页场景首帧必然漏。
 - **修复**：注入块增加 `inject_wait` 计数，第 1 帧（Frame 观察者先于 layout）跳过，等首帧布局完成后（第 2 帧观察者）再执行**单次**注入 + `root.layout()`。保持「单次点击」语义（不重复点击、不放大副作用）。

@@ -1,17 +1,17 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-05T15:21:31+08:00",
+  "generatedAt": "2026-09-05T17:30:10+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
-    "BUG:UI-190": {
-      "id": "BUG:UI-190",
+    "BUG:UI-193": {
+      "id": "BUG:UI-193",
       "type": "BUG",
-      "label": "UI-190: layui_test `--click` 合成点击在首帧（布局前）注入会全部脱靶——延迟到首个完整布局帧后注入（layui_test/src/app.cpp）（2026-09-05）",
+      "label": "UI-193: 媒体管线重构（MediaPipeline 节点化）与视频容器 VideoContainer —— VideoView 实现迁移到可运行期换节点的管线之上，layui_test 多媒体页（media/core、media/ffmpeg、layui_test/src/pages/media_page.cpp）（2026-09-05）",
       "path": "docs/CHANGELOG.md",
-      "anchor": "ui-190-layuitest---click-合成点击在首帧布局前注入会全部脱靶延迟到首个完整布局帧后注入layuitestsrcappcpp2026-09-05"
+      "anchor": "ui-193-媒体管线重构mediapipeline-节点化与视频容器-videocontainer--videoview-实现迁移到可运行期换节点的管线之上layuitest-多媒体页mediacoremediaffmpeglayuitestsrcpagesmediapagecpp2026-09-05"
     },
     "BUG:UI-189": {
       "id": "BUG:UI-189",
@@ -1277,6 +1277,12 @@
       "label": "BUILD",
       "path": "docs/BUILD.md"
     },
+    "DOC:MEDIA_PIPELINE": {
+      "id": "DOC:MEDIA_PIPELINE",
+      "type": "DOC",
+      "label": "MEDIA_PIPELINE",
+      "path": "docs/MEDIA_PIPELINE.md"
+    },
     "DOC:PLAN": {
       "id": "DOC:PLAN",
       "type": "DOC",
@@ -1890,6 +1896,12 @@
       "to": "BUG:UI-117",
       "kind": "ref",
       "context": "相关历史条目"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "MediaPipeline 媒体管线与视频容器"
     },
     {
       "from": "DOC:PLAN",
@@ -3530,6 +3542,48 @@
       "context": "回归清单#layui_test 崩溃时自动打印符号化调用栈（SetUnhandledExceptionFilter + dbghelp）；定位崩溃帧需 Release+/Z7 生成 PDB"
     },
     {
+      "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-193",
+      "kind": "checklist",
+      "context": "回归清单#管线节点可运行期按名更换：`set_*_name` + `MediaRegistry` 注册表装配；合成源与 FFmpeg 节点并存（同名重复注册忽略、不覆盖）；先 open 合成源再 open 真实文件不互相污染节点名"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-193",
+      "kind": "checklist",
+      "context": "回归清单#`VideoView` 公共 API 与行为语义保持不动（open/play/pause/seek/speed/volume/loop/step/advance/on_draw），实现整体迁到管线之上；FFmpeg 细节隔离节点实现"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-193",
+      "kind": "checklist",
+      "context": "回归清单#音频失败仅静音降级（`has_audio()==false`）不阻塞视频；音量实时作用于解码 PCM；winmm 队列在 seek/loop 时 flush"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-193",
+      "kind": "checklist",
+      "context": "回归清单#合成源帧内容仅依赖绝对位置（SMPTE 色条 + 底部进度条），`--shot-page` 截图确定性可回归；首帧立即交付不闪占位"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-193",
+      "kind": "checklist",
+      "context": "回归清单#每实例独立解码线程/纹理，多容器同窗口共存互不污染；容器/页面销毁（切页/退出）时线程 join 干净、无崩溃无泄漏"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-193",
+      "kind": "checklist",
+      "context": "回归清单#实播回归：`video_player --smoke N assets/test_av.mp4` 解码+音频正常、无日志错误、线程干净退出；media_load_test 各素材解码帧数不变"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-193",
+      "kind": "checklist",
+      "context": "回归清单#构建：`OPENGUI_MEDIA_CORE` 默认 OFF，纯 UI 工程不依赖媒体库；layui_test 以 media/core 合成源演示，无需 FFmpeg 即可构建运行；`api_gen.py` 覆盖新增公开头（video_container/pipeline/node/registry/ffmpeg_nodes）"
+    },
+    {
       "from": "DOC:README",
       "to": "BUG:UI-001",
       "kind": "checklist",
@@ -3561,6 +3615,18 @@
     },
     {
       "from": "META:CHANGELOG",
+      "to": "DOC:UI_API",
+      "kind": "mention",
+      "context": ""
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "DOC:MEDIA_PIPELINE",
+      "kind": "mention",
+      "context": ""
+    },
+    {
+      "from": "META:CHANGELOG",
       "to": "DOC:ARCHITECTURE",
       "kind": "mention",
       "context": ""
@@ -3578,12 +3644,6 @@
       "context": ""
     },
     {
-      "from": "META:CHANGELOG",
-      "to": "DOC:UI_API",
-      "kind": "mention",
-      "context": ""
-    },
-    {
       "from": "META:AGENTS",
       "to": "META:CHANGELOG",
       "kind": "mention",
@@ -3591,7 +3651,43 @@
     }
   ],
   "backlinks": {
-    "BUG:UI-190": [],
+    "BUG:UI-193": [
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#管线节点可运行期按名更换：`set_*_name` + `MediaRegistry` 注册表装配；合成源与 FFmpeg 节点并存（同名重复注册忽略、不覆盖）；先 open 合成源再 open 真实文件不互相污染节点名"
+      },
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#`VideoView` 公共 API 与行为语义保持不动（open/play/pause/seek/speed/volume/loop/step/advance/on_draw），实现整体迁到管线之上；FFmpeg 细节隔离节点实现"
+      },
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#音频失败仅静音降级（`has_audio()==false`）不阻塞视频；音量实时作用于解码 PCM；winmm 队列在 seek/loop 时 flush"
+      },
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#合成源帧内容仅依赖绝对位置（SMPTE 色条 + 底部进度条），`--shot-page` 截图确定性可回归；首帧立即交付不闪占位"
+      },
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#每实例独立解码线程/纹理，多容器同窗口共存互不污染；容器/页面销毁（切页/退出）时线程 join 干净、无崩溃无泄漏"
+      },
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#实播回归：`video_player --smoke N assets/test_av.mp4` 解码+音频正常、无日志错误、线程干净退出；media_load_test 各素材解码帧数不变"
+      },
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#构建：`OPENGUI_MEDIA_CORE` 默认 OFF，纯 UI 工程不依赖媒体库；layui_test 以 media/core 合成源演示，无需 FFmpeg 即可构建运行；`api_gen.py` 覆盖新增公开头（video_container/pipeline/node/registry/ffmpeg_nodes）"
+      }
+    ],
     "BUG:UI-189": [],
     "BUG:UI-184": [
       {
@@ -5695,6 +5791,11 @@
         "context": "UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22）"
       },
       {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "mention",
+        "context": "MediaPipeline 媒体管线与视频容器"
+      },
+      {
         "from": "DOC:PLAN",
         "kind": "mention",
         "context": "里程碑计划（Roadmap）"
@@ -5829,6 +5930,13 @@
         "context": "示例应用（M16 收官）"
       }
     ],
+    "DOC:MEDIA_PIPELINE": [
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": ""
+      }
+    ],
     "DOC:PLAN": [
       {
         "from": "DOC:README",
@@ -5866,8 +5974,7 @@
       "孤儿条目（无任何文档引用）: BUG:UI-186",
       "孤儿条目（无任何文档引用）: BUG:UI-187",
       "孤儿条目（无任何文档引用）: BUG:UI-188",
-      "孤儿条目（无任何文档引用）: BUG:UI-189",
-      "孤儿条目（无任何文档引用）: BUG:UI-190"
+      "孤儿条目（无任何文档引用）: BUG:UI-189"
     ]
   }
 }
