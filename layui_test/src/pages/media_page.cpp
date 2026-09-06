@@ -121,6 +121,7 @@ void build_media(PageHost& host) {
             "  播放控制：play/pause/set_playing/playing/set_loop/loop",
             "  定位：seek(秒) / position() / duration()；倍速 set_speed(0.1..4)",
             "  音频：has_audio() / set_volume(0..1)（FFmpeg 节点 + winmm 输出）",
+            "  控制条按需显隐（UI-197）：鼠标悬停容器显示，移开隐藏；双击画面=播放/暂停",
             "  内部自带底部控制条：播放按钮/进度滑条/循环开关/音量/倍速",
             "  数据管线（MediaPipeline）：Source/Decoder/AudioSink 运行期按名更换",
             "  （MediaRegistry 注册表；纯合成源在 media/core，FFmpeg 节点在 media/ffmpeg）",

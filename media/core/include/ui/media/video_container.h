@@ -17,6 +17,7 @@
 #include "ui/media/pipeline/pipeline.h"
 
 #include <algorithm>
+#include <chrono>
 
 namespace ui {
 class Font;
@@ -81,6 +82,10 @@ private:
     void ensure_controls();
     void layout_controls();
     void refresh_controls();
+    void update_controls_visibility(bool on);  // UI-197：显隐底部控制条 + 左右音量/亮度竖滑块
+
+    bool on_mouse_down(float x, float y, int button) override;  // UI-197：双击播放/暂停（右键 UI-198）
+    bool on_mouse_move(float x, float y) override;              // UI-197：悬停显示 / 移开隐藏控制条
 
     media::MediaPipeline pipe_;
     Texture* texture_ = nullptr;
@@ -108,6 +113,13 @@ private:
     Button* speed_down_btn_ = nullptr;  // 倍速 ▼（UI-194）
     Label* speed_label_ = nullptr;      // 倍速值显示（UI-194）
     Button* speed_up_btn_ = nullptr;    // 倍速 ▲（UI-194）
+
+    // UI-197：控制条悬停显隐——默认隐藏，鼠标在容器内才显示；播放源打开后若从未悬停也隐藏
+    bool controls_visible_ = false;
+    // UI-197：双击判定——左键时间窗 + 位置容差（双击切换播放/暂停）
+    std::chrono::steady_clock::time_point last_left_down_{};
+    float last_left_x_ = -1e9f;
+    float last_left_y_ = -1e9f;
 };
 
 }  // namespace ui

@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 191（BUG 182 / DOC 7 / META 2）
-- 边: 392
+- 节点: 192（BUG 183 / DOC 7 / META 2）
+- 边: 393
 - lint: 0 错误 / 5 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
@@ -1252,7 +1252,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-194-videocontainer-控制条改版音量亮度双竖向滑块基本滑块算法-倍速--按钮--图标标签修复无法拖动--图标重叠--文本过暗mediacore2026-09-06`
 - 反链(1):
-  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#VideoContainer 控制条交互：音量/亮度双竖向滑块（库内置基本滑块算法，拖动中不被每帧 `set_value_silent` 重置），亮度仅调视频画面（RGB tint，范围 0.2..3.0，默认 1.0，`set_brightness/brightness`），倍速 ▲▼ 步进按钮（0.5..2.0，步 0.25）；滑块上方 IconLabel 图标标签纯白、与轨道不重叠
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#VideoContainer 控制条交互（悬停时才可见，默认隐藏）：音量/亮度双竖向滑块（库内置基本滑块算法，拖动中不被每帧 `set_value_silent` 重置），亮度仅调视频画面（RGB tint，范围 0.2..3.0，默认 1.0，`set_brightness/brightness`），倍速 ▲▼ 步进按钮（0.5..2.0，步 0.25）；滑块上方 IconLabel 图标标签纯白、与轨道不重叠
 
 ### BUG:UI-195 · UI-195: 修复 Slider 小数/归一化值域「无法拖动」根因——默认步长量化（ui 库 Slider 根因修复，media/core VideoContainer 与 layui_test harness 配合）（2026-09-06）
 
@@ -1265,6 +1265,12 @@
 - 路径: `docs/CHANGELOG.md#ui-196-videocontainer-控制条三项修善①-音量亮度数值常显②-亮度标签文本不再溢出容器右缘③-水平进度条拖回后退立刻弹回修复mediacore-根因修复2026-09-06`
 - 反链(1):
   - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#控制条数值常显与 seek 后退不回弹：音量数值 `%d%%`、亮度数值 `%.1f` 纯白常显（随拖动实时刷新）；音量/亮度标签宽自适应（图标+gap+文本）不致文本溢出容器右缘；seek 松手后把手停在用户目标直到管线 position 追平（`pending_seek_norm_`），后退拖回不弹回；`MediaPipeline::seek()` 立即同步 `pos_seconds_`、`do_seek` 守卫提高到 6s 帧数并兜底把 pos 补到目标
+
+### BUG:UI-197 · UI-197: VideoContainer 双击切换播放/暂停 + 控制条悬停显隐（默认隐藏）——配合悬停确定性验证工具（media/core + ui/gl；layui_test 仅编排验证）（2026-09-07）
+
+- 路径: `docs/CHANGELOG.md#ui-197-videocontainer-双击切换播放暂停--控制条悬停显隐默认隐藏配合悬停确定性验证工具mediacore--uigllayuitest-仅编排验证2026-09-07`
+- 反链(1):
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#控制条显隐 + 双击切换（UI-197）：默认隐藏（画面纯净，`controls_visible_=false`），鼠标悬停容器显示、移开隐藏；双击视频区切换播放/暂停（左键 400ms/8px 容差，不吞单点事件）；隐藏子控件不参与事件分发；`Window::set_cursor_pos` + harness `--cursor/--probe-video` 提供确定性悬停验证
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -1549,6 +1555,7 @@
 | `BUG:UI-194` | BUG | UI-194: VideoContainer 控制条改版——音量/亮度双竖向滑块（基本滑块算法）+ 倍速 ▲▼ 按钮 + 图标标签，修复「无法拖动 / 图标重叠 / 文本过暗」（media/core）（2026-09-06） | `docs/CHANGELOG.md` |
 | `BUG:UI-195` | BUG | UI-195: 修复 Slider 小数/归一化值域「无法拖动」根因——默认步长量化（ui 库 Slider 根因修复，media/core VideoContainer 与 layui_test harness 配合）（2026-09-06） | `docs/CHANGELOG.md` |
 | `BUG:UI-196` | BUG | UI-196: VideoContainer 控制条三项修善——① 音量/亮度数值常显；② 亮度标签文本不再溢出容器右缘；③ 水平进度条「拖回后退立刻弹回」修复（media/core 根因修复）（2026-09-06） | `docs/CHANGELOG.md` |
+| `BUG:UI-197` | BUG | UI-197: VideoContainer 双击切换播放/暂停 + 控制条悬停显隐（默认隐藏）——配合悬停确定性验证工具（media/core + ui/gl；layui_test 仅编排验证）（2026-09-07） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1834,6 +1841,7 @@
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-194` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-195` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-196` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-197` | checklist |
 | `DOC:MEDIA_PIPELINE` | `META:CHANGELOG` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |

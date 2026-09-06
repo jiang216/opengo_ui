@@ -323,6 +323,14 @@ void Window::get_position(int& xpos, int& ypos) const {
     else { xpos = 0; ypos = 0; }
 }
 
+void Window::set_cursor_pos(double xpos, double ypos) {
+    if (window_) glfwSetCursorPos(window_, xpos, ypos);
+    // 同步写入内部坐标：OS 光标事件（cursor_pos_cb）经 poll 才会到达，未聚焦/未显示窗口
+    // 时可能永远不来；直接赋值保证下一帧 dispatch_mouse_move 立即用目标位置（脚本注入语义）。
+    mouse_x_ = (float)xpos;
+    mouse_y_ = (float)ypos;
+}
+
 void Window::center_on_primary_monitor() {
     if (!window_) return;
     int wsx, wsy, wsw, wsh;

@@ -3,6 +3,29 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-197: VideoContainer 双击切换播放/暂停 + 控制条悬停显隐（默认隐藏）——配合悬停确定性验证工具（media/core + ui/gl；layui_test 仅编排验证）（2026-09-07）
+- **级别**：功能增强（ui 库 media/core 的 `VideoContainer` + ui/gl `Window`；layui_test 编排/验证。用户圈定本轮范围：双击=播放/暂停切换；控制条默认隐藏、悬停容器显示、移开隐藏；右键菜单 UI-198 另行）。
+- **功能（根因归属：ui 库 VideoContainer，无测试绕行/掩盖）**：
+  1. **双击切换播放/暂停**：`VideoContainer::on_mouse_down`（左键 0 且 `has_video()`）用稳态时钟 + 8px 位置容差（400ms，仿 Dropdown DblClick）判定双击 → `pipe_.pause()/play()` + `refresh_controls()`；单次按下返回 false（不吞事件），子控件（播放钮/滑块）在父之上优先命中 → 控制条单点交互不受双击判定影响。
+  2. **控制条显隐（默认隐藏）**：新私有 `bool controls_visible_=false`；`on_mouse_move` 以 `hovered_ != controls_visible_` 差分决策，`update_controls_visibility(on)` 对全部控制条子控件整体 `set_visible(on)`（UI-156 脏标记语义，隐藏子重显向上 `mark_dirty` 触发重排，无 (0,0) 闪帧）；`on_draw` 底部半透明面板仅在 `controls_visible_` 时绘制——默认隐藏连底色都不画，画面纯净。
+  3. **隐藏态事件隔离**：控制条子控件 `visible=false` 后经 widget 分发跳过，容器本体仍可接收悬停与双击。
+- **关键耦合（防错）**：`Scene::frame` 每帧以真实光标位置 `dispatch_mouse_move(mx,my)`，合成 `--click` 的 move 注入会在同帧被真实光标位置覆盖 → 脚本化悬停验证必须用 `--cursor` 每帧 warp 真实光标，不能依赖注入 move。
+- **测试程序 + ui/gl 支撑（编排/验证工具，不承载 ui 库逻辑）**：
+  - ui/gl `Window::set_cursor_pos(x,y)`：`glfwSetCursorPos` + 同步写 `mouse_x_/y_`，脚本注入语义。
+  - layui_test `--cursor x,y`：每帧 Frame 观察者 warp 真实光标（须逐帧，poll_events 会刷回 OS 光标）。
+  - layui_test `--probe-video`：遍历控件树，打印各 `VideoContainer` 的 bounds / playing / has_video / position / 控制条显隐（首子控件 visible 代表整体）。
+- **回归清单（改动后核对；旧「控制条常显」断言已随本条目改为「悬停才显示」）**：
+  1. `--smoke` 全页切页正常，含多媒体页多容器 close+join；
+  2. `--shot-page 48` 裸截图：主容器控制条**默认隐藏**（无播放钮/seek 把手/时间标签/竖滑块/半透明底）——旧 UI-194/195/196 回归断言（裸截图验证控件可见）已不成立，改由 `--cursor <容器内>` 前置悬停再断言；
+  3. 悬停显示：`--cursor 700,385`（主容器 980×360 内）→ 控制条渲染；`--cursor 700,150`（容器上方）→ 不渲染；`--probe-video` 打印 controls=1/0；
+  4. 双击切换：`--cursor 700,385 --click 700,385 --click 700,385 --shot-after-click` → `playing=1→0`；4 连击回 `playing=1`；单击 `--click` → 仍 `playing=1`；
+  5. 单点交互不受阻：悬停下单击播放按钮/拖动 seek/音量/亮度滑块仍正常；
+  6. 隐藏子控件不参与事件分发，容器仍接收双击；
+  7. `api_gen.py --check` 0 差异；graphgen `--check` 0 错 0 警；
+  8. 纯 UI 工程 `OPENGUI_MEDIA_CORE=OFF` 不受影响。
+- **验证**：Ninja Release 构建通过；`--cursor` + `--probe-video` 实测主容器 hover 内 controls=1 / 外 controls=0；用户手动确认双击播放/暂停与悬停显隐；smoke/api_gen/graphgen 通过。
+- **影响范围**：`media/core/include/ui/media/video_container.h`、`media/core/src/video_container.cpp`、`gl/include/ui/gl/window.h`、`gl/src/window.cpp`、`layui_test/src/app.cpp`、`layui_test/src/pages/media_page.cpp`、`docs/CHANGELOG.md`、`docs/MEDIA_PIPELINE.md`
+
 ## UI-196: VideoContainer 控制条三项修善——① 音量/亮度数值常显；② 亮度标签文本不再溢出容器右缘；③ 水平进度条「拖回后退立刻弹回」修复（media/core 根因修复）（2026-09-06）
 - **级别**：缺陷修复 + 功能增强（ui 库 media/core 的 `VideoContainer` 与 `MediaPipeline`；layui_test 仅编排验证）。用户在 UI-194/UI-195 控制条改版后实测报三个问题：① 滑块（音量/亮度）无数值显示；② 亮度标签文本超出容器右缘；③ 水平进度条滑块无法后退（把手拖回后立刻弹回）。
 - **根因归属**：①②③ 均治本在 ui 库（media/core），非测试程序编排问题，测试程序只做 `--drag` 注入与像素验证。

@@ -96,6 +96,10 @@ public:
     void set_cursor_resize_ew();
     void set_cursor_ibeam();
 
+    // 程序化移动光标（脚本/测试注入）：同步触发 cursor_pos_cb 更新 mouse_x_/y_，
+    // 下一帧 Scene::frame 的 dispatch_mouse_move 即用新位置（悬停/移出确定性验证）。
+    void set_cursor_pos(double xpos, double ypos);
+
     // ---- 剪贴板 ----
     void set_clipboard_string(const char* string);
     const char* get_clipboard_string() const;

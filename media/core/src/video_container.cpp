@@ -12,6 +12,7 @@
 #include "ui/ui/theme.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -374,6 +375,60 @@ void VideoContainer::refresh_controls() {
     }
 }
 
+// UI-197：显隐控制条（底部播放条 + 左右音量/亮度竖滑块及标签数值）。
+// 走 set_visible()（UI-156 脏标记语义：隐藏子控件重显会向上 mark_dirty 触发重排，
+// 避免旧/0,0 坐标闪帧）。控制条是容器子控件，visible=false 后事件分发跳过它们
+// （widget.cpp dispatch 检查 !visible），容器本体仍可接收悬停/双击。
+void VideoContainer::update_controls_visibility(bool on) {
+    if (controls_visible_ == on) return;
+    controls_visible_ = on;
+    if (play_btn_) play_btn_->set_visible(on);
+    if (time_label_) time_label_->set_visible(on);
+    if (seek_slider_) seek_slider_->set_visible(on);
+    if (loop_switch_) loop_switch_->set_visible(on);
+    if (speed_down_btn_) speed_down_btn_->set_visible(on);
+    if (speed_label_) speed_label_->set_visible(on);
+    if (speed_up_btn_) speed_up_btn_->set_visible(on);
+    if (vol_slider_) vol_slider_->set_visible(on);
+    if (vol_label_) vol_label_->set_visible(on);
+    if (vol_val_label_) vol_val_label_->set_visible(on);
+    if (bright_slider_) bright_slider_->set_visible(on);
+    if (bright_label_) bright_label_->set_visible(on);
+    if (bright_val_label_) bright_val_label_->set_visible(on);
+    mark_dirty();
+}
+
+// UI-197：左键双击切换播放/暂停。用稳态时钟 + 位置容差（400ms / 8px，仿 Dropdown DblClick）。
+// 返回 false（不吞事件）：避免双击判定阻止控制条子控件（播放按钮/滑块）正常单点交互——
+// 子控件在父之上优先命中，本回调只在命中容器本体且未被子控件消费时触发。
+bool VideoContainer::on_mouse_down(float x, float y, int button) {
+    if (button == 0 && has_video()) {
+        const auto now = std::chrono::steady_clock::now();
+        const bool in_time = (now - last_left_down_) < std::chrono::milliseconds(400);
+        const bool in_pos = std::fabs(x - last_left_x_) < 8.f && std::fabs(y - last_left_y_) < 8.f;
+        last_left_down_ = now;
+        last_left_x_ = x;
+        last_left_y_ = y;
+        if (in_time && in_pos) {
+            if (pipe_.playing()) pipe_.pause(); else pipe_.play();
+            refresh_controls();
+            return true;
+        }
+    }
+    // 右键（button==1）为 UI-198 预留：本轮不处理
+    (void)button;
+    return false;
+}
+
+// UI-197：悬停显示 / 移开隐藏控制条。进入容器（hovered_ 变 true）显示；
+// 移出（hovered_ 变 false）隐藏。指针仍停留在控制条子控件上按「未离开」处理。
+bool VideoContainer::on_mouse_move(float x, float y) {
+    if (hovered_ != controls_visible_) {
+        update_controls_visibility(hovered_);
+    }
+    return false;
+}
+
 void VideoContainer::on_advance(float dt) {
     // 主线程：推进管线并上传新帧（GL 调用）
     if (pipe_.advance(dt)) {
@@ -439,7 +494,8 @@ void VideoContainer::on_draw(Renderer& renderer) {
     }
 
     // 底部控制条半透明面板（radius>0 允许半透明，防 UI-037 全屏灰蒙）
-    if (font_) {
+    // UI-197：仅当控制条可见（悬停时）才绘制背景；隐藏时连底都不画，保持画面纯净
+    if (font_ && controls_visible_) {
         const Rect bar{bounds_.x, bounds_.y + bounds_.h - 56.f, bounds_.w, 56.f};
         renderer.draw_rounded_rect(bar, 6.f, Vec4{0.f, 0.f, 0.f, 0.55f});
     }

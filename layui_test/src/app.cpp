@@ -19,6 +19,7 @@
 #include "ui/ui/widget.h"
 #include "ui/ui/scene.h"
 #include "ui/ui/window_container.h"
+#include "ui/media/video_container.h"
 
 #include <algorithm>
 #include <chrono>
@@ -44,6 +45,25 @@ constexpr float kHeaderH = 60.f;
 constexpr float kSidebarW = 240.f;  // 新镜像 docs/2 侧栏宽（ws-menu 240）
 constexpr float kChildSidebarW = 160.f;  // 第二列子菜单宽（镜像 side-child 160）
 constexpr float kTabTitleH = 40.f;
+
+// --probe-video：遍历控件树，打印每个 VideoContainer 的布局/播放/控制条显隐状态。
+// UI-197 验证用具：不承载 ui 库逻辑，纯「读取+打印」；控制条显隐 = 首个子控件 visible
+// （update_controls_visibility 对所有控制条子控件整体 set_visible，任意一个可代表）。
+void probe_video_containers(ui::Widget& w, int depth) {
+    for (ui::Widget* child : w.children()) {
+        if (!child) continue;
+        if (auto* vc = dynamic_cast<ui::VideoContainer*>(child)) {
+            const ui::Rect& b = vc->bounds();
+            const bool controls_on =
+                !child->children().empty() && child->children().front()->visible;
+            ui::log_info("probe[%d]: VideoContainer bounds(%.0f,%.0f %.0fx%.0f) playing=%d "
+                         "controls=%d has_video=%d pos=%.2f",
+                         depth, b.x, b.y, b.w, b.h, vc->playing() ? 1 : 0, controls_on ? 1 : 0,
+                         vc->has_video() ? 1 : 0, vc->position());
+        }
+        probe_video_containers(*child, depth + 1);
+    }
+}
 
 // 顶部导航可点击文本（克隆新镜像 docs/2 深色头部导航项）：白字、hover/active 变绿
 class ClickText : public ui::Widget {
@@ -226,6 +246,9 @@ int main(int argc, char** argv) {
     std::vector<std::pair<float, float>> click_points;  // --click x,y（可重复）
     struct DragSpec { float x1, y1, x2, y2; };          // --drag x1,y1 x2,y2：按下→多步移动→抬起
     std::vector<DragSpec> drag_points;
+    bool cursor_warp = false;             // --cursor x,y：程序化定位真实光标（悬停/移出确定性验证，UI-197）
+    float cursor_x = 0.f, cursor_y = 0.f;
+    bool probe_video = false;             // --probe-video：打印控件树中各 VideoContainer 状态
     bool list_pages = false;
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--smoke") == 0 && i + 1 < argc)
@@ -250,9 +273,15 @@ int main(int argc, char** argv) {
                 drag_points.push_back(d);
         } else if (std::strcmp(argv[i], "--shot-after-click") == 0) {
             shot_after_click = true;
+        } else if (std::strcmp(argv[i], "--cursor") == 0 && i + 1 < argc) {
+            if (std::sscanf(argv[++i], "%f,%f", &cursor_x, &cursor_y) == 2)
+                cursor_warp = true;
+        } else if (std::strcmp(argv[i], "--probe-video") == 0) {
+            probe_video = true;
         }
     }
     bool shot_done_ = false;
+    int probe_frames = 0;  // --probe-video 触发帧（第 2 帧起状态稳定：布局完成 + 光标/点击已注入）
 
     ui::log_info("layui_test %s starting (%d pages)", ui::version_string(),
                  (int)page::all_pages().size());
@@ -600,8 +629,13 @@ int main(int argc, char** argv) {
     bool clicks_injected = false;
     int inject_wait = 0;  // 等首个完整布局帧后再注入（UI-190）：Frame 阶段先于 layout/dispatch，首帧点击必偏
 
-    // 帧前：冒烟自动切页 + --click 合成点击注入（脚本化交互验证，点击会重建行控件）
+    // 帧前：冒烟自动切页 + --cursor 光标定位 + --click 合成点击注入（脚本化交互验证）
     scene.subscribe(ui::ScenePhase::Frame, [&](ui::Scene&, float) {
+        // --cursor x,y：每帧重定位真实光标（同步写 mouse_x_/y_，UI-197 悬停确定性验证）。
+        // 须逐帧调用：run() 的 poll_events 每秒会以 OS 实际光标位置刷回鼠标状态，仅在启动时
+        // warp 一次会被真实光标覆盖；逐帧打点后 dispatch_mouse_move 每帧稳定读到目标位置，
+        // 悬停显示/移出隐藏结果与 OS 光标位置解耦（合成点击仍走下方注入，两者互不干扰）。
+        if (cursor_warp) window.set_cursor_pos(cursor_x, cursor_y);
         if (smoke_seconds > 0.0 && (int)pages.size() > 1 &&
             std::chrono::steady_clock::now() - last_switch >= std::chrono::milliseconds(500)) {
             smoke_page = (smoke_page + 1) % (int)pages.size();
@@ -659,6 +693,11 @@ int main(int argc, char** argv) {
 
     // 帧后：截图（glReadPixels，begin_frame+root.draw 之后）+ HUD 绘制
     scene.on(ui::ScenePhase::PostDraw, [&](ui::Scene& s) {
+        // --probe-video：布局完成 + 光标/点击已注入后打印一次（端帧状态，含 dispatch 结果）
+        if (probe_video && probe_frames < 2) {
+            ++probe_frames;
+            if (probe_frames >= 2) probe_video_containers(root, 0);
+        }
         if (shot_path && !shot_done_ && (!shot_after_click || (click_points.empty() && drag_points.empty()) || clicks_injected)) {
             shot_done_ = true;
             const int w = window.width();
@@ -705,6 +744,10 @@ int main(int argc, char** argv) {
     });
 
     // 运行：--smoke 指定秒自动退出（含切页统计），否则直至窗口关闭
+    // --cursor x,y：先程序化定位真实光标（同步回调更新 window.mouse_x_/y_）。
+    // Scene::frame 每帧用该位置 dispatch_mouse_move → 悬停/移出结果确定，不受合成
+    // 点击注入（早于本行的 Frame 观察者）覆盖（UI-197 悬停显隐的确定性验证）。
+    if (cursor_warp) window.set_cursor_pos(cursor_x, cursor_y);
     if (smoke_seconds > 0.0) {
         scene.run_for(smoke_seconds);
         ui::log_info("smoke: exiting after %.1fs%s", smoke_seconds,

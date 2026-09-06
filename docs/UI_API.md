@@ -289,6 +289,7 @@ while (!window.should_close()) {
 | `void set_cursor_resize_ns()` |  |
 | `void set_cursor_resize_ew()` |  |
 | `void set_cursor_ibeam()` |  |
+| `void set_cursor_pos(double xpos, double ypos)` | 程序化移动光标（脚本/测试注入）：同步触发 cursor_pos_cb 更新 mouse_x_/y_， 下一帧 Scene::frame 的 dispatch_mouse_move 即用新位置（悬停/移出确定性验证）。 |
 | `void set_clipboard_string(const char* string)` | ---- 剪贴板 ---- |
 | `const char* get_clipboard_string() const` |  |
 | `static double get_time()` | ---- 时间 ---- |
@@ -3187,7 +3188,7 @@ vc->play(); vc->seek(4.f); vc->set_loop(true);
 vc->set_speed(1.f); vc->set_volume(0.8f);  // has_video/has_audio/position/duration 查询
 ```
 
-**依赖 include**：`ui/core/math.h`、`ui/ui/widget.h`、`ui/media/pipeline/pipeline.h`、`algorithm`
+**依赖 include**：`ui/core/math.h`、`ui/ui/widget.h`、`ui/media/pipeline/pipeline.h`、`algorithm`、`chrono`
 
 **类 `VideoContainer`**
 （继承 `: Widget`）
