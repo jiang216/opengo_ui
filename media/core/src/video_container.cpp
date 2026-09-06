@@ -12,6 +12,7 @@
 #include "ui/ui/theme.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -31,6 +32,8 @@ VideoContainer::~VideoContainer() {
 void VideoContainer::set_font(Font* font) {
     font_ = font;
     if (time_label_) time_label_->set_font(font);
+    if (vol_val_label_) vol_val_label_->set_font(font);
+    if (bright_val_label_) bright_val_label_->set_font(font);
     ensure_controls();
     refresh_controls();
 }
@@ -161,6 +164,8 @@ void VideoContainer::ensure_controls() {
     seek_slider_->set_range(0.f, 1.f);
     seek_slider_->set_step(0.002f);  // UI-195：0..1 显式细步，拖动连续定位
     seek_slider_->set_on_change([this](float t) {
+        // UI-196：记录用户拖到的目标，松开后把手停在目标上，直到管线 position 追平
+        pending_seek_norm_ = t;
         if (has_video() && pipe_.duration() > 0.0) pipe_.seek(t * (float)pipe_.duration());
     });
     add_child(seek_slider_);
@@ -186,6 +191,12 @@ void VideoContainer::ensure_controls() {
     vol_label_->set_icon_color({1.f, 1.f, 1.f, 1.f});
     vol_label_->set_text_color({1.f, 1.f, 1.f, 1.f});
     add_child(vol_label_);
+    // 音量常显数值（UI-196）：纯白，"100%"，放滑块正下方空档
+    vol_val_label_ = new Label(0, 0, 22, 16, "100%");
+    vol_val_label_->set_font(font_);
+    vol_val_label_->set_color({1.f, 1.f, 1.f, 1.f});
+    vol_val_label_->set_align(1);
+    add_child(vol_val_label_);
 
     // 竖向亮度滑块（UI-194）：视频区右缘，只调画面（RGB 乘亮度系数）
     bright_slider_ = new Slider(0, 0, 22, 120);
@@ -204,6 +215,12 @@ void VideoContainer::ensure_controls() {
     bright_label_->set_icon_color({1.f, 1.f, 1.f, 1.f});
     bright_label_->set_text_color({1.f, 1.f, 1.f, 1.f});
     add_child(bright_label_);
+    // 亮度常显数值（UI-196）：纯白，"1.0"，放滑块正下方空档
+    bright_val_label_ = new Label(0, 0, 22, 16, "1.0");
+    bright_val_label_->set_font(font_);
+    bright_val_label_->set_color({1.f, 1.f, 1.f, 1.f});
+    bright_val_label_->set_align(1);
+    add_child(bright_val_label_);
 
     // 倍速箭头（UI-194）：▲ 值 ▼，步进 ±0.25 夹在 0.5..2x
     speed_down_btn_ = new Button(0, 0, 18, 18, "");
@@ -234,8 +251,10 @@ void VideoContainer::ensure_controls() {
         loop_switch_->set_font(font_);
         vol_slider_->set_font(font_);
         vol_label_->set_font(font_);
+        if (vol_val_label_) vol_val_label_->set_font(font_);
         bright_slider_->set_font(font_);
         bright_label_->set_font(font_);
+        if (bright_val_label_) bright_val_label_->set_font(font_);
         speed_down_btn_->set_font(font_);
         speed_label_->set_font(font_);
         speed_up_btn_->set_font(font_);
@@ -277,17 +296,33 @@ void VideoContainer::layout_controls() {
     // 竖向滑块：视频区左右边缘（避开标题条与控制面板，轨道长随 bounds_.h）
     const float top = bounds_.y + title_h + 8.f;
     const float vid_bottom = bottom - 60.f;
-    const float vh = std::max(64.f, vid_bottom - top);
-    const float vol_w = 22.f;
-    // 标签带在滑块正上方（不重叠轨道/把手），纯白高亮 IconLabel
-    const float lbl_top = top;
-    const float lbl_h = 20.f;
-    const float slider_top = top + lbl_h + 4.f;
+    const float slider_top = top + 24.f;  // 标签(20)+间距(4)
     const float slider_h = std::max(64.f, vid_bottom - slider_top);
-    vol_label_->set_bounds(bounds_.x + 6.f, lbl_top, vol_w, lbl_h);
-    vol_slider_->set_bounds(bounds_.x + 6.f, slider_top, vol_w, slider_h);
-    bright_label_->set_bounds(bounds_.x + bounds_.w - 6.f - vol_w, lbl_top, vol_w, lbl_h);
-    bright_slider_->set_bounds(bounds_.x + bounds_.w - 6.f - vol_w, slider_top, vol_w, slider_h);
+    const float vol_w = 22.f;
+
+    // UI-196：自适应标签宽——图标(14)+gap(6)+文本(max中文约24px)+padding(4)≈48，贴右缘须留够
+    const float lbl_icon = 14.f;
+    const float lbl_gap  = 6.f;
+    const float lbl_pad  = 4.f;
+    const float vol_txt_w  = font_ ? font_->measure_text("音量")  : 24.f;
+    const float br_txt_w   = font_ ? font_->measure_text("亮度")  : 24.f;
+    const float vol_lbl_w  = std::max(vol_w, lbl_icon + lbl_gap + vol_txt_w + lbl_pad);
+    const float br_lbl_w   = std::max(vol_w, lbl_icon + lbl_gap + br_txt_w  + lbl_pad);
+
+    // 音量（左缘）
+    const float vol_lbl_x = bounds_.x + 6.f;
+    vol_label_->set_bounds(vol_lbl_x, top, vol_lbl_w, 20.f);
+    vol_slider_->set_bounds(vol_lbl_x, slider_top, vol_w, slider_h);
+    // 音量数值（滑块正下方）
+    vol_val_label_->set_bounds(vol_lbl_x, slider_top + slider_h + 2.f, vol_w, 16.f);
+
+    // 亮度（右缘，文本向内不溢出）
+    const float br_lbl_x = bounds_.x + bounds_.w - 6.f - br_lbl_w;
+    bright_label_->set_bounds(br_lbl_x, top, br_lbl_w, 20.f);
+    const float br_slider_x = bounds_.x + bounds_.w - 6.f - vol_w;
+    bright_slider_->set_bounds(br_slider_x, slider_top, vol_w, slider_h);
+    // 亮度数值（滑块正下方）
+    bright_val_label_->set_bounds(br_slider_x, slider_top + slider_h + 2.f, vol_w, 16.f);
 }
 
 void VideoContainer::refresh_controls() {
@@ -306,10 +341,32 @@ void VideoContainer::refresh_controls() {
         time_label_->set_text(buf);
     }
     if (seek_slider_ && has_video() && !seek_slider_->dragging() && pipe_.duration() > 0.0) {
-        seek_slider_->set_value_silent((float)(pipe_.position() / pipe_.duration()));
+        // UI-196：把手停在用户目标（pending_seek_norm_）直到管线 position 追上，再回 position 控制权
+        const float pos_ratio = (float)(pipe_.position() / pipe_.duration());
+        if (pending_seek_norm_ >= 0.f) {
+            if (std::fabs(pos_ratio - pending_seek_norm_) < 0.02f) {
+                pending_seek_norm_ = -1.f;
+                seek_slider_->set_value_silent(pos_ratio);
+            } else {
+                seek_slider_->set_value_silent(pending_seek_norm_);
+            }
+        } else {
+            seek_slider_->set_value_silent(pos_ratio);
+        }
     }
     if (vol_slider_ && !vol_slider_->dragging()) vol_slider_->set_value_silent(pipe_.volume());
     if (bright_slider_ && !bright_slider_->dragging()) bright_slider_->set_value_silent(brightness());
+    // UI-196：常显数值同步（拖动时 on_change 已改内部值，此处用最新值刷新数值标签）
+    if (vol_val_label_) {
+        char vbuf[12];
+        std::snprintf(vbuf, sizeof(vbuf), "%d%%", (int)std::round(pipe_.volume() * 100.f));
+        vol_val_label_->set_text(vbuf);
+    }
+    if (bright_val_label_) {
+        char bbuf[12];
+        std::snprintf(bbuf, sizeof(bbuf), "%.1f", brightness());
+        bright_val_label_->set_text(bbuf);
+    }
     if (speed_label_) {
         char sbuf[16];
         std::snprintf(sbuf, sizeof(sbuf), "%.1fx", pipe_.speed());

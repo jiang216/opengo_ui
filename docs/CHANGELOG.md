@@ -3,6 +3,27 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-196: VideoContainer 控制条三项修善——① 音量/亮度数值常显；② 亮度标签文本不再溢出容器右缘；③ 水平进度条「拖回后退立刻弹回」修复（media/core 根因修复）（2026-09-06）
+- **级别**：缺陷修复 + 功能增强（ui 库 media/core 的 `VideoContainer` 与 `MediaPipeline`；layui_test 仅编排验证）。用户在 UI-194/UI-195 控制条改版后实测报三个问题：① 滑块（音量/亮度）无数值显示；② 亮度标签文本超出容器右缘；③ 水平进度条滑块无法后退（把手拖回后立刻弹回）。
+- **根因归属**：①②③ 均治本在 ui 库（media/core），非测试程序编排问题，测试程序只做 `--drag` 注入与像素验证。
+  - **问题 1（无数值）**：UI-194 改版后音量/亮度只有竖向滑块 + 图标标签，无数值反馈文本。
+  - **问题 2（亮度文本溢出）**：`vol_label_`/`bright_label_` 均为 `IconLabel(0,0,22,20,...)`，标签宽写死 22；图标(14) + gap(6) + 中文文本(约26) ≈ 46px > 22px，文本绘制越出 bounds 向右溢出。亮度标签贴右缘 `bounds_.x + bounds_.w - 6 - 22`，文字溢出容器右缘。
+  - **问题 3（seek 后退弹回）**：`refresh_controls()` 每帧对非拖动态把手 `set_value_silent(pipe_.position()/pipe_.duration())`。松手清 `dragging_` 后，异步解码线程 `do_seek`（旧 guard ≤ 60 帧）尚未把 `pos_seconds_` 压到低目标，`position()` 仍是旧高值 → 把手被旧高值**弹回**。前进时播放自然向前不明显，后退必现。
+- **修复**：
+  - **问题 1**：`ensure_controls()` 新增 `vol_val_label_`/`bright_val_label_`（纯白 `Label`，`set_align(1)`、color `{1,1,1,1}`）；`refresh_controls()` 每帧 `snprintf("%d%%", round(vol*100))` 与 `"%.1f"` 常显；`set_font` 与 ensure_controls 的 font/theme 块纳入两新标签。
+  - **问题 2**：`layout_controls()` 标签宽自适应 `max(22, icon(14) + gap(6) + font_->measure_text(中文) + pad(4))`；亮度标签右缘内缩（`x = bounds_.x + bounds_.w - 6 - br_lbl_w`），文本不再越过容器右缘。
+  - **问题 3**：容器新增 `float pending_seek_norm_ = -1.f`。`seek on_change` 记录用户拖到的归一化目标并照常 `pipe_.seek(t * dur)`；`refresh_controls()` 中：`|pos_ratio - pending| < 0.02`（管线已追上目标）→ 清空 pending 并把把手回落到真实 position；否则把手**保持 pending_seek_norm_**（两种方向 seek 通用，无方向判断），杜绝被旧高值弹回。
+  - **pipeline 同步修复（同一感观根因）**：`MediaPipeline::seek()` 立即 `pos_seconds_.store(seconds)`（松开瞬间 `position()` 即为目标，把手不被旧高值盖回）；`do_seek` guard 上限由 60 提至 `6*(int)fps_+2`（从任意关键帧追回目标足够），`while(pos < target-0.02 && guard++ < guard_max)` 不再依赖 `target>=0` 前置，耗尽仍不足目标时把 `pos_seconds_` 补到 `target`（避免 UI 手柄落后于用户拖拽目标）。
+- **回归清单（改动后核对）**：
+  1. layui_test 全页 `--smoke` 自动切页：全部页面可切、退出干净（exit 0，含多媒体页多容器销毁）；
+  2. `--shot-page 48`：音量滑块下方出现纯白数值 `"100%"`、亮度滑块下方出现纯白 `"1.0"`；亮度标签"亮度"文本渲染在容器内（右缘 ≤ ~1236，容器右缘 1242），不越容器右界；
+  3. `--page 48 --drag 700,565,400,565 --shot-after-click --shot`：seek 把手**后退**拖到目标 (x≈398, 归一化≈0.13) 后停留不再弹回（旧行为弹回旧高值）；
+  4. `--page 48 --drag <音量滑块> <亮度滑块> --shot-after-click --shot`：拖动中数值标签实时刷新（音量 %、亮度一位小数）；
+  5. seek/vol/bright 显式细步（UI-195）与亮度 tint、倍速（UI-194）等既有功能不受影响；
+  6. `python tools/api_gen.py --check` 0 差异；graphgen `--check` 0 错（5 个孤儿警告 BUG:UI-185..189 为 HEAD 基线）。
+- **验证**：layui_test Release (Ninja) 重建通过（NINJA_EXIT=0）；`--shot-page 48` 截图像素：亮度标签文本 x≈1188-1210 在容器内、亮度数值 `"1.0"`（y≈520-526）与音量数值 `"100%"`（y≈498-536）可见；`--drag` 后退 seek 后把手停目标 x=398 不再弹回；`--drag` 音量向上后数值标签字形变化（实时刷新）；全页 `--smoke 3.5` 退出干净（page switches ok）；api_gen/graphgen 检查通过。
+- **影响范围**：`media/core/include/ui/media/video_container.h`、`media/core/src/video_container.cpp`、`media/core/src/pipeline.cpp`、`docs/CHANGELOG.md`、`docs/MEDIA_PIPELINE.md`
+
 ## UI-194: VideoContainer 控制条改版——音量/亮度双竖向滑块（基本滑块算法）+ 倍速 ▲▼ 按钮 + 图标标签，修复「无法拖动 / 图标重叠 / 文本过暗」（media/core）（2026-09-06）
 - **级别**：功能新增 + 缺陷修复（ui 库 media/core 的 `VideoContainer`；layui_test 仅做展示验证与脚本化编排）。UI-193 之后首次对控制条增强：原「音量+倍速」两条小横滑块改为视频区**左右各一竖向滑块**（左=音量，右=亮度），亮度只调视频画面（RGB 乘亮度系数），倍速改用 ▲/▼ 图标按钮步进。共修复用户实测暴露的 4 个问题。
 - **需求明细（用户拍板）**：① 倍速不用滑块，改用箭头（layui 图标库中有）；② 亮度作用范围只调视频画面（tint RGB）；③ 亮度范围 [0.2, 3.0]，默认 1.0；④ 竖向滑块旁加标识图标（音量 `sound`、亮度 `light`）；⑤ 滑块使用库内置标准垂直滑块（基本算法），不做自定义滑块逻辑；⑥ 图标/标签放滑块正上方空档、纯白高亮。亮度是**容器显示属性**（非管线/源属性）：`set_brightness()/brightness()`（头文件内联 clamp），内部 `brightness_` 默认 1.0。

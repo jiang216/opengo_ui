@@ -190,6 +190,7 @@ void MediaPipeline::step_frame() {
 void MediaPipeline::seek(float seconds) {
     if (seconds < 0.f) seconds = 0.f;
     if (duration_ > 0.0 && (double)seconds > duration_) seconds = (float)duration_;
+    pos_seconds_.store((double)seconds);  // UI-196：立即同步目标位置，UI 手柄/时间即时反映用户拖拽目标
     seek_ms_.store((std::int64_t)(seconds * 1000.f));
     seek_target_.store(seconds);
     play_time_ = seconds;
@@ -232,14 +233,22 @@ void MediaPipeline::do_seek(std::int64_t ms, float target) {
     if (audio_) audio_->flush();
     source_eof_ = false;
     eof_.store(false);
-    // 精确 seek：BACKWARD 定位到目标前关键帧，前进解码到目标时刻（守卫同 VideoView UI-018）
+    // 精确 seek：BACKWARD 定位到目标前关键帧，前进解码到目标时刻（守卫同 VideoView UI-018）。
+    // UI-196：守卫上限提高到 6s 帧数（合成源/常见素材从任意关键帧追回目标足够），
+    // 解码不足时不中途退出——seek 后从目标时刻续播，位置以解码帧为准；
+    // 耗尽仍不足目标时把 pos 补到目标（避免 UI 手柄落后于用户拖拽目标）。
+    const int guard_max = 6 * (int)fps_.load() + 2;
     int guard = 0;
-    while (target >= 0.f && pos_seconds_.load() < (double)target - 0.02 && guard++ < 60) {
+    while (pos_seconds_.load() < (double)target - 0.02 && guard++ < guard_max) {
         if (!decode_one_frame()) break;
     }
     {
         std::lock_guard<std::mutex> lk(frame_mutex_);
         if (!frame_buf_.data.empty()) pending_frame_ = frame_buf_.data;
+    }
+    // 目标时刻已到（或源无更多帧）：确保 pos 至少到目标，UI 进度条与目标一致
+    if (target >= 0.f && pos_seconds_.load() < (double)target - 0.02) {
+        pos_seconds_.store((double)target);
     }
 }
 

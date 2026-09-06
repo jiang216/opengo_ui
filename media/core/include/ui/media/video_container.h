@@ -99,8 +99,12 @@ private:
     Switch* loop_switch_ = nullptr;
     Slider* vol_slider_ = nullptr;      // 竖向音量滑块（UI-194）
     IconLabel* vol_label_ = nullptr;    // 音量标签（sound 图标 + 中文，UI-194）
+    Label* vol_val_label_ = nullptr;    // 音量常显数值（"100%"，UI-196）
     Slider* bright_slider_ = nullptr;   // 竖向亮度滑块（UI-194）
     IconLabel* bright_label_ = nullptr; // 亮度标签（light 图标 + 中文，UI-194）
+    Label* bright_val_label_ = nullptr; // 亮度常显数值（"1.0"，UI-196）
+
+    float pending_seek_norm_ = -1.f;    // 用户拖 seek 的目标（归一化 0..1）；管线 position 未追上显示它（UI-196），已追上/-1 则回 position
     Button* speed_down_btn_ = nullptr;  // 倍速 ▼（UI-194）
     Label* speed_label_ = nullptr;      // 倍速值显示（UI-194）
     Button* speed_up_btn_ = nullptr;    // 倍速 ▲（UI-194）

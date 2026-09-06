@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 190（BUG 181 / DOC 7 / META 2）
-- 边: 391
+- 节点: 191（BUG 182 / DOC 7 / META 2）
+- 边: 392
 - lint: 0 错误 / 5 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
@@ -1260,6 +1260,12 @@
 - 反链(1):
   - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#控制条滑块拖动连续：seek/vol/bright 显式细步 `0.002/0.01/0.05`，拖拽按像素连续定位（不被默认 step=1 量化成 0/1、0.2/1.2/2.2 等离散档）；Slider 无显式 `set_step` 时自动连续并自适配键盘细步；harness `--drag` 拖拽注入可脚本验证
 
+### BUG:UI-196 · UI-196: VideoContainer 控制条三项修善——① 音量/亮度数值常显；② 亮度标签文本不再溢出容器右缘；③ 水平进度条「拖回后退立刻弹回」修复（media/core 根因修复）（2026-09-06）
+
+- 路径: `docs/CHANGELOG.md#ui-196-videocontainer-控制条三项修善①-音量亮度数值常显②-亮度标签文本不再溢出容器右缘③-水平进度条拖回后退立刻弹回修复mediacore-根因修复2026-09-06`
+- 反链(1):
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#控制条数值常显与 seek 后退不回弹：音量数值 `%d%%`、亮度数值 `%.1f` 纯白常显（随拖动实时刷新）；音量/亮度标签宽自适应（图标+gap+文本）不致文本溢出容器右缘；seek 松手后把手停在用户目标直到管线 position 追平（`pending_seek_norm_`），后退拖回不弹回；`MediaPipeline::seek()` 立即同步 `pos_seconds_`、`do_seek` 守卫提高到 6s 帧数并兜底把 pos 补到目标
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1542,6 +1548,7 @@
 | `BUG:UI-193` | BUG | UI-193: 媒体管线重构（MediaPipeline 节点化）与视频容器 VideoContainer —— VideoView 实现迁移到可运行期换节点的管线之上，layui_test 多媒体页（media/core、media/ffmpeg、layui_test/src/pages/media_page.cpp）（2026-09-05） | `docs/CHANGELOG.md` |
 | `BUG:UI-194` | BUG | UI-194: VideoContainer 控制条改版——音量/亮度双竖向滑块（基本滑块算法）+ 倍速 ▲▼ 按钮 + 图标标签，修复「无法拖动 / 图标重叠 / 文本过暗」（media/core）（2026-09-06） | `docs/CHANGELOG.md` |
 | `BUG:UI-195` | BUG | UI-195: 修复 Slider 小数/归一化值域「无法拖动」根因——默认步长量化（ui 库 Slider 根因修复，media/core VideoContainer 与 layui_test harness 配合）（2026-09-06） | `docs/CHANGELOG.md` |
+| `BUG:UI-196` | BUG | UI-196: VideoContainer 控制条三项修善——① 音量/亮度数值常显；② 亮度标签文本不再溢出容器右缘；③ 水平进度条「拖回后退立刻弹回」修复（media/core 根因修复）（2026-09-06） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1826,6 +1833,7 @@
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-194` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-195` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-196` | checklist |
 | `DOC:MEDIA_PIPELINE` | `META:CHANGELOG` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |

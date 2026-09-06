@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-06T22:05:25+08:00",
+  "generatedAt": "2026-09-06T23:58:32+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-196": {
+      "id": "BUG:UI-196",
+      "type": "BUG",
+      "label": "UI-196: VideoContainer 控制条三项修善——① 音量/亮度数值常显；② 亮度标签文本不再溢出容器右缘；③ 水平进度条「拖回后退立刻弹回」修复（media/core 根因修复）（2026-09-06）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-196-videocontainer-控制条三项修善①-音量亮度数值常显②-亮度标签文本不再溢出容器右缘③-水平进度条拖回后退立刻弹回修复mediacore-根因修复2026-09-06"
+    },
     "BUG:UI-194": {
       "id": "BUG:UI-194",
       "type": "BUG",
@@ -3569,6 +3576,12 @@
     },
     {
       "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-196",
+      "kind": "checklist",
+      "context": "回归清单#控制条数值常显与 seek 后退不回弹：音量数值 `%d%%`、亮度数值 `%.1f` 纯白常显（随拖动实时刷新）；音量/亮度标签宽自适应（图标+gap+文本）不致文本溢出容器右缘；seek 松手后把手停在用户目标直到管线 position 追平（`pending_seek_norm_`），后退拖回不弹回；`MediaPipeline::seek()` 立即同步 `pos_seconds_`、`do_seek` 守卫提高到 6s 帧数并兜底把 pos 补到目标"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
       "to": "BUG:UI-193",
       "kind": "checklist",
       "context": "回归清单#管线节点可运行期按名更换：`set_*_name` + `MediaRegistry` 注册表装配；合成源与 FFmpeg 节点并存（同名重复注册忽略、不覆盖）；先 open 合成源再 open 真实文件不互相污染节点名"
@@ -3641,13 +3654,13 @@
     },
     {
       "from": "META:CHANGELOG",
-      "to": "DOC:UI_API",
+      "to": "DOC:MEDIA_PIPELINE",
       "kind": "mention",
       "context": ""
     },
     {
       "from": "META:CHANGELOG",
-      "to": "DOC:MEDIA_PIPELINE",
+      "to": "DOC:UI_API",
       "kind": "mention",
       "context": ""
     },
@@ -3677,6 +3690,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-196": [
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#控制条数值常显与 seek 后退不回弹：音量数值 `%d%%`、亮度数值 `%.1f` 纯白常显（随拖动实时刷新）；音量/亮度标签宽自适应（图标+gap+文本）不致文本溢出容器右缘；seek 松手后把手停在用户目标直到管线 position 追平（`pending_seek_norm_`），后退拖回不弹回；`MediaPipeline::seek()` 立即同步 `pos_seconds_`、`do_seek` 守卫提高到 6s 帧数并兜底把 pos 补到目标"
+      }
+    ],
     "BUG:UI-194": [
       {
         "from": "DOC:MEDIA_PIPELINE",
