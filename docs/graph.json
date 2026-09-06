@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-05T17:30:10+08:00",
+  "generatedAt": "2026-09-06T21:29:05+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-194": {
+      "id": "BUG:UI-194",
+      "type": "BUG",
+      "label": "UI-194: VideoContainer 控制条改版——音量/亮度双竖向滑块（基本滑块算法）+ 倍速 ▲▼ 按钮 + 图标标签，修复「无法拖动 / 图标重叠 / 文本过暗」（media/core）（2026-09-06）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-194-videocontainer-控制条改版音量亮度双竖向滑块基本滑块算法-倍速--按钮--图标标签修复无法拖动--图标重叠--文本过暗mediacore2026-09-06"
+    },
     "BUG:UI-193": {
       "id": "BUG:UI-193",
       "type": "BUG",
@@ -3543,6 +3550,12 @@
     },
     {
       "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-194",
+      "kind": "checklist",
+      "context": "回归清单#VideoContainer 控制条交互：音量/亮度双竖向滑块（库内置基本滑块算法，拖动中不被每帧 `set_value_silent` 重置），亮度仅调视频画面（RGB tint，范围 0.2..3.0，默认 1.0，`set_brightness/brightness`），倍速 ▲▼ 步进按钮（0.5..2.0，步 0.25）；滑块上方 IconLabel 图标标签纯白、与轨道不重叠"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
       "to": "BUG:UI-193",
       "kind": "checklist",
       "context": "回归清单#管线节点可运行期按名更换：`set_*_name` + `MediaRegistry` 注册表装配；合成源与 FFmpeg 节点并存（同名重复注册忽略、不覆盖）；先 open 合成源再 open 真实文件不互相污染节点名"
@@ -3651,6 +3664,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-194": [
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#VideoContainer 控制条交互：音量/亮度双竖向滑块（库内置基本滑块算法，拖动中不被每帧 `set_value_silent` 重置），亮度仅调视频画面（RGB tint，范围 0.2..3.0，默认 1.0，`set_brightness/brightness`），倍速 ▲▼ 步进按钮（0.5..2.0，步 0.25）；滑块上方 IconLabel 图标标签纯白、与轨道不重叠"
+      }
+    ],
     "BUG:UI-193": [
       {
         "from": "DOC:MEDIA_PIPELINE",

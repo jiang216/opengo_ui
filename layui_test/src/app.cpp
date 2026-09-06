@@ -222,6 +222,7 @@ int main(int argc, char** argv) {
     int shot_page = -1;
     int start_page = -1;
     float shot_scroll = 0.f;
+    bool shot_after_click = false;  // --shot-after-click：点击注入后再截图（验证点击后状态）
     std::vector<std::pair<float, float>> click_points;  // --click x,y（可重复）
     bool list_pages = false;
     for (int i = 1; i < argc; ++i) {
@@ -241,6 +242,8 @@ int main(int argc, char** argv) {
             float cx = 0.f, cy = 0.f;
             if (std::sscanf(argv[++i], "%f,%f", &cx, &cy) == 2)
                 click_points.push_back({cx, cy});
+        } else if (std::strcmp(argv[i], "--shot-after-click") == 0) {
+            shot_after_click = true;
         }
     }
     bool shot_done_ = false;
@@ -640,7 +643,7 @@ int main(int argc, char** argv) {
 
     // 帧后：截图（glReadPixels，begin_frame+root.draw 之后）+ HUD 绘制
     scene.on(ui::ScenePhase::PostDraw, [&](ui::Scene& s) {
-        if (shot_path && !shot_done_) {
+        if (shot_path && !shot_done_ && (!shot_after_click || click_points.empty() || clicks_injected)) {
             shot_done_ = true;
             const int w = window.width();
             const int h = window.height();

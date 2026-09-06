@@ -3187,7 +3187,7 @@ vc->play(); vc->seek(4.f); vc->set_loop(true);
 vc->set_speed(1.f); vc->set_volume(0.8f);  // has_video/has_audio/position/duration 查询
 ```
 
-**依赖 include**：`ui/core/math.h`、`ui/ui/widget.h`、`ui/media/pipeline/pipeline.h`
+**依赖 include**：`ui/core/math.h`、`ui/ui/widget.h`、`ui/media/pipeline/pipeline.h`、`algorithm`
 
 **类 `VideoContainer`**
 （继承 `: Widget`）
@@ -3217,10 +3217,20 @@ vc->set_speed(1.f); vc->set_volume(0.8f);  // has_video/has_audio/position/durat
 | `void set_volume(float volume)` |  |
 | `float volume() const` |  |
 | `bool has_audio() const` |  |
+| `void set_brightness(float brightness)` | 画面亮度（UI-194）：显示层效果，只调视频画面（RGB 乘亮度系数），范围 [0.2, 3.0]，默认 1.0 |
+| `float brightness() const` |  |
 | `bool synthetic() const` | 合成源自动启用标志（已 open 合成源） |
 | `void on_advance(float dt) override` |  |
 | `void on_draw(Renderer& renderer) override` |  |
 | `void on_layout() override` |  |
+
+**常量**：
+
+| 常量 | 值 | 说明 |
+| --- | --- | --- |
+| `kVideoContainerBrightMin` | `0.2f` | 画面亮度范围（UI-194）：0.2（明显调暗）.. 3.0（增亮至 3 倍），默认 1.0 = 原样 |
+| `kVideoContainerBrightMax` | `3.0f` |  |
+| `kVideoContainerSpeedStep` | `0.25f` | 倍速箭头步进（UI-194）：▲/▼ 每点一次 ±kVideoContainerSpeedStep，夹在 0.5..2x |
 
 
 ### `ui/media/pipeline/node.h`

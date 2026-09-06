@@ -16,6 +16,8 @@
 
 #include "ui/media/pipeline/pipeline.h"
 
+#include <algorithm>
+
 namespace ui {
 class Font;
 class Renderer;
@@ -25,6 +27,13 @@ class Button;
 class Label;
 class Slider;
 class Switch;
+class IconLabel;
+
+// 画面亮度范围（UI-194）：0.2（明显调暗）.. 3.0（增亮至 3 倍），默认 1.0 = 原样
+constexpr float kVideoContainerBrightMin = 0.2f;
+constexpr float kVideoContainerBrightMax = 3.0f;
+// 倍速箭头步进（UI-194）：▲/▼ 每点一次 ±kVideoContainerSpeedStep，夹在 0.5..2x
+constexpr float kVideoContainerSpeedStep = 0.25f;
 
 class VideoContainer : public Widget {
 public:
@@ -57,6 +66,9 @@ public:
     void set_volume(float volume);
     float volume() const;
     bool has_audio() const;
+    // 画面亮度（UI-194）：显示层效果，只调视频画面（RGB 乘亮度系数），范围 [0.2, 3.0]，默认 1.0
+    void set_brightness(float brightness);
+    float brightness() const { return std::clamp(brightness_, kVideoContainerBrightMin, kVideoContainerBrightMax); }
 
     // 合成源自动启用标志（已 open 合成源）
     bool synthetic() const { return synthetic_; }
@@ -75,6 +87,7 @@ private:
     bool has_frame_ = false;
     bool synthetic_ = false;
     std::string last_error_;
+    float brightness_ = 1.0f;   // 画面亮度系数（UI-194），范围 [0.2, 3.0]
 
     Font* font_ = nullptr;
     const Theme* theme_ = nullptr;
@@ -84,8 +97,13 @@ private:
     Label* time_label_ = nullptr;
     Slider* seek_slider_ = nullptr;
     Switch* loop_switch_ = nullptr;
-    Slider* vol_slider_ = nullptr;
-    Slider* speed_slider_ = nullptr;
+    Slider* vol_slider_ = nullptr;      // 竖向音量滑块（UI-194）
+    IconLabel* vol_label_ = nullptr;    // 音量标签（sound 图标 + 中文，UI-194）
+    Slider* bright_slider_ = nullptr;   // 竖向亮度滑块（UI-194）
+    IconLabel* bright_label_ = nullptr; // 亮度标签（light 图标 + 中文，UI-194）
+    Button* speed_down_btn_ = nullptr;  // 倍速 ▼（UI-194）
+    Label* speed_label_ = nullptr;      // 倍速值显示（UI-194）
+    Button* speed_up_btn_ = nullptr;    // 倍速 ▲（UI-194）
 };
 
 }  // namespace ui

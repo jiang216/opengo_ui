@@ -3,6 +3,29 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-194: VideoContainer 控制条改版——音量/亮度双竖向滑块（基本滑块算法）+ 倍速 ▲▼ 按钮 + 图标标签，修复「无法拖动 / 图标重叠 / 文本过暗」（media/core）（2026-09-06）
+- **级别**：功能新增 + 缺陷修复（ui 库 media/core 的 `VideoContainer`；layui_test 仅做展示验证与脚本化编排）。UI-193 之后首次对控制条增强：原「音量+倍速」两条小横滑块改为视频区**左右各一竖向滑块**（左=音量，右=亮度），亮度只调视频画面（RGB 乘亮度系数），倍速改用 ▲/▼ 图标按钮步进。共修复用户实测暴露的 4 个问题。
+- **需求明细（用户拍板）**：① 倍速不用滑块，改用箭头（layui 图标库中有）；② 亮度作用范围只调视频画面（tint RGB）；③ 亮度范围 [0.2, 3.0]，默认 1.0；④ 竖向滑块旁加标识图标（音量 `sound`、亮度 `light`）；⑤ 滑块使用库内置标准垂直滑块（基本算法），不做自定义滑块逻辑；⑥ 图标/标签放滑块正上方空档、纯白高亮。亮度是**容器显示属性**（非管线/源属性）：`set_brightness()/brightness()`（头文件内联 clamp），内部 `brightness_` 默认 1.0。
+- **实现要点**：
+  - `video_container.h`：新增常量 `kVideoContainerBrightMin/Max`（0.2/3.0）、`kVideoContainerSpeedStep`（0.25）；新增 `set_brightness()/brightness()` 公共 API；成员：删 `speed_slider_`，新增 `bright_slider_`（竖向亮度滑块）、`vol_label_`/`bright_label_`（`ui::IconLabel` 标签）、`speed_down_btn_`/`speed_label_`/`speed_up_btn_`（倍速 ▼ 值 ▲）；`#include <algorithm>`（内联 clamp 需要）。
+  - `video_container.cpp`：`ensure_controls()` 创建两个竖向 `Slider`（`set_vertical(true)`、range 0..1 / 0.2..3.0、`set_tips(false)`、去 `set_track_height` 干扰）与两个 `IconLabel`（`set_icon("sound"/"light")` + 中文，显式 `set_icon_color`/`set_text_color` 纯白 `{1,1,1,1}`）；`layout_controls()` 将滑块置于视频区左右缘（`bounds_.x+6` / `bounds_.x+bounds_.w-6-22`），标签带在滑块正上方（`lbl_top` = 原 top，滑块 `slider_top = lbl_top + lbl_h + 4`）——轨道长随 `bounds_.h`；`set_theme()`/font 循环纳入全部新控件。
+  - **修复 1（无法拖动）**：`refresh_controls()` 每帧无条件 `vol_slider_->set_value_silent(pipe_.volume())` / `bright_slider_->set_value_silent(brightness())` 把滑块 `value_` 强制重置、挤压手动拖动（seek 滑块早有 `!seek_slider_->dragging()` 守卫，音量/亮度缺失）。修复：两处均加 `!vol_slider_->dragging()` / `!bright_slider_->dragging()` 守卫，拖动中不再被每帧重置，**拖动恢复 = 库内置标准垂直滑块基本算法原样工作**。
+  - **修复 3（图标与滑块顶部重叠）**：原 `on_draw` 手绘 `layui_icon::sound/light` 于 `vbar.y+10`（正好压在轨道起点/顶部把手）。移除该手绘，改由 `IconLabel` 控件承载，布局在滑块正上方空档，与轨道/把手零重叠。
+  - **修复 4（文本亮度低）**：原手绘图标用 0.92 灰；现 `IconLabel` 图标/文字纯白 `{1,1,1,1}` 高亮。
+  - 画面亮度渲染：`on_draw` 视频 `draw_textured_quad(..., Vec4{brightness_, brightness_, brightness_, 1.f})` tint 乘 RGB（`video_container.cpp` 视频区绘制处）；亮度 1.0 不变，>1 增亮（超 255 裁白），<1 调暗。
+  - 倍速：`speed_down_btn_`(icon "down") / `speed_label_`(%.1fx) / `speed_up_btn_`(icon "up")，步进 `kVideoContainerSpeedStep` 夹在 0.5..2.0。
+- **测试程序（layui_test 编排 harness）**：`app.cpp` 新增 `--shot-after-click` 参数——`--shot` 截图等待 `clicks_injected`（点击注入，第 2 帧 Frame 观察者）后再执行 PostDraw 截图，用于脚本化验证「点击后状态」（本条目用于亮度拖点后像素校验）。默认（不带该参数）行为不变：仍首帧截图退出。
+- **回归清单（改动后核对）**：
+  1. layui_test 全页 `--smoke` 自动切页：全部页面可切、退出干净（含多媒体页多容器销毁 close+join，无泄漏/无挂起）；
+  2. `layui_test --page 48 --smoke N`：主容器 + A/B 双容器同帧渲染，各容器独立播放，控制条控件（播放钮/seek/时间/循环/倍速/音量/亮度）存在且可交互，无崩溃；
+  3. 截图像素级：`--shot-page 48` 主容器左缘出现竖向音量滑块（fill 全满 teal）+ 上方纯白 `sound` 图标标签；右缘出现竖向亮度滑块（值 1.0 → 轨道底部约 28.6% teal fill）+ 上方纯白 `light` 图标标签；图标与轨道/把手不重叠（标签带在滑块上方）；亮度 1.0 → 视频 SMPTE 条 192 级色无 tint 变化；
+  4. `--page 48 --click <亮度滑块轨道中下> --shot-after-click --shot`: 视频像素变亮（点击亮度 ~2.0 后 SMPTE 白条由 (192,192,192) → (255,255,255)，平均像素和 332 → 444），证明滑块点击 → on_change → set_brightness → tint 生效；点击音量滑块/倍速 ▲ 无崩溃，smoke exit 0；
+  5. `VideoContainer` 公共 API：`open_source/play/pause/seek/speed/volume/loop/has_video/has_audio` 语义与 UI-193 回归清单一致（未改动）；新增 `set_brightness/brightness`；
+  6. `python tools/api_gen.py --check` 0 差异；graphgen `--check` 0 错 0 警；
+  7. 纯 UI 工程（OPENGUI_MEDIA_CORE=OFF）不受影响（仅 media/core 内部改动）。
+- **验证**：layui_test Release (Ninja) 重建通过；`--shot-page 48 --shot` 截图像素确认（双竖滑块 + 纯白标签 + 无重叠 + 亮度 1.0 基线）；`--page 48 --click 1227,366 --shot-after-click --shot` 像素前后对比验证亮度 tint；`--page 48 --click 281,400 --click 1227,544 --click 1227,400 --smoke 1` 全交互路径 exit 0 无错误日志；api_gen/graphgen 检查通过。
+- **影响范围**：`media/core/include/ui/media/video_container.h`、`media/core/src/video_container.cpp`、`layui_test/src/app.cpp`、`docs/UI_API.md`、`docs/CHANGELOG.md`
+
 ## UI-193: 媒体管线重构（MediaPipeline 节点化）与视频容器 VideoContainer —— VideoView 实现迁移到可运行期换节点的管线之上，layui_test 多媒体页（media/core、media/ffmpeg、layui_test/src/pages/media_page.cpp）（2026-09-05）
 - **级别**：功能新增（ui 库 media/core + media/ffmpeg 重构），UI-015/UI-021/UI-033/UI-146 语义保持不动。新分层：`media/core`（节点接口 + 组装 + 合成源，**不依赖 FFmpeg**）与 `media/ffmpeg`（FFmpeg 实现节点，运行期注册）双静态库；新增带标题条/控制条/占位文案的视频容器 `ui::VideoContainer`；`VideoView` 公共 API 不变，实现整体迁到管线之上；layui_test 新增「多媒体」演示页（合成源 + 双容器），默认无需 FFmpeg 即可构建运行。
 - **背景 / 原单片实现问题**：旧 `VideoView` 解码线程 + RGBA 队列 + Texture 全在一个实现里，合成源/流源/多路音视频的扩展只能继续堆 if-else；同时 FFmpeg 类型（AVFormatContext/RGBAPacket）泄漏进公共头，拖累纯 UI 工程。UI-193 拍板四项决策：① 接受 media/core + media/ffmpeg 分层；② VideoView 实现迁到管线之上、公共 API 不动；③ 节点运行期按名更换；④ 本轮仅 FFmpeg 软件解码，预留 HW 接口。

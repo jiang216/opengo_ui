@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 188（BUG 179 / DOC 7 / META 2）
-- 边: 389
+- 节点: 189（BUG 180 / DOC 7 / META 2）
+- 边: 390
 - lint: 0 错误 / 5 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
@@ -1248,6 +1248,12 @@
   - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#实播回归：`video_player --smoke N assets/test_av.mp4` 解码+音频正常、无日志错误、线程干净退出；media_load_test 各素材解码帧数不变
   - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#构建：`OPENGUI_MEDIA_CORE` 默认 OFF，纯 UI 工程不依赖媒体库；layui_test 以 media/core 合成源演示，无需 FFmpeg 即可构建运行；`api_gen.py` 覆盖新增公开头（video_container/pipeline/node/registry/ffmpeg_nodes）
 
+### BUG:UI-194 · UI-194: VideoContainer 控制条改版——音量/亮度双竖向滑块（基本滑块算法）+ 倍速 ▲▼ 按钮 + 图标标签，修复「无法拖动 / 图标重叠 / 文本过暗」（media/core）（2026-09-06）
+
+- 路径: `docs/CHANGELOG.md#ui-194-videocontainer-控制条改版音量亮度双竖向滑块基本滑块算法-倍速--按钮--图标标签修复无法拖动--图标重叠--文本过暗mediacore2026-09-06`
+- 反链(1):
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#VideoContainer 控制条交互：音量/亮度双竖向滑块（库内置基本滑块算法，拖动中不被每帧 `set_value_silent` 重置），亮度仅调视频画面（RGB tint，范围 0.2..3.0，默认 1.0，`set_brightness/brightness`），倍速 ▲▼ 步进按钮（0.5..2.0，步 0.25）；滑块上方 IconLabel 图标标签纯白、与轨道不重叠
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1528,6 +1534,7 @@
 | `BUG:UI-188` | BUG | UI-188: ScrollBox clear_children 未失效滚动回调致悬空调用崩溃（ui/src/scrollbox.cpp + ui/include/ui/ui/scrollbox.h + ui/include/ui/ui/widget.h）（2026-09-03） | `docs/CHANGELOG.md` |
 | `BUG:UI-189` | BUG | UI-189: layui_test 新增「多级窗口」演示页——多 GLFW 窗口（各自独立 GL 上下文）逐层创建 4 层（layui_test/src/pages/multilevel_window_page.cpp）（2026-09-05） | `docs/CHANGELOG.md` |
 | `BUG:UI-193` | BUG | UI-193: 媒体管线重构（MediaPipeline 节点化）与视频容器 VideoContainer —— VideoView 实现迁移到可运行期换节点的管线之上，layui_test 多媒体页（media/core、media/ffmpeg、layui_test/src/pages/media_page.cpp）（2026-09-05） | `docs/CHANGELOG.md` |
+| `BUG:UI-194` | BUG | UI-194: VideoContainer 控制条改版——音量/亮度双竖向滑块（基本滑块算法）+ 倍速 ▲▼ 按钮 + 图标标签，修复「无法拖动 / 图标重叠 / 文本过暗」（media/core）（2026-09-06） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1810,6 +1817,7 @@
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-194` | checklist |
 | `DOC:MEDIA_PIPELINE` | `META:CHANGELOG` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
