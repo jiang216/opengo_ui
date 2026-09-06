@@ -29,6 +29,10 @@ public:
     void set_checked();
     // 选中指定 (组序号, 组内子项序号)：清除其余项选中态，高亮该项（layui `.layui-menu-item-checked` 绿字）
     void set_selected(int group_index, int item_index);
+    // UI-198：读/改菜单项（按 add_* 插入序，含分隔线与父级项）——上下文菜单回显当前状态
+    int item_count() const { return (int)items_.size(); }
+    void set_item_text(int index, const char* title);        // 动态文本（如「播放/暂停」「循环:开/关」）
+    void set_item_checked(int index, bool checked);          // 选中态（绿字，当前值打勾）
     void set_badge(const char* text);
     void set_dot_badge();
 
@@ -74,6 +78,19 @@ private:
     void draw_sub_panel(Renderer&, int parent_index);
     void layout_items();
     void compute_visibility() const;
+    // (x,y) 命中 flyout 子面板某子项时返回其 items_ 下标，否则 -1（on_mouse_down/move 共用）
+    int hit_sub_item(float x, float y) const;
+    // 可见飞出头子面板区域的命中框（flyout 画在 Menu 自身 bounds 之外，base contains 覆盖不到）
+    class HitBox : public Widget {
+    public:
+        explicit HitBox(Menu* m) : menu_(m) {}
+    protected:
+        bool on_mouse_down(float x, float y, int button) override { return menu_->on_mouse_down(x, y, button); }
+        bool on_mouse_move(float x, float y) override { return menu_->on_mouse_move(x, y); }
+    private:
+        Menu* menu_;
+    };
+    HitBox* hitbox_ = nullptr;
 
     std::vector<Item> items_;
     Font* font_ = nullptr;
@@ -82,6 +99,7 @@ private:
     Item* hover_ = nullptr;
     Item* active_hover_ = nullptr;
     int current_level_ = 0;
+    int open_parent_ = -1;  // index into items_ — which parent's flyout is open (even when hover is on sub-item)
     Rect sub_panel_rect_{};
 
     bool style_ov_ = false;

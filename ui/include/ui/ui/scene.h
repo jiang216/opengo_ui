@@ -43,6 +43,8 @@ enum class ScenePhase {
 };
 
 // 逐事件钩子（set_event_hook）。返回 true = 该事件已被消费，Scene 不再向下处理。
+// 注：MouseDown/MouseUp 钩子语义为「左键（button 0）」；右键（button 1）不经钩子，
+// 由 Scene::frame 直接下发控件树 dispatch_mouse_down/up(…, 1)（上下文菜单，UI-198）。
 enum class SceneEvent {
     MouseMove,   // 每帧一次（hook 内可访问 window.mouse_*）
     MouseDown,   // 左键按下边沿

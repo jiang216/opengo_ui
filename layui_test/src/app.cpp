@@ -246,6 +246,10 @@ int main(int argc, char** argv) {
     std::vector<std::pair<float, float>> click_points;  // --click x,y（可重复）
     struct DragSpec { float x1, y1, x2, y2; };          // --drag x1,y1 x2,y2：按下→多步移动→抬起
     std::vector<DragSpec> drag_points;
+    std::vector<std::pair<float, float>> rclick_points;  // --rclick x,y（右键按钮1注入，UI-198 上下文菜单验证）
+    std::vector<std::pair<float, float>> click_after_rclick_points;  // --click-after-rclick x,y：菜单弹出后下一帧点菜单项
+    int click_after_wait = 0;  // 菜单弹板行几何需 layout 后才算出，右键帧之后再多等一帧再点
+    bool click_after_done = false;
     bool cursor_warp = false;             // --cursor x,y：程序化定位真实光标（悬停/移出确定性验证，UI-197）
     float cursor_x = 0.f, cursor_y = 0.f;
     bool probe_video = false;             // --probe-video：打印控件树中各 VideoContainer 状态
@@ -271,6 +275,14 @@ int main(int argc, char** argv) {
             DragSpec d;
             if (std::sscanf(argv[++i], "%f,%f,%f,%f", &d.x1, &d.y1, &d.x2, &d.y2) == 4)
                 drag_points.push_back(d);
+        } else if (std::strcmp(argv[i], "--rclick") == 0 && i + 1 < argc) {
+            float rx = 0.f, ry = 0.f;
+            if (std::sscanf(argv[++i], "%f,%f", &rx, &ry) == 2)
+                rclick_points.push_back({rx, ry});
+        } else if (std::strcmp(argv[i], "--click-after-rclick") == 0 && i + 1 < argc) {
+            float cx = 0.f, cy = 0.f;
+            if (std::sscanf(argv[++i], "%f,%f", &cx, &cy) == 2)
+                click_after_rclick_points.push_back({cx, cy});
         } else if (std::strcmp(argv[i], "--shot-after-click") == 0) {
             shot_after_click = true;
         } else if (std::strcmp(argv[i], "--cursor") == 0 && i + 1 < argc) {
@@ -627,6 +639,7 @@ int main(int argc, char** argv) {
     auto last_switch = std::chrono::steady_clock::now();
     bool smoke_switched_any = false;
     bool clicks_injected = false;
+    bool rclick_done = false;  // UI-198：右键只注入一次（勿逐帧重建打开中的上下文菜单）
     int inject_wait = 0;  // 等首个完整布局帧后再注入（UI-190）：Frame 阶段先于 layout/dispatch，首帧点击必偏
 
     // 帧前：冒烟自动切页 + --cursor 光标定位 + --click 合成点击注入（脚本化交互验证）
@@ -647,7 +660,7 @@ int main(int argc, char** argv) {
         // UI-190：Frame 观察者运行于 scene.frame() 的「分配输入（layout+dispatch）」之前，
         // 首帧注入时页面控件尚未布局（bounds 仍是初值）会全部脱靶；延迟到第 2 帧（页面已
         // 完成首帧布局）再注入，仍保持「单次点击」语义。
-        if (!click_points.empty() || !drag_points.empty()) {
+        if (!click_points.empty() || !drag_points.empty() || !rclick_points.empty()) {
             if (inject_wait >= 1) {
                 clicks_injected = true;
                 for (const auto& c : click_points) {
@@ -665,9 +678,36 @@ int main(int argc, char** argv) {
                     }
                     root.dispatch_mouse_up(d.x2, d.y2, 0);
                 }
+                // 右键（button 1）注入（UI-198）：命中控件树 → 打开上下文菜单（VideoContainer/Dropdown）。
+                // 只注入一次（rclick_done）：菜单弹出后需保持 open 状态供后续 --click-after-rclick /
+                // --cursor 悬停交互，逐帧重注入会反复重建菜单、重置展开态导致后续点击脱靶。
+                if (!rclick_done) {
+                    rclick_done = true;
+                    for (const auto& r : rclick_points) {
+                        root.dispatch_mouse_move(r.first, r.second);
+                        root.dispatch_mouse_down(r.first, r.second, 1);
+                        root.dispatch_mouse_up(r.first, r.second, 1);
+                    }
+                }
                 root.layout();
             } else {
                 ++inject_wait;
+            }
+        }
+        // --click-after-rclick（UI-198）：菜单弹出后下一帧点菜单项，验证动作回写状态。
+        // 右键注入帧里菜单弹板虽已 add_child 到 root，但行几何（it.y0/y1）要等 layout 才算，
+        // 同帧点必脱靶 → 等 clicks_injected 后再等一帧（click_after_wait>=1）才命中。
+        if (!click_after_rclick_points.empty() && clicks_injected && !click_after_done) {
+            if (click_after_wait < 1) {
+                ++click_after_wait;
+            } else {
+                for (const auto& c : click_after_rclick_points) {
+                    root.dispatch_mouse_move(c.first, c.second);
+                    root.dispatch_mouse_down(c.first, c.second, 0);
+                    root.dispatch_mouse_up(c.first, c.second, 0);
+                }
+                root.layout();
+                click_after_done = true;
             }
         }
     });
@@ -698,7 +738,11 @@ int main(int argc, char** argv) {
             ++probe_frames;
             if (probe_frames >= 2) probe_video_containers(root, 0);
         }
-        if (shot_path && !shot_done_ && (!shot_after_click || (click_points.empty() && drag_points.empty()) || clicks_injected)) {
+        if (shot_path && !shot_done_ && (!shot_after_click ||
+                                        (click_points.empty() && drag_points.empty() && rclick_points.empty() &&
+                                         click_after_rclick_points.empty()) ||
+                                        (clicks_injected &&
+                                         (click_after_rclick_points.empty() || click_after_done)))) {
             shot_done_ = true;
             const int w = window.width();
             const int h = window.height();

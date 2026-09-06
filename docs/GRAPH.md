@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 192（BUG 183 / DOC 7 / META 2）
-- 边: 393
+- 节点: 193（BUG 184 / DOC 7 / META 2）
+- 边: 394
 - lint: 0 错误 / 5 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
@@ -1272,6 +1272,12 @@
 - 反链(1):
   - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#控制条显隐 + 双击切换（UI-197）：默认隐藏（画面纯净，`controls_visible_=false`），鼠标悬停容器显示、移开隐藏；双击视频区切换播放/暂停（左键 400ms/8px 容差，不吞单点事件）；隐藏子控件不参与事件分发；`Window::set_cursor_pos` + harness `--cursor/--probe-video` 提供确定性悬停验证
 
+### BUG:UI-198 · UI-198: VideoContainer 右键上下文菜单——DropDown ContextMenu 覆盖全容器 + Menu 折叠父级 → 右侧子面板展开/悬停命中/子项选中即关；flyout 越界命中框（ui 库根因修复）（2026-09-07）
+
+- 路径: `docs/CHANGELOG.md#ui-198-videocontainer-右键上下文菜单dropdown-contextmenu-覆盖全容器--menu-折叠父级--右侧子面板展开悬停命中子项选中即关flyout-越界命中框ui-库根因修复2026-09-07`
+- 反链(1):
+  - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#右键上下文菜单（UI-198）：覆盖全容器右击弹出（Dropdown ContextMenu + `set_region("")` 隐藏触发器仅命中区），折叠父级（倍速 0.5x~2.0x / 音量 0/25/50/75/100% / 亮度 0.5..3.0）悬停/点击展开右侧子面板并可点选（Menu `open_parent_` 持久 + `HitBox` 越界命中），动作经容器公共 API 与底部控制条同管线状态，动态回显（播放/暂停、循环:开/关、当前档打勾），选子项即关菜单；Scene 右键（button 1）直达控件树不经左键钩子
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1556,6 +1562,7 @@
 | `BUG:UI-195` | BUG | UI-195: 修复 Slider 小数/归一化值域「无法拖动」根因——默认步长量化（ui 库 Slider 根因修复，media/core VideoContainer 与 layui_test harness 配合）（2026-09-06） | `docs/CHANGELOG.md` |
 | `BUG:UI-196` | BUG | UI-196: VideoContainer 控制条三项修善——① 音量/亮度数值常显；② 亮度标签文本不再溢出容器右缘；③ 水平进度条「拖回后退立刻弹回」修复（media/core 根因修复）（2026-09-06） | `docs/CHANGELOG.md` |
 | `BUG:UI-197` | BUG | UI-197: VideoContainer 双击切换播放/暂停 + 控制条悬停显隐（默认隐藏）——配合悬停确定性验证工具（media/core + ui/gl；layui_test 仅编排验证）（2026-09-07） | `docs/CHANGELOG.md` |
+| `BUG:UI-198` | BUG | UI-198: VideoContainer 右键上下文菜单——DropDown ContextMenu 覆盖全容器 + Menu 折叠父级 → 右侧子面板展开/悬停命中/子项选中即关；flyout 越界命中框（ui 库根因修复）（2026-09-07） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1842,6 +1849,7 @@
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-195` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-196` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-197` | checklist |
+| `DOC:MEDIA_PIPELINE` | `BUG:UI-198` | checklist |
 | `DOC:MEDIA_PIPELINE` | `META:CHANGELOG` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |
 | `DOC:PLAN` | `DOC:ARCHITECTURE` | mention |

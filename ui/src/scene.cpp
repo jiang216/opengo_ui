@@ -86,6 +86,9 @@ void Scene::frame(float dt) {
     // UI-173）。此处用非消耗 peek 各取所需：分发者与订阅者共享同一边沿。
     const bool mouse_down_edge = dispatch_mouse && window_.mouse_pressed_peek(0);
     const bool mouse_up_edge = dispatch_mouse && window_.mouse_released_peek(0);
+    // UI-198：右键（button 1）边沿单独快照——上下文菜单语义，直接分发控件树（不经钩子）
+    const bool rbtn_down_edge = dispatch_mouse && window_.mouse_pressed_peek(1);
+    const bool rbtn_up_edge = dispatch_mouse && window_.mouse_released_peek(1);
     // 帧前派发：媒体推进/动画/工具逻辑（如 video.advance、carousel.advance）
     notify_phase(ScenePhase::Frame, dt);
     root_.advance(dt);
@@ -124,6 +127,13 @@ void Scene::frame(float dt) {
             else
                 root_.dispatch_mouse_up(mx, my, 0);
         }
+        // UI-198：右键（button 1）——上下文菜单语义。MouseDown/MouseUp 钩子保持「左键」定义
+        // （签名无键位随路数据，现有应用均按左键使用），右键直接下发控件树，命中与否由目标
+        // 控件自行判定（如 VideoContainer::on_mouse_down(…, 1) 打开右键菜单 / Dropdown ContextMenu）。
+        if (rbtn_down_edge)
+            root_.dispatch_mouse_down(mx, my, 1);
+        if (rbtn_up_edge)
+            root_.dispatch_mouse_up(mx, my, 1);
         // UI-184：鼠标分发后收尾——
         // ① 释放丢失（失焦/光标离开时有键按下）的复位标记已由 mouse_released_peek 本轮
         //    读到 up 并分发，此处确认清除并举证把对应键按下状态复位为 false；

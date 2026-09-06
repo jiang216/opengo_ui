@@ -3,6 +3,32 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-198: VideoContainer 右键上下文菜单——DropDown ContextMenu 覆盖全容器 + Menu 折叠父级 → 右侧子面板展开/悬停命中/子项选中即关；flyout 越界命中框（ui 库根因修复）（2026-09-07）
+- **级别**：功能增强（ui 库：ui/src `menu`/`dropdown`、`scene`，媒体 media/core `VideoContainer`；layui_test 仅编排/验证 UI-198 悬停/点击确定性）。需求（用户拍板）：右键弹上下文菜单覆盖整个视频容器，含 播放/暂停、倍速 0.5x~2.0x、音量 0/25/50/75/100%、亮度 0.5/1.0/1.5/2.0/3.0、（以上为折叠父级 → 右侧子面板）、循环:开/关、关闭/重新打开源；菜单动作经容器公共 API 与底部控制条同一管线状态；菜单选中即关。
+- **功能（根因归属：除签名注记外全部治本在 ui 库与 media/core；layui_test 仅编排验证）**：
+  1. **Scene 右键语义**：`Scene::frame` 新增右按钮（button 1）按下/抬起边沿快照（`mouse_pressed_peek(1)`），不经左键语义的 `MouseDown/MouseUp` 事件钩子（钩子签名无键位随路、现有应用均按左键用），直接 `root_.dispatch_mouse_down/up(mx,my,1)` 下发控件树，命中与否由目标控件自行判定。
+  2. **VideoContainer 右键菜单**：`ensure_controls()` 内建一个覆盖全容器（`set_bounds(bounds_.x,bounds_.y,bounds_.w,bounds_.h)`，随 `layout_controls` 同步）的 `Dropdown`（`set_region("")` 隐藏触发器、仅作右击命中区；`set_menu_width(190)`），`add_parent` 建 倍速/音量/亮度 折叠父级 + 分隔线 + 关闭/重新打开源；动作回调全部走容器公共 API（`set_playing/set_speed/set_volume/set_brightness/set_loop/open_source`），状态由 `refresh_context_menu()` 每帧回显（动态文本「播放/暂停」「循环:开/关」+ 当前档打勾，`set_item_text/set_item_checked/item_count` 无变化不标脏零开销）。
+  3. **Menu 折叠父级 → flyout 子面板**：`add_parent/end_group` 分组、`compute_visibility` 折叠父级子区（父项后到分隔线/同级父项为止全隐藏）；悬停父项自动展开右侧子面板（`open_parent_` 持久化：鼠标移到子面板上时不收面板），点击父项同样展开（不收起整个菜单）；flyout 子项点击触发 `cb` + `on_item_click_`（Dropdown 据此"选子项即关整菜单"）。
+  4. **flyout 越界命中框（本轮调试发现的 ui 库真实根因）**：`Menu::draw_sub_panel` 把右侧子面板画在 Menu 自身 `bounds_` 之外（`panel_x = bounds_.x+bounds_.w+4`），而 `Widget::dispatch_mouse_down/up` 只在 `contains()` 命中时才调 `on_mouse_down` → flyout 上的点击/悬停全部落空穿透到下层控件（Media 页即穿透到 VideoContainer）。修复：Menu 内嵌私有子控件 `HitBox`（`Menu::HitBox` 转发 `on_mouse_move/on_mouse_down` 到 Menu 自身），`draw_sub_panel` 同步其 bounds+visible、`draw_overlay` 无展开父时隐藏；`on_mouse_down/on_mouse_move` 共用 `hit_sub_item()` 命中计算（含顶部 8px 内边距、行高 36px、越界 -1）。
+  5. **上一版遗留（本条目一并定版）**：`Dropdown::set_item_text/set_item_checked/item_count` 转发到内部 Menu；容器 `open_source` 记录 `source_desc_` 供「重新打开源」。
+- **关键时序约束（防错）**：
+  - `--page N` 是 pages 向量按 `PageDef.order` 排序后的**位置索引**（order 有空洞 0..163，71 页）；媒体页 视频容器 = 索引 **48**（不是 62）。列表旗标为 `--list-pages`（打印并退出 0）；`--pages` 不被识别会正常开窗。
+  - `--shot` 不带 `--shot-after-click` 时第 1 帧 PostDraw 即截图（注入最早第 2 帧起），rclick/click 验证必须 `--shot-after-click`。
+  - **rclick 只注入一次**（harness `rclick_done`）：逐帧重注入会把每帧弹出/重建中的菜单重置 `open_parent_`，后续 `--click-after-rclick` 脱靶。
+  - `--click-after-rclick` 在 `clicks_injected` 后再等一帧（菜单弹板行几何需 layout 才算）才注入。
+- **测试程序 + 支撑（编排/验证工具，不承载 ui 库逻辑）**：layui_test `--rclick x,y`（右键按下注入一次）、`--click-after-rclick x,y`、`--shot-after-click`；右键经 `root.dispatch_mouse_down/up(…,1)` 合成，与 Scene 右键语义同路径。
+- **回归清单（改动后核对）**：
+  1. `--page 48 --rclick 700,400 --shot-after-click --shot` → 菜单弹板 (700,400,190,285) 展开（菜单区原视频色变白）；`--probe-video` 不崩；
+  2. `--page 48 --rclick 700,400 --cursor 750,460 --shot-after-click --shot` → 悬停「倍速」父行（y0=441..481）→ 右侧 flyout (894,441,~,160) 展开，菜单区+flyout 区全白；
+  3. `--page 48 --rclick 700,400 --cursor 750,460 --click-after-rclick 950,539 --shot-after-click --shot` → 点 flyout「1.5x」→ `set_speed(1.5)` + 菜单选中即关（菜单区恢复视频色）；控制条倍速标签变 `1.5x`；
+  4. 音量/亮度/循环/关闭/重新打开源同机制可点；命中子面板顶部 8px 内边距不落错行、越界点击回落到容器双击/单点语义不受阻；
+  5. 既有 Menu/Dropdown 回归：`--shot-page 23`（基础菜单）、`41`（下拉菜单）、`19`、`9` 正常截图无崩溃；下拉「选中即关」语义不变；导航侧栏/分组菜单（含 Parent）不受 HitBox 影响（仅 flyout 展开时可见）；
+  6. `--smoke 3` 全页自动切页并干净退出（page switches ok）；
+  7. `python tools/api_gen.py --check` 0 差异；graphgen `--check` 0 错 0 警；
+  8. 纯 UI 工程 `OPENGUI_MEDIA_CORE=OFF` 不受影响。
+- **验证**：Ninja Release 构建 `BUILD_OK`；临时 `[DEBUG]` 打印（菜单弹板/行几何/on_draw/on_mouse_down/move/set_speed）实测完整链路：rclick(700,400)→菜单弹出→悬停(750,460)倍速行→flyout 展开→click(950,539)=1.5x→`set_speed 1.5`→菜单自动关；清理全部 debug 后像素验证：g1 基线菜单区=视频 SMPTE 色、g2（rclick+hover）菜单+flyout 区全白、g3（+点 1.5x 后）菜单区恢复视频色、控制条字符串区 377px 差分（1.0x→1.5x）；`--shot-page 23/41/19/9` 正常；`--smoke 3` 通过；api_gen/graphgen 通过。
+- **影响范围**：`ui/include/ui/ui/menu.h`、`ui/src/menu.cpp`、`ui/include/ui/ui/dropdown.h`、`ui/src/dropdown.cpp`、`ui/include/ui/ui/scene.h`、`ui/src/scene.cpp`、`media/core/include/ui/media/video_container.h`、`media/core/src/video_container.cpp`、`layui_test/src/app.cpp`、`layui_test/src/pages/media_page.cpp`、`docs/CHANGELOG.md`、`docs/MEDIA_PIPELINE.md`
+
 ## UI-197: VideoContainer 双击切换播放/暂停 + 控制条悬停显隐（默认隐藏）——配合悬停确定性验证工具（media/core + ui/gl；layui_test 仅编排验证）（2026-09-07）
 - **级别**：功能增强（ui 库 media/core 的 `VideoContainer` + ui/gl `Window`；layui_test 编排/验证。用户圈定本轮范围：双击=播放/暂停切换；控制条默认隐藏、悬停容器显示、移开隐藏；右键菜单 UI-198 另行）。
 - **功能（根因归属：ui 库 VideoContainer，无测试绕行/掩盖）**：

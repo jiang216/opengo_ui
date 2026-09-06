@@ -29,6 +29,7 @@ class Label;
 class Slider;
 class Switch;
 class IconLabel;
+class Dropdown;
 
 // 画面亮度范围（UI-194）：0.2（明显调暗）.. 3.0（增亮至 3 倍），默认 1.0 = 原样
 constexpr float kVideoContainerBrightMin = 0.2f;
@@ -120,6 +121,18 @@ private:
     std::chrono::steady_clock::time_point last_left_down_{};
     float last_left_x_ = -1e9f;
     float last_left_y_ = -1e9f;
+
+    // UI-198：右键上下文菜单（Dropdown，ContextMenu 触发，覆盖整个容器；菜单弹板挂 root 之上）
+    Dropdown* ctx_menu_ = nullptr;
+    std::string source_desc_;  // 最近一次 open_source 的描述串（「重新打开源」用）
+    int it_play_ = -1;         // 「播放/暂停」项索引（插入序，动态文本）
+    int it_speed_base_ = -1;   // 倍速子项首索引（0.5x/1.0x/1.5x/2.0x，连续）
+    int it_vol_base_ = -1;     // 音量子项首索引（0/25/50/75/100%，连续）
+    int it_bright_base_ = -1;  // 亮度子项首索引（0.5/1.0/1.5/2.0/3.0，连续）
+    int it_loop_ = -1;         // 「循环:开/关」项索引（动态文本 + 选中态）
+
+    void build_context_menu();   // ensure_controls 内建一次（项/回调/索引）
+    void refresh_context_menu(); // refresh_controls 每帧回显当前状态（文本/选中态）
 };
 
 }  // namespace ui

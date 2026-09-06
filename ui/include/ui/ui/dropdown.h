@@ -56,6 +56,11 @@ public:
     // 选中项回调（title 文本）
     void set_on_select(std::function<void(const char*)> cb) { on_select_ = std::move(cb); }
 
+    // UI-198：右键菜单回显——菜单项按插入序（含分隔线/父级项），刷新文本与选中态
+    int item_count() const;
+    void set_item_text(int index, const char* title);
+    void set_item_checked(int index, bool checked);
+
     void set_font(Font* font);
     void set_theme(const Theme* theme);
 

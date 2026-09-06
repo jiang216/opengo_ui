@@ -5,6 +5,7 @@
 #include "ui/gl/renderer.h"
 #include "ui/gl/texture.h"
 #include "ui/ui/button.h"
+#include "ui/ui/dropdown.h"
 #include "ui/ui/iconlabel.h"
 #include "ui/ui/label.h"
 #include "ui/ui/slider.h"
@@ -35,6 +36,7 @@ void VideoContainer::set_font(Font* font) {
     if (time_label_) time_label_->set_font(font);
     if (vol_val_label_) vol_val_label_->set_font(font);
     if (bright_val_label_) bright_val_label_->set_font(font);
+    if (ctx_menu_) ctx_menu_->set_font(font);
     ensure_controls();
     refresh_controls();
 }
@@ -42,6 +44,7 @@ void VideoContainer::set_font(Font* font) {
 void VideoContainer::set_theme(const Theme* theme) {
     theme_ = theme;
     ensure_controls();
+    if (ctx_menu_) ctx_menu_->set_theme(theme);
     if (play_btn_) play_btn_->set_theme(theme);
     if (time_label_) time_label_->set_theme(theme);
     if (seek_slider_) seek_slider_->set_theme(theme);
@@ -61,6 +64,7 @@ void VideoContainer::set_title(const char* title) {
 
 bool VideoContainer::open_source(const char* descriptor) {
     close_source();
+    source_desc_ = descriptor ? descriptor : "";
     synthetic_ = descriptor && std::strncmp(descriptor, "synthetic", 9) == 0;
     last_error_.clear();
     if (!pipe_.open(descriptor)) {
@@ -273,6 +277,7 @@ void VideoContainer::ensure_controls() {
         speed_label_->set_theme(theme_);
         speed_up_btn_->set_theme(theme_);
     }
+    build_context_menu();  // UI-198：右键上下文菜单（覆盖全容器命中区）
 }
 
 void VideoContainer::layout_controls() {
@@ -280,6 +285,9 @@ void VideoContainer::layout_controls() {
     const float x1 = bounds_.x + bounds_.w - 8.f;
     const float bottom = bounds_.y + bounds_.h - 6.f;
     const float title_h = title_.empty() ? 0.f : 26.f;
+
+    // UI-198：右键菜单命中区覆盖整个容器（触发器隐藏，仅做右击命中）
+    if (ctx_menu_) ctx_menu_->set_bounds(bounds_.x, bounds_.y, bounds_.w, bounds_.h);
 
     // 底部控制条（叠在画面上）：seek 一行 + 控制一行
     seek_slider_->set_bounds(x0, bottom - 18.f, x1 - x0, 14.f);
@@ -373,6 +381,117 @@ void VideoContainer::refresh_controls() {
         std::snprintf(sbuf, sizeof(sbuf), "%.1fx", pipe_.speed());
         speed_label_->set_text(sbuf);
     }
+    refresh_context_menu();  // UI-198：右键菜单回显当前状态（倍速/音量/亮度/循环/播放文本）
+}
+
+// UI-198：右键上下文菜单（Dropdown + ContextMenu 触发，覆盖整个容器）。
+// 触发器外观隐藏（set_region("") 不画灰色占位区）仅作命中区；菜单弹板 open_popup 挂 root
+// 之上、点击外部自动收起（Dropdown/Menu 既有语义）。菜单动作全部经由容器公共 API，与
+// 底部控制条同一管线状态（play/pause/set_speed/set_volume/set_brightness/set_loop）。
+void VideoContainer::build_context_menu() {
+    ctx_menu_ = new Dropdown(0, 0, bounds_.w, bounds_.h, "");
+    ctx_menu_->set_region("");  // 仅命中区：隐藏触发器、ContextMenu 事件、不绘制占位
+    ctx_menu_->set_menu_width(190.f);
+    if (font_) ctx_menu_->set_font(font_);
+    if (theme_) ctx_menu_->set_theme(theme_);
+
+    int mi = 0;
+    ctx_menu_->add_item(pipe_.playing() ? "暂停" : "播放", [this]() {
+        set_playing(!pipe_.playing());
+        refresh_controls();
+    });
+    it_play_ = mi++;
+    ctx_menu_->add_separator();
+    ++mi;
+
+    ctx_menu_->add_parent("倍速");
+    ++mi;
+    it_speed_base_ = mi;
+    ctx_menu_->add_item("0.5x", [this]() { set_speed(0.5f); refresh_controls(); });
+    ctx_menu_->add_item("1.0x", [this]() { set_speed(1.0f); refresh_controls(); });
+    ctx_menu_->add_item("1.5x", [this]() { set_speed(1.5f); refresh_controls(); });
+    ctx_menu_->add_item("2.0x", [this]() { set_speed(2.0f); refresh_controls(); });
+    mi += 4;
+    ctx_menu_->end_group();
+
+    ctx_menu_->add_separator();
+    ++mi;
+
+    ctx_menu_->add_parent("音量");
+    ++mi;
+    it_vol_base_ = mi;
+    for (int i = 0; i < 5; ++i) {  // 0/25/50/75/100%
+        char buf[8];
+        std::snprintf(buf, sizeof(buf), "%d%%", i * 25);
+        ctx_menu_->add_item(buf, [this, i]() { set_volume((float)i * 0.25f); refresh_controls(); });
+    }
+    mi += 5;
+    ctx_menu_->end_group();
+
+    ctx_menu_->add_separator();
+    ++mi;
+
+    ctx_menu_->add_parent("亮度");
+    ++mi;
+    it_bright_base_ = mi;
+    const float brights_v[5] = {0.5f, 1.0f, 1.5f, 2.0f, 3.0f};
+    for (int i = 0; i < 5; ++i) {
+        const float v = brights_v[i];
+        char buf[8];
+        std::snprintf(buf, sizeof(buf), "%.1f", v);
+        ctx_menu_->add_item(buf, [this, v]() { set_brightness(v); refresh_controls(); });
+    }
+    mi += 5;
+    ctx_menu_->end_group();
+
+    ctx_menu_->add_separator();
+    ++mi;
+
+    it_loop_ = mi;
+    ctx_menu_->add_item(pipe_.loop() ? "循环:开" : "循环:关", [this]() {
+        set_loop(!pipe_.loop());
+        refresh_controls();
+    });
+    ++mi;
+    ctx_menu_->add_separator();
+    ++mi;
+
+    ctx_menu_->add_item("关闭源", [this]() {
+        if (has_video()) {
+            close_source();
+            refresh_controls();
+        }
+    });
+    ctx_menu_->add_item("重新打开源", [this]() {
+        if (!source_desc_.empty()) {
+            open_source(source_desc_.c_str());
+            refresh_controls();
+        }
+    });
+
+    add_child(ctx_menu_);
+}
+
+// UI-198：右键菜单回显当前状态（每帧调用，菜单项文本/选中态变化才标脏，零冗余重绘）。
+void VideoContainer::refresh_context_menu() {
+    if (!ctx_menu_) return;
+    if (it_play_ >= 0) ctx_menu_->set_item_text(it_play_, pipe_.playing() ? "暂停" : "播放");
+    if (it_loop_ >= 0) {
+        ctx_menu_->set_item_text(it_loop_, pipe_.loop() ? "循环:开" : "循环:关");
+        ctx_menu_->set_item_checked(it_loop_, pipe_.loop());
+    }
+    for (int i = 0; i < 4; ++i) {  // 倍速 0.5/1.0/1.5/2.0 打勾即当前档
+        const float v = 0.5f + 0.5f * (float)i;
+        ctx_menu_->set_item_checked(it_speed_base_ + i, std::fabs(pipe_.speed() - v) < 0.01f);
+    }
+    for (int i = 0; i < 5; ++i) {  // 音量 0/25/50/75/100% 打勾即当前档
+        ctx_menu_->set_item_checked(it_vol_base_ + i,
+                                    (int)std::round(pipe_.volume() * 100.f) == i * 25);
+    }
+    const float brights[5] = {0.5f, 1.0f, 1.5f, 2.0f, 3.0f};
+    for (int i = 0; i < 5; ++i) {  // 亮度 0.5..3.0 打勾即当前档
+        ctx_menu_->set_item_checked(it_bright_base_ + i, std::fabs(brightness() - brights[i]) < 0.01f);
+    }
 }
 
 // UI-197：显隐控制条（底部播放条 + 左右音量/亮度竖滑块及标签数值）。
@@ -415,7 +534,8 @@ bool VideoContainer::on_mouse_down(float x, float y, int button) {
             return true;
         }
     }
-    // 右键（button==1）为 UI-198 预留：本轮不处理
+    // 右键（button==1）由覆盖全容器的 ctx_menu_ 子控件（Dropdown ContextMenu，UI-198）
+    // 优先命中并打开菜单；这里兜底返回 false 不吞事件。
     (void)button;
     return false;
 }

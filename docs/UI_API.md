@@ -1479,6 +1479,9 @@ parent->add_child(dd);
 | `void show_at(float sx, float sy)` |  |
 | `bool opened() const` |  |
 | `void set_on_select(std::function<void(const char*)> cb)` | 选中项回调（title 文本） |
+| `int item_count() const` | UI-198：右键菜单回显——菜单项按插入序（含分隔线/父级项），刷新文本与选中态 |
+| `void set_item_text(int index, const char* title)` |  |
+| `void set_item_checked(int index, bool checked)` |  |
 | `void set_font(Font* font)` |  |
 | `void set_theme(const Theme* theme)` |  |
 | `void on_layout() override` |  |
@@ -2029,6 +2032,9 @@ parent->add_child(mb);
 | `void clear()` | 清空全部项（第二列子菜单按板块重建时复用同一控件） |
 | `void set_checked()` |  |
 | `void set_selected(int group_index, int item_index)` | 选中指定 (组序号, 组内子项序号)：清除其余项选中态，高亮该项（layui `.layui-menu-item-checked` 绿字） |
+| `int item_count() const` | UI-198：读/改菜单项（按 add_* 插入序，含分隔线与父级项）——上下文菜单回显当前状态 |
+| `void set_item_text(int index, const char* title)` | 动态文本（如「播放/暂停」「循环:开/关」） |
+| `void set_item_checked(int index, bool checked)` | 选中态（绿字，当前值打勾） |
 | `void set_badge(const char* text)` |  |
 | `void set_dot_badge()` |  |
 | `void set_large(bool large)` |  |
@@ -2038,6 +2044,7 @@ parent->add_child(mb);
 | `void set_on_item_click(std::function<void(const char*)> cb)` | 普通菜单项被点击时回调（title 文本），供宿主（如 Dropdown）做选中/收起 |
 | `void set_on_group_click(std::function<void(const char*)> cb)` | 分组头被点击时回调（title 文本，spread 已切换后触发），供宿主联动收起/展开外部面板 |
 | `float preferred_height() const` |  |
+| `explicit HitBox(Menu* m)` |  |
 
 **类 `Item`**
 
@@ -2058,6 +2065,13 @@ parent->add_child(mb);
 | `mutable int group_index = -1;` |  |
 | `mutable bool visible = true;` |  |
 
+**类 `HitBox`**
+（继承 `: Widget`）
+
+| 方法 | 功能说明 |
+| --- | --- |
+| `explicit HitBox(Menu* m)` |  |
+
 **自由函数**（命名空间 `ui` / `ui::layui`）：
 
 | 函数 | 功能说明 |
@@ -2066,6 +2080,7 @@ parent->add_child(mb);
 | `void draw_sub_panel(Renderer&, int parent_index)` |  |
 | `void layout_items()` |  |
 | `void compute_visibility() const` |  |
+| `int hit_sub_item(float x, float y) const` | (x,y) 命中 flyout 子面板某子项时返回其 items_ 下标，否则 -1（on_mouse_down/move 共用） |
 
 **枚举 `Type`**
 

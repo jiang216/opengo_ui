@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-07T01:20:36+08:00",
+  "generatedAt": "2026-09-07T03:18:30+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-198": {
+      "id": "BUG:UI-198",
+      "type": "BUG",
+      "label": "UI-198: VideoContainer 右键上下文菜单——DropDown ContextMenu 覆盖全容器 + Menu 折叠父级 → 右侧子面板展开/悬停命中/子项选中即关；flyout 越界命中框（ui 库根因修复）（2026-09-07）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-198-videocontainer-右键上下文菜单dropdown-contextmenu-覆盖全容器--menu-折叠父级--右侧子面板展开悬停命中子项选中即关flyout-越界命中框ui-库根因修复2026-09-07"
+    },
     "BUG:UI-197": {
       "id": "BUG:UI-197",
       "type": "BUG",
@@ -3595,6 +3602,12 @@
     },
     {
       "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-198",
+      "kind": "checklist",
+      "context": "回归清单#右键上下文菜单（UI-198）：覆盖全容器右击弹出（Dropdown ContextMenu + `set_region(\"\")` 隐藏触发器仅命中区），折叠父级（倍速 0.5x~2.0x / 音量 0/25/50/75/100% / 亮度 0.5..3.0）悬停/点击展开右侧子面板并可点选（Menu `open_parent_` 持久 + `HitBox` 越界命中），动作经容器公共 API 与底部控制条同管线状态，动态回显（播放/暂停、循环:开/关、当前档打勾），选子项即关菜单；Scene 右键（button 1）直达控件树不经左键钩子"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
       "to": "BUG:UI-193",
       "kind": "checklist",
       "context": "回归清单#管线节点可运行期按名更换：`set_*_name` + `MediaRegistry` 注册表装配；合成源与 FFmpeg 节点并存（同名重复注册忽略、不覆盖）；先 open 合成源再 open 真实文件不互相污染节点名"
@@ -3703,6 +3716,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-198": [
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#右键上下文菜单（UI-198）：覆盖全容器右击弹出（Dropdown ContextMenu + `set_region(\"\")` 隐藏触发器仅命中区），折叠父级（倍速 0.5x~2.0x / 音量 0/25/50/75/100% / 亮度 0.5..3.0）悬停/点击展开右侧子面板并可点选（Menu `open_parent_` 持久 + `HitBox` 越界命中），动作经容器公共 API 与底部控制条同管线状态，动态回显（播放/暂停、循环:开/关、当前档打勾），选子项即关菜单；Scene 右键（button 1）直达控件树不经左键钩子"
+      }
+    ],
     "BUG:UI-197": [
       {
         "from": "DOC:MEDIA_PIPELINE",

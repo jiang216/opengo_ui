@@ -122,6 +122,19 @@ void Dropdown::set_popup_style(const Vec4& bg, const Vec4& hover, const Vec4& te
     if (menu_) menu_->set_style_overrides(bg, bg, hover, text);
 }
 
+// UI-198：转发到内部 Menu —— 上下文菜单动态回显当前状态（文本/选中态），由宿主每帧刷新
+int Dropdown::item_count() const {
+    return menu_ ? menu_->item_count() : 0;
+}
+
+void Dropdown::set_item_text(int index, const char* title) {
+    if (menu_) menu_->set_item_text(index, title);
+}
+
+void Dropdown::set_item_checked(int index, bool checked) {
+    if (menu_) menu_->set_item_checked(index, checked);
+}
+
 // ---- 显隐 ----
 void Dropdown::show() {
     mark_dirty();

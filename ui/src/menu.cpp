@@ -24,7 +24,11 @@ constexpr float kSubPanelPad = 8.f;
 constexpr float kSubItemH = 36.f;
 }  // namespace
 
-Menu::Menu(float x, float y, float w, float h) : Widget(x, y, w, h) {}
+Menu::Menu(float x, float y, float w, float h) : Widget(x, y, w, h) {
+    hitbox_ = new HitBox(this);
+    hitbox_->set_visible(false);
+    add_child(hitbox_);
+}
 
 void Menu::add_item(const char* title, std::function<void()> cb) {
     items_.push_back({title ? title : "", "", std::move(cb), Item::Plain, current_level_,
@@ -68,12 +72,30 @@ void Menu::clear() {
     current_level_ = 0;
     hover_ = nullptr;
     active_hover_ = nullptr;
+    open_parent_ = -1;
     sub_panel_rect_ = {};
 }
 
 void Menu::set_checked() {
     mark_dirty();
         if (!items_.empty()) items_.back().checked = true;
+}
+
+// UI-198：按插入序改项文本（含分隔线/父级项），无变化不标脏（refresh_controls 每帧调用零开销）
+void Menu::set_item_text(int index, const char* title) {
+    if (index < 0 || index >= (int)items_.size()) return;
+    const std::string t = title ? title : "";
+    if (items_[index].text == t) return;
+    items_[index].text = t;
+    mark_dirty();
+}
+
+// UI-198：按插入序改项选中态（绿字回显当前值，如倍速/音量/亮度当前档）
+void Menu::set_item_checked(int index, bool checked) {
+    if (index < 0 || index >= (int)items_.size()) return;
+    if (items_[index].checked == checked) return;
+    items_[index].checked = checked;
+    mark_dirty();
 }
 
 void Menu::set_selected(int group_index, int item_index) {
@@ -208,6 +230,18 @@ void Menu::compute_visibility() const {
             it.visible = false;
         }
     }
+    // UI-198：Parent 子区折叠——父项（add_parent）的子项不在地一层平铺，仅随
+    // 「悬停自动展开」的右侧子面板（draw_sub_panel）显示。边界条件与 draw_sub_panel
+    // 的收集一致：从父项后起到「分隔线 / 层级 ≤ 父项」处为止，其余全部置不可见。
+    for (size_t pi = 0; pi < items_.size(); ++pi) {
+        if (items_[pi].type != Item::Parent) continue;
+        for (size_t j = pi + 1; j < items_.size(); ++j) {
+            const Item& it = items_[j];
+            if (it.type == Item::Divider) break;
+            if (it.level <= items_[pi].level) break;
+            items_[j].visible = false;
+        }
+    }
 }
 
 void Menu::draw_item(Renderer& renderer, Item& it, int /*index*/) {
@@ -289,6 +323,28 @@ void Menu::draw_item(Renderer& renderer, Item& it, int /*index*/) {
     }
 }
 
+// (x,y) 命中当前打开父项的 flyout 子面板内子项 → 返回其 items_ 下标；未展开/未命中 → -1
+int Menu::hit_sub_item(float x, float y) const {
+    if (open_parent_ < 0 || open_parent_ >= (int)items_.size() ||
+        items_[open_parent_].type != Item::Parent || !items_[open_parent_].visible)
+        return -1;
+    if (sub_panel_rect_.w <= 0.f || sub_panel_rect_.h <= 0.f) return -1;
+    if (x < sub_panel_rect_.x || x >= sub_panel_rect_.x + sub_panel_rect_.w ||
+        y < sub_panel_rect_.y || y >= sub_panel_rect_.y + sub_panel_rect_.h)
+        return -1;
+    const float sub_ly = y - sub_panel_rect_.y;
+    if (sub_ly < kSubPanelPad) return -1;
+    const int idx = (int)((sub_ly - kSubPanelPad) / kSubItemH);
+    std::vector<int> sub;
+    for (int j = open_parent_ + 1; j < (int)items_.size(); ++j) {
+        if (items_[j].type == Item::Divider) break;
+        if (items_[j].level <= items_[open_parent_].level) break;
+        if (items_[j].level == items_[open_parent_].level + 1) sub.push_back(j);
+    }
+    if (idx < 0 || idx >= (int)sub.size()) return -1;
+    return sub[idx];
+}
+
 void Menu::draw_sub_panel(Renderer& renderer, int parent_index) {
     if (!font_ || parent_index < 0 || parent_index >= (int)items_.size()) return;
     if (!items_[parent_index].visible) return;
@@ -330,8 +386,12 @@ void Menu::draw_sub_panel(Renderer& renderer, int parent_index) {
     renderer.draw_quad({panel_x, panel_y, 1.f, ph}, border);
     renderer.draw_quad({panel_x + pw - 1.f, panel_y, 1.f, ph}, border);
 
-    // Store sub-panel rect for mouse hit testing (screen coords)
+    // Store sub-panel rect for mouse hit testing (screen coords) + sync hitbox child
     const_cast<Menu*>(this)->sub_panel_rect_ = {panel_x, panel_y, pw, ph};
+    if (hitbox_) {
+        hitbox_->set_bounds(panel_x, panel_y, pw, ph);
+        hitbox_->set_visible(true);
+    }
 
     // Draw sub-items
     for (size_t si = 0; si < sub.size(); ++si) {
@@ -375,13 +435,12 @@ void Menu::draw_sub_panel(Renderer& renderer, int parent_index) {
 }
 
 void Menu::draw_overlay(Renderer& renderer) {
-    if (active_hover_ && active_hover_->type == Item::Parent && active_hover_->visible) {
-        for (int i = 0; i < (int)items_.size(); ++i) {
-            if (&items_[i] == active_hover_) {
-                draw_sub_panel(renderer, i);
-                return;
-            }
-        }
+    // UI-198: draw flyout if open_parent_ is set (persists when hover is on sub-item)
+    if (open_parent_ >= 0 && open_parent_ < (int)items_.size() &&
+        items_[open_parent_].type == Item::Parent && items_[open_parent_].visible) {
+        draw_sub_panel(renderer, open_parent_);
+    } else if (hitbox_) {
+        hitbox_->set_visible(false);  // 无 flyout / 已收起 → 同步隐藏命中框
     }
 }
 
@@ -404,30 +463,37 @@ void Menu::on_draw(Renderer& renderer) {
     for (int i = 0; i < (int)items_.size(); ++i) {
         draw_item(renderer, items_[i], i);
     }
+    // UI-198: flyout sub-panel must be drawn after items (sub-panel is outside bounds_)
+    draw_overlay(renderer);
 }
 
 bool Menu::on_mouse_down(float x, float y, int button) {
     if (button != 0) return false;
     if (!font_) return false;
-
     const float lx = x - bounds_.x;
 
     // If a sub-panel is open, check if click is inside it first
-    if (active_hover_ && active_hover_->type == Item::Parent && active_hover_->visible) {
-        if (sub_panel_rect_.w > 0.f && sub_panel_rect_.h > 0.f) {
-            if (x >= sub_panel_rect_.x && x < sub_panel_rect_.x + sub_panel_rect_.w &&
-                y >= sub_panel_rect_.y && y < sub_panel_rect_.y + sub_panel_rect_.h) {
-                return true;
-            }
-        }
-        active_hover_ = nullptr;
+    if (const int si = hit_sub_item(x, y); si >= 0) {
+        // UI-198：flyout 子项行命中 → 触发回调 + on_item_click（Dropdown 据此选中即关）
+        Item& sit = items_[si];
+        if (sit.cb) sit.cb();
+        if (on_item_click_) on_item_click_(sit.text.c_str());
+        open_parent_ = -1;
         sub_panel_rect_ = {};
+        if (hitbox_) hitbox_->set_visible(false);
+        return true;
+    }
+    if (open_parent_ >= 0) {
+        open_parent_ = -1;
+        sub_panel_rect_ = {};
+        if (hitbox_) hitbox_->set_visible(false);
     }
 
     if (lx < 0.f || lx >= bounds_.w || y < bounds_.y || y >= bounds_.y + bounds_.h)
         return false;
 
-    for (auto& it : items_) {
+    for (int i = 0; i < (int)items_.size(); ++i) {
+        Item& it = items_[i];
         if (!it.visible) continue;
         if (y >= it.y0 && y < it.y1) {
             if (it.type == Item::Group && it.allow_spread) {
@@ -436,7 +502,10 @@ bool Menu::on_mouse_down(float x, float y, int button) {
                 return true;
             }
             if (it.type == Item::Parent) {
+                // UI-198：点击父项 → 展开右侧 flyout（不收起菜单）
                 active_hover_ = &it;
+                open_parent_ = i;
+                sub_panel_rect_ = {};  // 几何由本帧 draw_sub_panel 重算
                 return true;
             }
             if (it.type == Item::Plain && it.cb) {
@@ -458,50 +527,39 @@ bool Menu::on_mouse_move(float x, float y) {
     // 否则 root is_dirty() 不翻 → 渲染被跳过 → 高亮停留在首个命中行，直至其他事件触发重绘。
     Item* const prev_hover = hover_;
     Item* const prev_active = active_hover_;
+    const int prev_open = open_parent_;
     auto notify_hover_changed = [&]() {
-        if (hover_ != prev_hover || active_hover_ != prev_active) mark_dirty();
+        if (hover_ != prev_hover || active_hover_ != prev_active || open_parent_ != prev_open)
+            mark_dirty();
     };
 
     hover_ = nullptr;
 
-    // Check if hovering over a sub-panel item
-    if (active_hover_ && active_hover_->type == Item::Parent && active_hover_->visible &&
-        sub_panel_rect_.w > 0.f && sub_panel_rect_.h > 0.f) {
-        if (x >= sub_panel_rect_.x && x < sub_panel_rect_.x + sub_panel_rect_.w &&
-            y >= sub_panel_rect_.y && y < sub_panel_rect_.y + sub_panel_rect_.h) {
-            const float sub_ly = y - sub_panel_rect_.y;
-            const float pad = kSubPanelPad;
-            if (sub_ly >= pad) {
-                const int idx = (int)((sub_ly - pad) / kSubItemH);
-                for (int i = 0; i < (int)items_.size(); ++i) {
-                    if (&items_[i] == active_hover_) {
-                        std::vector<int> sub;
-                        for (int j = i + 1; j < (int)items_.size(); ++j) {
-                            if (items_[j].type == Item::Divider) break;
-                            if (items_[j].level <= items_[i].level) break;
-                            if (items_[j].level == items_[i].level + 1) sub.push_back(j);
-                        }
-                        if (idx >= 0 && idx < (int)sub.size()) {
-                            active_hover_ = &items_[sub[idx]];
-                        }
-                        break;
-                    }
-                }
-            }
-            notify_hover_changed();
-            return false;
-        }
+    // UI-198：悬停在已展开 flyout（右侧子面板）内 → 高亮子项、保持面板开启
+    if (const int si = hit_sub_item(x, y); si >= 0) {
+        active_hover_ = &items_[si];
+        notify_hover_changed();
+        return false;
     }
 
     // Check menu items
     if (lx >= 0.f && lx < bounds_.w && y >= bounds_.y && y < bounds_.y + bounds_.h) {
-        for (auto& it : items_) {
+        for (int i = 0; i < (int)items_.size(); ++i) {
+            Item& it = items_[i];
             if (!it.visible) continue;
             if (y >= it.y0 && y < it.y1) {
                 if (it.type != Item::Divider) hover_ = &it;
-                if (active_hover_ && active_hover_->type == Item::Parent && &it != active_hover_) {
-                    active_hover_ = nullptr;
+                // UI-198：悬停父项自动展开右侧子面板（需先命中本面板再进 flyout）
+                if (it.type == Item::Parent) {
+                    if (open_parent_ != i) {
+                        open_parent_ = i;
+                        sub_panel_rect_ = {};  // 新父项 flyout 几何由本帧 draw_sub_panel 重算
+                        active_hover_ = &it;
+                    }
+                } else if (open_parent_ >= 0) {
+                    open_parent_ = -1;
                     sub_panel_rect_ = {};
+                    if (active_hover_ && active_hover_->type == Item::Parent) active_hover_ = nullptr;
                 }
                 notify_hover_changed();
                 return false;
@@ -509,16 +567,16 @@ bool Menu::on_mouse_move(float x, float y) {
         }
     }
 
-    // Mouse outside menu — clear hover, keep sub-panel if mouse is over it
-    if (active_hover_ && active_hover_->type == Item::Parent) {
-        if (sub_panel_rect_.w > 0.f && sub_panel_rect_.h > 0.f) {
-            if (x < sub_panel_rect_.x || x >= sub_panel_rect_.x + sub_panel_rect_.w ||
-                y < sub_panel_rect_.y || y >= sub_panel_rect_.y + sub_panel_rect_.h) {
-                active_hover_ = nullptr;
-                sub_panel_rect_ = {};
-            }
+    // Mouse outside menu — keep flyout if mouse is over it; else close
+    if (open_parent_ >= 0 && sub_panel_rect_.w > 0.f && sub_panel_rect_.h > 0.f) {
+        if (x < sub_panel_rect_.x || x >= sub_panel_rect_.x + sub_panel_rect_.w ||
+            y < sub_panel_rect_.y || y >= sub_panel_rect_.y + sub_panel_rect_.h) {
+            open_parent_ = -1;
+            sub_panel_rect_ = {};
+            active_hover_ = nullptr;
         }
     } else {
+        open_parent_ = -1;
         active_hover_ = nullptr;
     }
     notify_hover_changed();
