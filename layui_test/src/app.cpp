@@ -224,6 +224,8 @@ int main(int argc, char** argv) {
     float shot_scroll = 0.f;
     bool shot_after_click = false;  // --shot-after-click：点击注入后再截图（验证点击后状态）
     std::vector<std::pair<float, float>> click_points;  // --click x,y（可重复）
+    struct DragSpec { float x1, y1, x2, y2; };          // --drag x1,y1 x2,y2：按下→多步移动→抬起
+    std::vector<DragSpec> drag_points;
     bool list_pages = false;
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--smoke") == 0 && i + 1 < argc)
@@ -242,6 +244,10 @@ int main(int argc, char** argv) {
             float cx = 0.f, cy = 0.f;
             if (std::sscanf(argv[++i], "%f,%f", &cx, &cy) == 2)
                 click_points.push_back({cx, cy});
+        } else if (std::strcmp(argv[i], "--drag") == 0 && i + 1 < argc) {
+            DragSpec d;
+            if (std::sscanf(argv[++i], "%f,%f,%f,%f", &d.x1, &d.y1, &d.x2, &d.y2) == 4)
+                drag_points.push_back(d);
         } else if (std::strcmp(argv[i], "--shot-after-click") == 0) {
             shot_after_click = true;
         }
@@ -607,13 +613,23 @@ int main(int argc, char** argv) {
         // UI-190：Frame 观察者运行于 scene.frame() 的「分配输入（layout+dispatch）」之前，
         // 首帧注入时页面控件尚未布局（bounds 仍是初值）会全部脱靶；延迟到第 2 帧（页面已
         // 完成首帧布局）再注入，仍保持「单次点击」语义。
-        if (!click_points.empty() && !clicks_injected) {
+        if (!click_points.empty() || !drag_points.empty()) {
             if (inject_wait >= 1) {
                 clicks_injected = true;
                 for (const auto& c : click_points) {
                     root.dispatch_mouse_move(c.first, c.second);
                     root.dispatch_mouse_down(c.first, c.second, 0);
                     root.dispatch_mouse_up(c.first, c.second, 0);
+                }
+                for (const auto& d : drag_points) {
+                    // 拖拽注入：按下→8 步插值移动→抬起（滑块 carrying_ 期间 move 逐帧改值）
+                    root.dispatch_mouse_move(d.x1, d.y1);
+                    root.dispatch_mouse_down(d.x1, d.y1, 0);
+                    for (int i = 1; i <= 8; ++i) {
+                        const float t = i / 8.f;
+                        root.dispatch_mouse_move(d.x1 + (d.x2 - d.x1) * t, d.y1 + (d.y2 - d.y1) * t);
+                    }
+                    root.dispatch_mouse_up(d.x2, d.y2, 0);
                 }
                 root.layout();
             } else {
@@ -643,7 +659,7 @@ int main(int argc, char** argv) {
 
     // 帧后：截图（glReadPixels，begin_frame+root.draw 之后）+ HUD 绘制
     scene.on(ui::ScenePhase::PostDraw, [&](ui::Scene& s) {
-        if (shot_path && !shot_done_ && (!shot_after_click || click_points.empty() || clicks_injected)) {
+        if (shot_path && !shot_done_ && (!shot_after_click || (click_points.empty() && drag_points.empty()) || clicks_injected)) {
             shot_done_ = true;
             const int w = window.width();
             const int h = window.height();

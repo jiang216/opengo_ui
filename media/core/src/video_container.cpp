@@ -159,6 +159,7 @@ void VideoContainer::ensure_controls() {
 
     seek_slider_ = new Slider(0, 0, 100, 16);
     seek_slider_->set_range(0.f, 1.f);
+    seek_slider_->set_step(0.002f);  // UI-195：0..1 显式细步，拖动连续定位
     seek_slider_->set_on_change([this](float t) {
         if (has_video() && pipe_.duration() > 0.0) pipe_.seek(t * (float)pipe_.duration());
     });
@@ -172,6 +173,7 @@ void VideoContainer::ensure_controls() {
     vol_slider_ = new Slider(0, 0, 22, 120);
     vol_slider_->set_vertical(true);
     vol_slider_->set_range(0.f, 1.f);
+    vol_slider_->set_step(0.01f);  // UI-195：0..1 显式细步，拖动连续
     vol_slider_->set_value_silent(1.f);
     vol_slider_->set_tips(false);
     vol_slider_->set_on_change([this](float v) { pipe_.set_volume(v); });
@@ -189,6 +191,7 @@ void VideoContainer::ensure_controls() {
     bright_slider_ = new Slider(0, 0, 22, 120);
     bright_slider_->set_vertical(true);
     bright_slider_->set_range(kVideoContainerBrightMin, kVideoContainerBrightMax);
+    bright_slider_->set_step(0.05f);  // UI-195：0.2..3.0 显式细步（56 档），拖动连续
     bright_slider_->set_value_silent(1.f);
     bright_slider_->set_tips(false);
     bright_slider_->set_on_change([this](float v) { set_brightness(v); });

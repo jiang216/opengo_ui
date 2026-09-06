@@ -30,7 +30,7 @@ public:
 
     // —— layui slider 选项 ——
     void set_range_enabled(bool on) {  range_ = on; mark_dirty(); }   // 范围拖拽（双环）
-    void set_step(float step) {  step_ = step > 0.f ? step : 1.f; mark_dirty(); }
+    void set_step(float step) {  step_ = step > 0.f ? step : 1.f; has_step_ = true; mark_dirty(); }  // 显式步长：开启量化
     void set_showstep(bool on) {  showstep_ = on; mark_dirty(); }     // 间断点
     void set_tips(bool on) {  tips_ = on; mark_dirty(); }             // 提示文本
     void set_tips_callback(std::function<std::string(float)> fn) { tips_fn_ = std::move(fn); } // setTips
@@ -58,7 +58,8 @@ private:
 
     float value_from_coord(float c) const;  // 像素坐标(横x/纵y)→值（含 step 取整）
     float coord_for(float v) const;         // 值→像素坐标
-    float step_round(float v) const;
+    float step_round(float v) const;        // 有显式步长才取整；无步长=原值（连续）
+    float effective_step() const;           // 有显式步长用 step_；无则自动细步（min(step_, 区间/100)）
     Rect track_rect() const;
     Rect input_rect() const;
     Vec4 accent() const;
@@ -67,7 +68,8 @@ private:
 
     float value_ = 0.f, value2_ = 50.f;
     float min_ = 0.f, max_ = 100.f;
-    float step_ = 1.f;
+    float step_ = 1.f;      // 默认步长值（无 has_step_ 时仅作 effective_step 上限参考）
+    bool has_step_ = false; // set_step 显式设置过：才按 step_round 量化（未设置 = 连续拖动）
     float track_len_ = 200.f;   // vertical 轨道长度
     bool range_ = false;
     bool showstep_ = false;

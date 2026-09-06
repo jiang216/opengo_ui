@@ -2448,7 +2448,7 @@ parent->add_child(sl);
 | `float value2() const` |  |
 | `bool dragging() const` |  |
 | `void set_range_enabled(bool on)` | —— layui slider 选项 —— 范围拖拽（双环） |
-| `void set_step(float step)` |  |
+| `void set_step(float step)` | 显式步长：开启量化 |
 | `void set_showstep(bool on)` | 间断点 |
 | `void set_tips(bool on)` | 提示文本 |
 | `void set_tips_callback(std::function<std::string(float)> fn)` | setTips |

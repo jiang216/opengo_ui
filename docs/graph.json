@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-06T21:29:05+08:00",
+  "generatedAt": "2026-09-06T22:05:25+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -12,6 +12,13 @@
       "label": "UI-194: VideoContainer 控制条改版——音量/亮度双竖向滑块（基本滑块算法）+ 倍速 ▲▼ 按钮 + 图标标签，修复「无法拖动 / 图标重叠 / 文本过暗」（media/core）（2026-09-06）",
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-194-videocontainer-控制条改版音量亮度双竖向滑块基本滑块算法-倍速--按钮--图标标签修复无法拖动--图标重叠--文本过暗mediacore2026-09-06"
+    },
+    "BUG:UI-195": {
+      "id": "BUG:UI-195",
+      "type": "BUG",
+      "label": "UI-195: 修复 Slider 小数/归一化值域「无法拖动」根因——默认步长量化（ui 库 Slider 根因修复，media/core VideoContainer 与 layui_test harness 配合）（2026-09-06）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-195-修复-slider-小数归一化值域无法拖动根因默认步长量化ui-库-slider-根因修复mediacore-videocontainer-与-layuitest-harness-配合2026-09-06"
     },
     "BUG:UI-193": {
       "id": "BUG:UI-193",
@@ -3556,6 +3563,12 @@
     },
     {
       "from": "DOC:MEDIA_PIPELINE",
+      "to": "BUG:UI-195",
+      "kind": "checklist",
+      "context": "回归清单#控制条滑块拖动连续：seek/vol/bright 显式细步 `0.002/0.01/0.05`，拖拽按像素连续定位（不被默认 step=1 量化成 0/1、0.2/1.2/2.2 等离散档）；Slider 无显式 `set_step` 时自动连续并自适配键盘细步；harness `--drag` 拖拽注入可脚本验证"
+    },
+    {
+      "from": "DOC:MEDIA_PIPELINE",
       "to": "BUG:UI-193",
       "kind": "checklist",
       "context": "回归清单#管线节点可运行期按名更换：`set_*_name` + `MediaRegistry` 注册表装配；合成源与 FFmpeg 节点并存（同名重复注册忽略、不覆盖）；先 open 合成源再 open 真实文件不互相污染节点名"
@@ -3669,6 +3682,13 @@
         "from": "DOC:MEDIA_PIPELINE",
         "kind": "checklist",
         "context": "回归清单#VideoContainer 控制条交互：音量/亮度双竖向滑块（库内置基本滑块算法，拖动中不被每帧 `set_value_silent` 重置），亮度仅调视频画面（RGB tint，范围 0.2..3.0，默认 1.0，`set_brightness/brightness`），倍速 ▲▼ 步进按钮（0.5..2.0，步 0.25）；滑块上方 IconLabel 图标标签纯白、与轨道不重叠"
+      }
+    ],
+    "BUG:UI-195": [
+      {
+        "from": "DOC:MEDIA_PIPELINE",
+        "kind": "checklist",
+        "context": "回归清单#控制条滑块拖动连续：seek/vol/bright 显式细步 `0.002/0.01/0.05`，拖拽按像素连续定位（不被默认 step=1 量化成 0/1、0.2/1.2/2.2 等离散档）；Slider 无显式 `set_step` 时自动连续并自适配键盘细步；harness `--drag` 拖拽注入可脚本验证"
       }
     ],
     "BUG:UI-193": [

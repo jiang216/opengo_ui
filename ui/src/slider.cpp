@@ -55,9 +55,21 @@ void Slider::set_range_value(float start, float end) {
 }
 
 float Slider::step_round(float v) const {
+    // 未显式 set_step：不量化（连续拖动）。默认 step_=1 曾使 0..1 区间被压缩成 0/1 两端
+    //（seek/vol/speed 等小数区间「无法拖动」根因，UI-195）：显式 set_step 才取整。
+    if (!has_step_) return v;
     float s = step_ > 0.f ? step_ : 1.f;
     const float snapped = min_ + std::round((v - min_) / s) * s;
     return std::min(std::max(snapped, min_), max_);
+}
+
+float Slider::effective_step() const {
+    // 键盘/输入框箭头步长：显式 step 用之；未设置时自动细步——取默认 1 与 区间/100 的较小者，
+    // 既让 0..1 区间键盘可用（0.01），又不改变整数区间（0..100→1、20..1000→1）的既有手感。
+    if (has_step_) return step_;
+    const float span = max_ - min_;
+    if (span <= 0.f) return 1.f;
+    return std::min(step_, span / 100.f);
 }
 
 Rect Slider::track_rect() const {
@@ -126,10 +138,10 @@ bool Slider::on_mouse_down(float x, float y, int button) {
         if (x >= up_x && x <= ib.x + ib.w) {  // 右侧加减区
             const bool up = y < ib.y + ib.h * 0.5f;
             if (range_) {
-                value2_ = step_round(value2_ + (up ? step_ : -step_));
+                value2_ = step_round(value2_ + (up ? effective_step() : -effective_step()));
                 if (value2_ < value_) value2_ = value_;
             } else {
-                value_ = step_round(value_ + (up ? step_ : -step_));
+                value_ = step_round(value_ + (up ? effective_step() : -effective_step()));
             }
             emit();
             return true;
@@ -178,15 +190,16 @@ bool Slider::on_mouse_up(float x, float y, int button) {
 bool Slider::on_key_down(int key, int mods) {
     (void)mods;
     if (disabled_) return false;
+    const float st = effective_step();  // 键盘箭头统一走有效步长
     if (key == KeyLeft || key == KeyDown) {
         if (range_ && active_range_ == 1) {
-            value2_ = step_round(std::max(value2_ - step_, value_));
+            value2_ = step_round(std::max(value2_ - st, value_));
             if (value2_ == value_) { /* 不穿过 */ }
         } else {
             if (range_) {
-                value_ = step_round(std::min(value_ - step_, value2_));
+                value_ = step_round(std::min(value_ - st, value2_));
             } else {
-                value_ = step_round(value_ - step_);
+                value_ = step_round(value_ - st);
             }
         }
         emit();
@@ -194,12 +207,12 @@ bool Slider::on_key_down(int key, int mods) {
     }
     if (key == KeyRight || key == KeyUp) {
         if (range_ && active_range_ == 1) {
-            value2_ = step_round(value2_ + step_);
+            value2_ = step_round(value2_ + st);
         } else {
             if (range_) {
-                value_ = step_round(std::min(value_ + step_, value2_));
+                value_ = step_round(std::min(value_ + st, value2_));
             } else {
-                value_ = step_round(value_ + step_);
+                value_ = step_round(value_ + st);
             }
         }
         emit();

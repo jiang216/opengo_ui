@@ -26,6 +26,28 @@
 - **验证**：layui_test Release (Ninja) 重建通过；`--shot-page 48 --shot` 截图像素确认（双竖滑块 + 纯白标签 + 无重叠 + 亮度 1.0 基线）；`--page 48 --click 1227,366 --shot-after-click --shot` 像素前后对比验证亮度 tint；`--page 48 --click 281,400 --click 1227,544 --click 1227,400 --smoke 1` 全交互路径 exit 0 无错误日志；api_gen/graphgen 检查通过。
 - **影响范围**：`media/core/include/ui/media/video_container.h`、`media/core/src/video_container.cpp`、`layui_test/src/app.cpp`、`docs/UI_API.md`、`docs/CHANGELOG.md`
 
+## UI-195: 修复 Slider 小数/归一化值域「无法拖动」根因——默认步长量化（ui 库 Slider 根因修复，media/core VideoContainer 与 layui_test harness 配合）（2026-09-06）
+- **级别**：缺陷修复（ui 库 `core/gl/ui` 的 `Slider`；media/core、layui_test 仅配合）。用户复报「容器中的滑块都无法拖动」。UI-194 当时归因（每帧 `set_value_silent` 缺 `dragging()` 守卫并已修）只恢复了事件通路，**拖动失效的表象依旧**——真实根因在 `Slider` 自身，本轮修正归因并根治。
+- **根因**：`Slider` 默认 `float step_ = 1.f`，`set_range` 后未显式设步长即保持 1；`value_from_coord` → `step_round` 一律按 `min_ + round((v-min_)/step_)*step_` 量化。小数/归一化值域被压成极少数档位：
+  - seek / volume `[0,1]` + step1 → 只能取 0 / 1（拖动把手吸端点、视觉上无法移动）；
+  - 亮度 `[0.2,3.0]` + step1 → 只能取 0.2 / 1.2 / 2.2（跳档 = 「吸」到端点像拖不动）；
+  - 倍速 `[0.5,2.0]` + step1 → 只能取 0.5 / 1.5 / 2.0（`apps/main.cpp`、`apps/video_player.cpp` 的倍速滑块同样受影响）。
+  - 整数区间（0..100、20..50、20..1000）因 step=1 恰为整数粒度，从未暴露。
+- **UI-194 验证被量化掩盖（事实修正）**：当时 `--click 1227,366` 目标亮度 2.0 实际被 step_round 量化成 2.2（非预想 2.0）；且 `--click` 只有 down+up 无真实 move 拖拽注入，测不出连续拖动缺陷。
+- **修复**：
+  - **A（Slider 根因，ui 库）**：`slider.h` 新增 `bool has_step_ = false;`，`set_step()` 显式调用即置位（**显式步长才量化**，向后兼容 slider 页 s4/s5 的 step10/showstep 语义）；`step_round()` 在 `!has_step_` 时直接返回原值（鼠标拖动连续）；新增 `effective_step()` = 有显式步长用 `step_`，否则 `min(step_, (max_-min_)/100)`（键盘箭头 / 输入框加减共用——0..1→0.01、0.2..3→0.028、0.5..2→0.015 自动细步，整数区间手感不变）。
+  - **B（media/core 配合）**：`video_container.cpp ensure_controls()` 三滑块显式细步：seek `set_step(0.002f)`、vol `set_step(0.01f)`、bright `set_step(0.05f)`（56 档）。
+  - **C（layui_test 编排 harness）**：新参数 `--drag x1,y1,x2,y2`——按下 → 8 步插值 move → 抬起，与 `--click` 并列注入；`--shot-after-click` 的截图条件由 `clicks_injected` 扩展为「clicks 与 drags 注入全部完成」。
+- **回归清单（改动后核对）**：
+  1. layui_test 全页 `--smoke` 自动切页：全部页面可切、退出干净（exit 0，含多媒体页多容器销毁）；
+  2. `--page 48 --drag 1227,446,1227,422 --shot-after-click --shot`：亮度拖 1.0→**1.30**（把手 y 446→422），视频 SMPTE 白条 `(192,192,192)`→`(250,250,250)`（≈192×1.302）——**连续非量化**（旧行为只会出现 230=1.2 / 255=2.2）；
+  3. `--page 48 --drag 281,286,281,398 --shot-after-click --shot`：音量拖 1.0→**≈0.47**（fill 上沿 292→405），轨道 (276,300) teal→灰（全满时 (23,186,171)）；
+  4. slider 页显式 `set_step(10)` / `set_showstep` 行为不变（显式量化路径原样保留）；
+  5. `apps/main.cpp`、`apps/video_player.cpp` 倍速 `[0.5,2.0]` 因 A 自动变连续，无需改代码；
+  6. `python tools/api_gen.py --check` 0 差异；graphgen `--check` 0 错（5 个孤儿警告 BUG:UI-185..189 为 HEAD 基线）。
+- **验证**：layui_test Release (Ninja) 重建通过（NINJA_EXIT=0）；`--page 48` 拖拽截图逐像素比对通过（亮度 1.30 / 音量 fill 上沿 405）；全页 `--smoke 40` 退出干净 exit 0；api_gen/graphgen 检查通过。
+- **影响范围**：`ui/include/ui/ui/slider.h`、`ui/src/slider.cpp`、`media/core/src/video_container.cpp`、`layui_test/src/app.cpp`、`docs/UI_API.md`、`docs/CHANGELOG.md`
+
 ## UI-193: 媒体管线重构（MediaPipeline 节点化）与视频容器 VideoContainer —— VideoView 实现迁移到可运行期换节点的管线之上，layui_test 多媒体页（media/core、media/ffmpeg、layui_test/src/pages/media_page.cpp）（2026-09-05）
 - **级别**：功能新增（ui 库 media/core + media/ffmpeg 重构），UI-015/UI-021/UI-033/UI-146 语义保持不动。新分层：`media/core`（节点接口 + 组装 + 合成源，**不依赖 FFmpeg**）与 `media/ffmpeg`（FFmpeg 实现节点，运行期注册）双静态库；新增带标题条/控制条/占位文案的视频容器 `ui::VideoContainer`；`VideoView` 公共 API 不变，实现整体迁到管线之上；layui_test 新增「多媒体」演示页（合成源 + 双容器），默认无需 FFmpeg 即可构建运行。
 - **背景 / 原单片实现问题**：旧 `VideoView` 解码线程 + RGBA 队列 + Texture 全在一个实现里，合成源/流源/多路音视频的扩展只能继续堆 if-else；同时 FFmpeg 类型（AVFormatContext/RGBAPacket）泄漏进公共头，拖累纯 UI 工程。UI-193 拍板四项决策：① 接受 media/core + media/ffmpeg 分层；② VideoView 实现迁到管线之上、公共 API 不动；③ 节点运行期按名更换；④ 本轮仅 FFmpeg 软件解码，预留 HW 接口。
