@@ -78,6 +78,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/opengl_uiTargets.cmake")
 set(opengl_ui_FOUND TRUE)
 set(opengl_ui_VERSION @_OPENGUI_PROJECT_VERSION@)
 
+set(opengl_ui_core_FOUND TRUE)
+set(opengl_ui_gl_FOUND TRUE)
+set(opengl_ui_ui_FOUND TRUE)
+
 if(_opengl_ui_want_ffmpeg)
     set(opengl_ui_ffmpeg_FOUND TRUE)
 else()

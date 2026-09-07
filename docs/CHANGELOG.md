@@ -3,6 +3,21 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）
+- **级别**：缺陷修复（ui 库 `ui/src/scrollbox.cpp`；layui_test 只做脚本化验证）。用户实测 audio_text 规则管理页：规则集/正则集下拉（47 项长列表，`kThumbMinH=28` 小滑块）滚动条「打开后首次点滑块没抓住，松手再按才拖得动」。
+- **根因（ui 库）**：`ScrollBox::on_mouse_down` 的滑块命中基于 scrollbar_style 几何实时计算（`thumb_rect()`）。真实用户以肉眼瞄准 28px 小滑块，按压必然存在像素级偏差 → `on_thumb` 判定失败落入「点击轨道空白」分支——该分支仅 `set_scroll(scroll_from_y(y))` 跳转**却不置 `sb_.dragging`**，本次按下不进入拖拽，松手后滑块位于光标下；用户需再次按下（滑块恰在光标下、`on_thumb` 命中）才能拖动。症状即「首次点滑块没抓住，松手再按才拖得动」。脚本化注入（精确命中 `thumb_rect()` 坐标）恒复现不出，正是「偏差像素量级」造成的确定性差异，故此前 harness 全绿但实机必现。
+- **修复**：点击轨道空白分支在跳转后补置 `sb_.dragging = true`——跳转使滑块瞬移到光标正下方，置 dragging 使**本次按下即抓取**，后续 move（未松手）直接继续拖动，无需二次按下；「点击轨道空白仍跳转」（[UI-144](CHANGELOG.md#ui-144-scrollbox-滚动条按下滑块不再立即跳转点击轨道空白仍跳转2026-08-28) 回归清单）语义保留：按下后无 move 的点击行为逐像素不变。
+- **回归清单（改动后核对）**：
+  1. 按住滑块：首按即抓、无按下瞬间跳转（UI-144 语义不变）；
+  2. 点击轨道空白：滑块跳转到点击位置（UI-144 语义不变）；跳转后不松手继续 move 即连续拖动（新）；
+  3. 下拉面板（`layui-form-select-panel`）与普通 ScrollBox/TextArea/Table 滚动条同路径生效——长列表小滑块首按可拖；
+  4. 既有 ComboBox 开合「选中即关」、机滚轮/固定头部/锚定子控件（add_pinned）不受影响；
+  5. `python tools/api_gen.py --check` 0 差异；graphgen `--check` 0 错 0 警；
+  6. `--smoke 2` 全页切页正常退出 0；`--shot-page 23/41/13` 正常截图；
+  7. 纯 UI 工程（OPENGUI_MEDIA_CORE=OFF）不受影响。
+- **测试程序（编排/验证 lane，UI-198 先例）**：layui_test 新增 `--fs <frame>:<action>`（down/move/up/click/drag/scroll 逗号分隔，逐帧注入）与 `--dump-forms`（打印当前页全部 ComboBox 屏幕坐标供脚本定位），作永久回归工具。插桩（40 选项下拉）实测：首按偏差 thumb 下 12px 一次按下即触发拖拽 scroll 0→263（修复前需二次按下）；c2 七选项下拉同路径无崩溃。插桩/调试代码在提交前全部清理。
+- **影响范围**：`ui/src/scrollbox.cpp`、`layui_test/src/app.cpp`、`docs/CHANGELOG.md`
+
 ## UI-200: Table 流加载触底续灌失效修复——rebuild_rows 重建后重挂 body_ 的 on_scroll_to_bottom 钩子（ui/src/table.cpp；audio_text 指令预览等四表实测）（2026-09-07）
 - **级别**：缺陷修复（ui 库 `ui/src/table.cpp`；layui_test / audio_text 配合验证）。audio_text 规则管理页四表（指令预览 / 正则 / 语音指令 / mode 动作）流加载失效：触底不续灌、首屏不补满、数据耗尽「没有更多了」提示不再出现。
 - **根因**：UI-188 起 `ScrollBox::clear_children()` 置空 `body_` 的 `on_bottom_`/`on_scroll_`（防悬空引用）；`Table::rebuild_rows()` 每次重建都走 `clear_children()`，但流加载钩子只在 `set_paginated(false)` / `set_on_load_more` 注册一次 → 被清空后未重新挂回 → `check_bottom()` 因 `!on_bottom_` 提前返回，触底续灌（`on_scroll_to_bottom`）与首屏补满（`rearm_bottom()` → `check_bottom()`）全部失效。

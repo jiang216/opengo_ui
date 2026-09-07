@@ -11,6 +11,7 @@
 #include "ui/ui/label.h"
 #include "ui/ui/layui_icons.h"
 #include "ui/ui/menu.h"
+#include "ui/ui/combobox.h"
 #include "ui/ui/scrollbox.h"
 #include "ui/ui/switch.h"
 #include "ui/ui/tabs.h"
@@ -254,6 +255,11 @@ int main(int argc, char** argv) {
     float cursor_x = 0.f, cursor_y = 0.f;
     bool probe_video = false;             // --probe-video：打印控件树中各 VideoContainer 状态
     bool list_pages = false;
+    bool dump_forms = false;  // --dump-forms：打印当前页所有 ComboBox 屏幕绝对坐标
+    // --fs <frame>:<action>：按帧号定时注入交互（可重复），frame 用整数帧号
+    //   action: down x,y | move x,y | up x,y | click x,y | drag x1,y1 x2,y2 | scroll x,y,dx,dy
+    struct FsAction { int frame; std::string kind; float a, b, c, d; };
+    std::vector<FsAction> fs_actions;
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--smoke") == 0 && i + 1 < argc)
             smoke_seconds = std::atof(argv[++i]);
@@ -290,13 +296,37 @@ int main(int argc, char** argv) {
                 cursor_warp = true;
         } else if (std::strcmp(argv[i], "--probe-video") == 0) {
             probe_video = true;
+        } else if (std::strcmp(argv[i], "--dump-forms") == 0) {
+            dump_forms = true;
+        } else if (std::strcmp(argv[i], "--fs") == 0 && i + 1 < argc) {
+            // --fs frame:down,x,y / frame:click,x,y / frame:drag,x1,y1,x2,y2（逗号分隔）
+            const char* s = argv[++i];
+            int fr = 0; FsAction fa; int n = 0;
+            char kind[16] = {0};
+            if (std::sscanf(s, "%d:%15[^,]", &fr, kind) == 2) {
+                fa.frame = fr; fa.kind = kind; fa.a = fa.b = fa.c = fa.d = -1.f;
+                if (fa.kind == "down" || fa.kind == "move" || fa.kind == "up" ||
+                    fa.kind == "click") {
+                    n = std::sscanf(s, "%*d:%*[^,],%f,%f", &fa.a, &fa.b);
+                } else if (fa.kind == "drag") {
+                    n = std::sscanf(s, "%*d:%*[^,],%f,%f,%f,%f", &fa.a, &fa.b, &fa.c, &fa.d);
+                } else if (fa.kind == "scroll") {
+                    // scroll x,y,dx,dy —— 对命中点所在 ScrollBox 注入滚轮
+                    n = std::sscanf(s, "%*d:%*[^,],%f,%f,%f,%f", &fa.a, &fa.b, &fa.c, &fa.d);
+                }
+                if (n >= 2) fs_actions.push_back(fa);
+            }
         }
     }
     bool shot_done_ = false;
     int probe_frames = 0;  // --probe-video 触发帧（第 2 帧起状态稳定：布局完成 + 光标/点击已注入）
+    bool dump_forms_done = false;  // --dump-forms 已打印并请求退出
 
     ui::log_info("layui_test %s starting (%d pages)", ui::version_string(),
                  (int)page::all_pages().size());
+    for (const auto& fa : fs_actions)
+        ui::log_info("fs parsed frame=%d kind=%s (%.0f,%.0f,%.0f,%.0f)", fa.frame,
+                     fa.kind.c_str(), fa.a, fa.b, fa.c, fa.d);
 
     // 带自绘标题栏的窗口容器：居中 + 可拖动/最小化/最大化/关闭（UI-168）
     ui::WindowContainer container(1280, 900, "layui_test: clone of layui demo site");
@@ -633,6 +663,7 @@ int main(int argc, char** argv) {
     // ---- Scene 生命周期订阅 ----
     auto last = std::chrono::steady_clock::now();  // HUD 每秒 tick 计时
     int frames = 0;
+    int fs_index = 0;  // --fs 帧脚本已执行计数（供截图门控等待）
     char hud[64] = "";  // 右上角 HUD：每秒 tick 更新内容，每帧绘制（不闪烁，UI-049）
     // 冒烟自动切页游标（每 500ms 切下一页，验证 release_tree 无崩溃）
     int smoke_page = 0;
@@ -694,6 +725,39 @@ int main(int argc, char** argv) {
                 ++inject_wait;
             }
         }
+        // --fs：帧脚本，按帧号执行 down/move/up/click/drag（复现下拉滚动条首按时序）
+        {
+            for (; fs_index < (int)fs_actions.size(); ++fs_index) {
+                const FsAction& fa = fs_actions[fs_index];
+                if (fa.frame > frames) break;
+                ui::log_info("fs exec frame=%d kind=%s at (%.0f,%.0f)", frames,
+                             fa.kind.c_str(), fa.a, fa.b);
+                if (fa.kind == "down") root.dispatch_mouse_move(fa.a, fa.b);
+                if (fa.kind == "down") root.dispatch_mouse_down(fa.a, fa.b, 0);
+                if (fa.kind == "move") root.dispatch_mouse_move(fa.a, fa.b);
+                if (fa.kind == "up") root.dispatch_mouse_move(fa.a, fa.b);
+                if (fa.kind == "up") root.dispatch_mouse_up(fa.a, fa.b, 0);
+                if (fa.kind == "click") {
+                    root.dispatch_mouse_move(fa.a, fa.b);
+                    root.dispatch_mouse_down(fa.a, fa.b, 0);
+                    root.dispatch_mouse_up(fa.a, fa.b, 0);
+                }
+                if (fa.kind == "drag") {
+                    root.dispatch_mouse_move(fa.a, fa.b);
+                    root.dispatch_mouse_down(fa.a, fa.b, 0);
+                    for (int k = 1; k <= 8; ++k) {
+                        const float t = k / 8.f;
+                        root.dispatch_mouse_move(fa.a + (fa.c - fa.a) * t,
+                                                 fa.b + (fa.d - fa.b) * t);
+                    }
+                    root.dispatch_mouse_up(fa.c, fa.d, 0);
+                }
+                if (fa.kind == "scroll") {
+                    root.dispatch_mouse_scroll(fa.a, fa.b, fa.c, fa.d);
+                }
+                root.layout();
+            }
+        }
         // --click-after-rclick（UI-198）：菜单弹出后下一帧点菜单项，验证动作回写状态。
         // 右键注入帧里菜单弹板虽已 add_child 到 root，但行几何（it.y0/y1）要等 layout 才算，
         // 同帧点必脱靶 → 等 clicks_injected 后再等一帧（click_after_wait>=1）才命中。
@@ -738,11 +802,32 @@ int main(int argc, char** argv) {
             ++probe_frames;
             if (probe_frames >= 2) probe_video_containers(root, 0);
         }
-        if (shot_path && !shot_done_ && (!shot_after_click ||
-                                        (click_points.empty() && drag_points.empty() && rclick_points.empty() &&
-                                         click_after_rclick_points.empty()) ||
-                                        (clicks_injected &&
-                                         (click_after_rclick_points.empty() || click_after_done)))) {
+        // --dump-forms：递归打印预览区 ComboBox 的屏幕绝对坐标（布局完成后的第 10 帧）
+        if (dump_forms && !dump_forms_done && frames >= 10) {
+            dump_forms_done = true;
+            ui::log_info("preview origin (%.0f,%.0f) scroll=%.0f page=%s nchild=%zu",
+                         preview.bounds().x, preview.bounds().y, preview.scroll_offset(),
+                         pages[current_page].title, preview.children().size());
+            std::function<void(ui::Widget*)> walk = [&](ui::Widget* w) {
+                if (auto* cb = dynamic_cast<ui::ComboBox*>(w))
+                    ui::log_info("combo bounds (%.0f,%.0f %.0fx%.0f)", cb->bounds().x,
+                                 cb->bounds().y, cb->bounds().w, cb->bounds().h);
+                for (ui::Widget* c : w->children()) walk(c);
+            };
+            for (ui::Widget* c : preview.children()) walk(c);
+            ui::log_info("dump-forms total walk done");
+            s.request_exit();
+        }
+        if (shot_path && !shot_done_) {
+            bool injections_done = true;
+            if (!click_points.empty() || !drag_points.empty() || !rclick_points.empty())
+                injections_done = clicks_injected;
+            if (!click_after_rclick_points.empty())
+                injections_done = injections_done && click_after_done;
+            injections_done = injections_done && (fs_index >= (int)fs_actions.size());
+            const bool snap_ready =
+                (shot_after_click || !fs_actions.empty()) ? injections_done : true;
+            if (snap_ready) {
             shot_done_ = true;
             const int w = window.width();
             const int h = window.height();
@@ -765,6 +850,7 @@ int main(int argc, char** argv) {
                 ui::log_error("shot save failed: %s", shot_path);
             }
             s.request_exit();  // 截图完成即退出
+            }
         }
 
         ++frames;

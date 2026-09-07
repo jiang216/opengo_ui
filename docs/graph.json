@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-07T16:49:08+08:00",
+  "generatedAt": "2026-09-07T16:50:10+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-199": {
+      "id": "BUG:UI-199",
+      "type": "BUG",
+      "label": "UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-199-scrollbox-滚动条点击轨道空白仅跳转不抓取修复按下即抓--拖拽延续根治下拉列表滚动条首次点滑块没抓住松手再按才拖得动uisrcscrollboxcpplayuitest-仅编排验证--永久回归-lane2026-09-07"
+    },
     "BUG:UI-200": {
       "id": "BUG:UI-200",
       "type": "BUG",
@@ -1357,6 +1364,12 @@
     }
   },
   "edges": [
+    {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）"
+    },
     {
       "from": "META:CHANGELOG",
       "to": "META:CHANGELOG",
@@ -3723,6 +3736,7 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-199": [],
     "BUG:UI-200": [],
     "BUG:UI-198": [
       {
@@ -5801,6 +5815,11 @@
       {
         "from": "META:CHANGELOG",
         "kind": "mention",
+        "context": "UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
         "context": "UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）"
       },
       {
@@ -6083,6 +6102,7 @@
       "孤儿条目（无任何文档引用）: BUG:UI-187",
       "孤儿条目（无任何文档引用）: BUG:UI-188",
       "孤儿条目（无任何文档引用）: BUG:UI-189",
+      "孤儿条目（无任何文档引用）: BUG:UI-199",
       "孤儿条目（无任何文档引用）: BUG:UI-200"
     ]
   }

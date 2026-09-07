@@ -184,8 +184,13 @@ bool ScrollBox::on_mouse_down(float x, float y, int button) {
             // 按住滑块：仅进入拖拽，不在按下瞬间 set_scroll（消除按下即跳）
             sb_.dragging = true;
         } else {
-            // 点击轨道空白处（滑块上方/下方）：保持跳转到点击位置。
+            // 点击轨道空白处（滑块上方/下方）：跳转到点击位置（保留 UI-144「点击轨道
+            // 空白仍跳转」语义），并同时进入拖拽态——真实用户瞄准小滑块（kThumbMinH=
+            // 28px，长列表下）常有数像素偏差而 miss，此前仅跳转不置 dragging，需松手再按
+            // 一次才能拖动（「首次点滑块没抓住，松手再按才拖得动」）；跳转后拇指恰在
+            // 光标下，置 dragging 使本次按下即抓住、后续移动继续拖动，无需二次按下。
             set_scroll(scroll_from_y(y));
+            sb_.dragging = true;
         }
         return true;  // 捕获鼠标，拖动滑块
     }

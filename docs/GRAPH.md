@@ -5,14 +5,15 @@
 
 ## 统计
 
-- 节点: 194（BUG 185 / DOC 7 / META 2）
-- 边: 394
-- lint: 0 错误 / 6 警告
+- 节点: 195（BUG 186 / DOC 7 / META 2）
+- 边: 395
+- lint: 0 错误 / 7 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-187
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-188
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-189
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-199
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-200
 
 ## 反链索引
@@ -1279,6 +1280,11 @@
 - 反链(1):
   - `DOC:MEDIA_PIPELINE` (checklist) — 回归清单#右键上下文菜单（UI-198）：覆盖全容器右击弹出（Dropdown ContextMenu + `set_region("")` 隐藏触发器仅命中区），折叠父级（倍速 0.5x~2.0x / 音量 0/25/50/75/100% / 亮度 0.5..3.0）悬停/点击展开右侧子面板并可点选（Menu `open_parent_` 持久 + `HitBox` 越界命中），动作经容器公共 API 与底部控制条同管线状态，动态回显（播放/暂停、循环:开/关、当前档打勾），选子项即关菜单；Scene 右键（button 1）直达控件树不经左键钩子
 
+### BUG:UI-199 · UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）
+
+- 路径: `docs/CHANGELOG.md#ui-199-scrollbox-滚动条点击轨道空白仅跳转不抓取修复按下即抓--拖拽延续根治下拉列表滚动条首次点滑块没抓住松手再按才拖得动uisrcscrollboxcpplayuitest-仅编排验证--永久回归-lane2026-09-07`
+- 反链: 无
+
 ### BUG:UI-200 · UI-200: Table 流加载触底续灌失效修复——rebuild_rows 重建后重挂 body_ 的 on_scroll_to_bottom 钩子（ui/src/table.cpp；audio_text 指令预览等四表实测）（2026-09-07）
 
 - 路径: `docs/CHANGELOG.md#ui-200-table-流加载触底续灌失效修复rebuildrows-重建后重挂-body-的-onscrolltobottom-钩子uisrctablecppaudiotext-指令预览等四表实测2026-09-07`
@@ -1353,7 +1359,8 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(26):
+- 反链(27):
+  - `META:CHANGELOG` (mention) — UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）
   - `META:CHANGELOG` (mention) — UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
   - `META:CHANGELOG` (mention) — UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
@@ -1569,6 +1576,7 @@
 | `BUG:UI-196` | BUG | UI-196: VideoContainer 控制条三项修善——① 音量/亮度数值常显；② 亮度标签文本不再溢出容器右缘；③ 水平进度条「拖回后退立刻弹回」修复（media/core 根因修复）（2026-09-06） | `docs/CHANGELOG.md` |
 | `BUG:UI-197` | BUG | UI-197: VideoContainer 双击切换播放/暂停 + 控制条悬停显隐（默认隐藏）——配合悬停确定性验证工具（media/core + ui/gl；layui_test 仅编排验证）（2026-09-07） | `docs/CHANGELOG.md` |
 | `BUG:UI-198` | BUG | UI-198: VideoContainer 右键上下文菜单——DropDown ContextMenu 覆盖全容器 + Menu 折叠父级 → 右侧子面板展开/悬停命中/子项选中即关；flyout 越界命中框（ui 库根因修复）（2026-09-07） | `docs/CHANGELOG.md` |
+| `BUG:UI-199` | BUG | UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07） | `docs/CHANGELOG.md` |
 | `BUG:UI-200` | BUG | UI-200: Table 流加载触底续灌失效修复——rebuild_rows 重建后重挂 body_ 的 on_scroll_to_bottom 钩子（ui/src/table.cpp；audio_text 指令预览等四表实测）（2026-09-07） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
@@ -1958,6 +1966,7 @@
 | `META:CHANGELOG` | `DOC:MEDIA_PIPELINE` | mention |
 | `META:CHANGELOG` | `DOC:README` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
