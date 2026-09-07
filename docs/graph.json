@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-07T03:18:30+08:00",
+  "generatedAt": "2026-09-07T16:49:08+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-200": {
+      "id": "BUG:UI-200",
+      "type": "BUG",
+      "label": "UI-200: Table 流加载触底续灌失效修复——rebuild_rows 重建后重挂 body_ 的 on_scroll_to_bottom 钩子（ui/src/table.cpp；audio_text 指令预览等四表实测）（2026-09-07）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-200-table-流加载触底续灌失效修复rebuildrows-重建后重挂-body-的-onscrolltobottom-钩子uisrctablecppaudiotext-指令预览等四表实测2026-09-07"
+    },
     "BUG:UI-198": {
       "id": "BUG:UI-198",
       "type": "BUG",
@@ -3716,6 +3723,7 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-200": [],
     "BUG:UI-198": [
       {
         "from": "DOC:MEDIA_PIPELINE",
@@ -6074,7 +6082,8 @@
       "孤儿条目（无任何文档引用）: BUG:UI-186",
       "孤儿条目（无任何文档引用）: BUG:UI-187",
       "孤儿条目（无任何文档引用）: BUG:UI-188",
-      "孤儿条目（无任何文档引用）: BUG:UI-189"
+      "孤儿条目（无任何文档引用）: BUG:UI-189",
+      "孤儿条目（无任何文档引用）: BUG:UI-200"
     ]
   }
 }

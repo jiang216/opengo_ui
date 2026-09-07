@@ -3,6 +3,19 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-200: Table 流加载触底续灌失效修复——rebuild_rows 重建后重挂 body_ 的 on_scroll_to_bottom 钩子（ui/src/table.cpp；audio_text 指令预览等四表实测）（2026-09-07）
+- **级别**：缺陷修复（ui 库 `ui/src/table.cpp`；layui_test / audio_text 配合验证）。audio_text 规则管理页四表（指令预览 / 正则 / 语音指令 / mode 动作）流加载失效：触底不续灌、首屏不补满、数据耗尽「没有更多了」提示不再出现。
+- **根因**：UI-188 起 `ScrollBox::clear_children()` 置空 `body_` 的 `on_bottom_`/`on_scroll_`（防悬空引用）；`Table::rebuild_rows()` 每次重建都走 `clear_children()`，但流加载钩子只在 `set_paginated(false)` / `set_on_load_more` 注册一次 → 被清空后未重新挂回 → `check_bottom()` 因 `!on_bottom_` 提前返回，触底续灌（`on_scroll_to_bottom`）与首屏补满（`rearm_bottom()` → `check_bottom()`）全部失效。
+- **修复**：`rebuild_rows()` 在 `rearm_bottom()` 之前补：`if (!paginated_ && on_load_more_ && body_) body_->set_on_scroll_to_bottom(on_load_more_);`——每次重建后重挂钩子，`on_bottom_`/`on_scroll_` 与 clear 配对恢复（先清空防悬空、再重挂回复用，UI-188 语义保留）。
+- **回归清单（改动后核对）**：
+  1. `set_paginated(false) + set_on_load_more`：触底续灌按批继续加载、首屏不满自动补满、数据耗尽后不再触发；
+  2. 分页表（`paginated_`）路径不受影响（不重挂钩子）；
+  3. `close()` / 表销毁时钩子不悬空（clear_children 仍先清空，UI-188 回归保持）；
+  4. `python tools/api_gen.py --check` 0 差异；graphgen `--check` 0 错 0 警；`--smoke 2` 通过；
+  5. 纯 UI 工程（OPENGUI_MEDIA_CORE=OFF）不受影响。
+- **验证**：Release (Ninja) 构建通过；layui_test smoke / `--shot-page` 回归通过；audio_text 重链接后人工实测四表续灌（待集成，实机验证结果见后续条目）。
+- **影响范围**：`ui/src/table.cpp`、`docs/CHANGELOG.md`
+
 ## UI-198: VideoContainer 右键上下文菜单——DropDown ContextMenu 覆盖全容器 + Menu 折叠父级 → 右侧子面板展开/悬停命中/子项选中即关；flyout 越界命中框（ui 库根因修复）（2026-09-07）
 - **级别**：功能增强（ui 库：ui/src `menu`/`dropdown`、`scene`，媒体 media/core `VideoContainer`；layui_test 仅编排/验证 UI-198 悬停/点击确定性）。需求（用户拍板）：右键弹上下文菜单覆盖整个视频容器，含 播放/暂停、倍速 0.5x~2.0x、音量 0/25/50/75/100%、亮度 0.5/1.0/1.5/2.0/3.0、（以上为折叠父级 → 右侧子面板）、循环:开/关、关闭/重新打开源；菜单动作经容器公共 API 与底部控制条同一管线状态；菜单选中即关。
 - **功能（根因归属：除签名注记外全部治本在 ui 库与 media/core；layui_test 仅编排验证）**：

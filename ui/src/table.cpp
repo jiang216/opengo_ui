@@ -717,6 +717,9 @@ void Table::rebuild_rows() {
     // 后再查一次」语义。同步回调可再入 add_row→rebuild_rows→rearm 递归，深度以填满
     // 一屏所需批次数为界（有限收敛）；数据耗尽方停止 append 即断链。
     // 注意：必须在尾注追加之后调用（先定稿内容再判触底）。
+    // UI-188 后置注册：clear_children 置空 body_ 的 on_bottom_/on_scroll_，流加载钩子
+    // 需在每次重建后重挂，否则 check_bottom 提前返回、触底续灌与首屏补满全部失效。
+    if (!paginated_ && on_load_more_ && body_) body_->set_on_scroll_to_bottom(on_load_more_);
     if (!paginated_ && on_load_more_ && body_) body_->rearm_bottom();
     // UI-157：重建后自动预热全部可见字形。此前仅市场表显式调用 prebake_visible_text，
     // 详情窗口配置表（plugin_detail_window buildConfigTable）未调用 → 首帧走配额限流
