@@ -144,7 +144,9 @@ void Collapse::on_draw(Renderer& renderer) {
         const float ty = it.y0 + (kTitleH - font_->line_height()) * 0.5f;
         // 展开箭头（旋转 90 度的小三角）——用 '>' 字符近似
         font_->draw_text(renderer, expanded ? "v" : ">", bounds_.x + 15.f, ty, t->text_secondary);
-        font_->draw_text(renderer, it.title.c_str(), bounds_.x + 35.f, ty, t->text);
+        // 折叠标题在 #fafafa 浅底上用可读深色 token：暗色主题（默认 Theme 结构）
+        // 下 t->text 为近白，白字+浅底对比度≈0（UI-201）
+        font_->draw_text(renderer, it.title.c_str(), bounds_.x + 35.f, ty, t->text_secondary);
 
         if (i > 0 && !expanded)
             renderer.draw_quad({bounds_.x, it.y1, bounds_.w, 1.f}, t->border);

@@ -250,7 +250,9 @@ void Menu::draw_item(Renderer& renderer, Item& it, int /*index*/) {
     const Theme* t = theme_ ? theme_ : &kDefault;
     const Vec4 panel = style_ov_ ? ov_bg_ : t->panel;
     const Vec4 border = style_ov_ ? ov_border_ : t->border;
-    const Vec4 text = style_ov_ ? ov_text_ : t->text;
+    // 弹层面板底恒为浅色（t->panel 白 / ov_bg_），项文字须用可读深色 token：
+    // 暗色主题（默认 Theme 结构）下 t->text 为近白，白底白字对比度≈0（UI-201）。
+    const Vec4 text = style_ov_ ? ov_text_ : t->text_secondary;
     const Vec4 text2 = style_ov_ ? ov_text_ : t->text_secondary;
     const Vec4 muted = style_ov_ ? ov_text_ : t->text_muted;
     const Vec4 hover = style_ov_ ? ov_hover_ : Vec4{0.96f, 0.96f, 0.96f, 1.f};
@@ -352,7 +354,8 @@ void Menu::draw_sub_panel(Renderer& renderer, int parent_index) {
     const Theme* t = theme_ ? theme_ : &kDefault;
     const Vec4 panel = style_ov_ ? ov_bg_ : t->panel;
     const Vec4 border = style_ov_ ? ov_border_ : t->border;
-    const Vec4 text = style_ov_ ? ov_text_ : t->text;
+    // 子面板白底同主菜单：项文字取可读深色 token（UI-201）
+    const Vec4 text = style_ov_ ? ov_text_ : t->text_secondary;
     const Vec4 muted = style_ov_ ? ov_text_ : t->text_muted;
     const Vec4 hover = style_ov_ ? ov_hover_ : Vec4{0.96f, 0.96f, 0.96f, 1.f};
     const float line_h = font_->line_height();

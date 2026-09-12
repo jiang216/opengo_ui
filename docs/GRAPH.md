@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 195（BUG 186 / DOC 7 / META 2）
-- 边: 395
+- 节点: 196（BUG 187 / DOC 7 / META 2）
+- 边: 397
 - lint: 0 错误 / 7 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
@@ -207,11 +207,12 @@
 ### BUG:UI-022 · UI-022: M17a layui 克隆·基础设施 + 轻量组件（2026-08-10）
 
 - 路径: `docs/CHANGELOG.md#ui-022-m17a-layui-克隆基础设施--轻量组件2026-08-10`
-- 反链(6):
+- 反链(7):
   - `META:CHANGELOG` (ref) — 相关历史条目
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Widget 类名机制：`add_class/remove_class/has_class`（空格分隔多类名去重），`classes()` 供样式层遍历
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui_style 解析层：`layui::has_class` 便捷查询、`layui::hex` 十六进制转色、`layui::bg_color/bg_fill` 工具色（8 个 layui-bg-*）
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Theme 语义色扩展：success/info/warning/danger/border/panel/text_secondary/text_muted + `Theme::make_layui()`（浅灰底、accent #16baaa、radius 2px）；`button_normal` 为中性底色（白，非主色）——HBox/VBox/Grid/Panel/ScrollBox/TextBox/CheckBox/Radio/MenuBar/PanelWindow 等容器/控件底不染色
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#浅底表面文本对比度：Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题在浅底（`panel` 白 / 标题 `#fafafa`）上必须用可读深色 token `text_secondary`（#5f5f5f）绘制文字——默认 `Theme` 结构 `text` 为近白、白底白字不可读，禁止浅底复用近白 `text`（UI-201）
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Renderer `draw_polygon`：凸多边形三角扇填充（独立 flat 管线 + 动态 VBO），像素坐标 y 向下
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#轻量组件：Progress（layui-progress / layui-progress-big + layui-bg-* 色类填充、默认填充 #5fb878、`set_text_override` 自定义文本如分数"5 / 10"）、Badge（默认/rim 描边/dot 正圆 + layui-bg-* 叠加、`preferred_width()` 自适应）、Card（header+body 布局 + 两层阴影近似）、Breadcrumb（链接/当前项/分隔符 + `set_separator()` 自定义）、Timeline（左缘 #eee 竖线 + 20px 白底圆轴（内置 icon，`set_axis_icon` 换、`set_axis_rotate` 旋转动画、hover 变红描边）+ 富内容 `add_item_rich`（多行/列表/强调/图标，标题可 h3 大字））、Rate（5 星、已选实心/未选空心、hover 预览放大、点击取值、readonly）
 
@@ -1290,6 +1291,12 @@
 - 路径: `docs/CHANGELOG.md#ui-200-table-流加载触底续灌失效修复rebuildrows-重建后重挂-body-的-onscrolltobottom-钩子uisrctablecppaudiotext-指令预览等四表实测2026-09-07`
 - 反链: 无
 
+### BUG:UI-201 · UI-201: 浅色面板上文本 token 选错致「白字白底」不可读——Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题改用可读深色 token text_secondary（ui/src/menu.cpp + ui/src/collapse.cpp；agent/chat_shell 实测）（2026-09-12）
+
+- 路径: `docs/CHANGELOG.md#ui-201-浅色面板上文本-token-选错致白字白底不可读menu-弹层项主面板flyout-子面板与-collapse-折叠标题改用可读深色-token-textsecondaryuisrcmenucpp--uisrccollapsecppagentchatshell-实测2026-09-12`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#浅底表面文本对比度：Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题在浅底（`panel` 白 / 标题 `#fafafa`）上必须用可读深色 token `text_secondary`（#5f5f5f）绘制文字——默认 `Theme` 结构 `text` 为近白、白底白字不可读，禁止浅底复用近白 `text`（UI-201）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1578,6 +1585,7 @@
 | `BUG:UI-198` | BUG | UI-198: VideoContainer 右键上下文菜单——DropDown ContextMenu 覆盖全容器 + Menu 折叠父级 → 右侧子面板展开/悬停命中/子项选中即关；flyout 越界命中框（ui 库根因修复）（2026-09-07） | `docs/CHANGELOG.md` |
 | `BUG:UI-199` | BUG | UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07） | `docs/CHANGELOG.md` |
 | `BUG:UI-200` | BUG | UI-200: Table 流加载触底续灌失效修复——rebuild_rows 重建后重挂 body_ 的 on_scroll_to_bottom 钩子（ui/src/table.cpp；audio_text 指令预览等四表实测）（2026-09-07） | `docs/CHANGELOG.md` |
+| `BUG:UI-201` | BUG | UI-201: 浅色面板上文本 token 选错致「白字白底」不可读——Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题改用可读深色 token text_secondary（ui/src/menu.cpp + ui/src/collapse.cpp；agent/chat_shell 实测）（2026-09-12） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1640,6 +1648,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-020` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-020` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-021` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-022` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-022` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-022` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-022` | checklist |
@@ -1843,6 +1852,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-182` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-183` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-184` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-201` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

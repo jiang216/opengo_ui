@@ -3,6 +3,22 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-201: 浅色面板上文本 token 选错致「白字白底」不可读——Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题改用可读深色 token text_secondary（ui/src/menu.cpp + ui/src/collapse.cpp；agent/chat_shell 实测）（2026-09-12）
+- **级别**：缺陷修复（ui 库 `ui/src/menu.cpp`、`ui/src/collapse.cpp`；宿主例：agent/chat_shell 顶栏历史会话下拉、右键上下文菜单、工具调用/权限卡片折叠标题）。用户实测：下拉/右键菜单项目与折叠标题「跟背景颜色一致、看不清」（对比度≈0），属浅色底上误用浅色文本 token。
+- **根因（ui 库）**：`Theme` 结构默认构造即暗色系「模板库」——`window_bg` 深色、`text` 近白（{0.92,0.93,0.95}），但 `panel` 恒为白（{1,1,1}）、若干浅底控件使用硬编码浅色底（如 Collapse 标题栏 `#fafafa`）。`Menu::draw_item`/`Menu::draw_sub_panel` 在 `t->panel`（白）上画 `t->text`（近白），`Collapse` 标题在 `#fafafa` 上画 `t->text` → 白底白字。宿主若用默认 `ui::Theme theme;`（agent/chat_shell 即此）即全量暴露；暗色主题下「白 panel + 白 text」是历史遗留的选色不对称。
+- **修复**：三条绘制路径的项文字/标题统一改取可读深色 token `text_secondary`（{0.37,0.37,0.37} #5f5f5f，暗/亮/浅棕主题下均稳定）：
+  1. `Menu::draw_item`（主面板）：`const Vec4 text = style_ov_ ? ov_text_ : t->text_secondary;`——`style_ov_`（自定义覆盖色）路径不受影响；
+  2. `Menu::draw_sub_panel`（flyout 子面板，同白底）：同上；
+  3. `Collapse::draw`（`#fafafa` 标题栏）：标题文字 `t->text` → `t->text_secondary`（展开箭头 `v/>` 本就已用 text_secondary，一并一致）。
+- **回归清单（改动后核对）**：
+  1. Menu/Dropdown 弹层（含 flyout 子面板）项文字浅底深字可读；分组头/箭头/选中态/自定义 `set_style` 颜色语义不变；
+  2. Collapse 折叠标题（展开/收起、图标 →，文本 v/>）浅底深字可读，hover/选中高亮不变；
+  3. 暗色底控件路径不受影响：Table/Code 深底、Card 深色标题等未改 token；
+  4. 纯 UI 工程（`OPENGUI_MEDIA_CORE=OFF`）不受影响；graphgen `--check` 0 错 0 警；
+  5. 宿主 agent/chat_shell：`--smoke 5` SMOKE_OK 退出 0；全轨 `tools/build.ps1` 100 checks / 0 failures；opencode E2E `OPCODE_RESULT:PASS`（详见 agent AG-719）。
+- **验证**：Release (VS 18 2026, cmake install-all) 重建 `ui_ui.lib` 并 `cmake --install` 更新 `install/`；agent 同步 `install/lib/ui_ui.lib` 重链后：`chat_core_tests` 100 checks / 0 failures、`chat_shell --smoke 5` 连续 3/3 SMOKE_OK（期间一次 0xC0000005 偶发复跑即过，非确定性，未复发）。人工对比度目测见 AG-719 结论。
+- **影响范围**：`ui/src/menu.cpp`、`ui/src/collapse.cpp`、`docs/CHANGELOG.md`（宿主 agent 侧条目 AG-719）
+
 ## UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）
 - **级别**：缺陷修复（ui 库 `ui/src/scrollbox.cpp`；layui_test 只做脚本化验证）。用户实测 audio_text 规则管理页：规则集/正则集下拉（47 项长列表，`kThumbMinH=28` 小滑块）滚动条「打开后首次点滑块没抓住，松手再按才拖得动」。
 - **根因（ui 库）**：`ScrollBox::on_mouse_down` 的滑块命中基于 scrollbar_style 几何实时计算（`thumb_rect()`）。真实用户以肉眼瞄准 28px 小滑块，按压必然存在像素级偏差 → `on_thumb` 判定失败落入「点击轨道空白」分支——该分支仅 `set_scroll(scroll_from_y(y))` 跳转**却不置 `sb_.dragging`**，本次按下不进入拖拽，松手后滑块位于光标下；用户需再次按下（滑块恰在光标下、`on_thumb` 命中）才能拖动。症状即「首次点滑块没抓住，松手再按才拖得动」。脚本化注入（精确命中 `thumb_rect()` 坐标）恒复现不出，正是「偏差像素量级」造成的确定性差异，故此前 harness 全绿但实机必现。
