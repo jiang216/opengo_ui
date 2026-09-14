@@ -248,6 +248,15 @@ void ScrollBox::on_draw(Renderer& renderer) {
         renderer.draw_quad(bounds_, Vec4{0.18f, 0.21f, 0.24f, 1.0f});
         return;
     }
+    if (has_class("layui-chat-msg")) {
+        // UI-203：消息面板独立表面——区别于侧栏/top_bar/status 同色的 button_normal，
+        // 用更深的蓝灰内容井 + 1px 发丝线左/上边界（消息区与左列/状态条的分隔）。
+        // 气泡（layui-bg-blue/gray 卡片）浮于其上保持各自的底色可辨。
+        renderer.draw_quad(bounds_, Vec4{0.157f, 0.18f, 0.22f, 1.0f});           // #282e3a
+        renderer.draw_quad({bounds_.x, bounds_.y, bounds_.w, 1.f}, Vec4{0.10f, 0.11f, 0.13f, 1.0f});
+        renderer.draw_quad({bounds_.x, bounds_.y, 1.f, bounds_.h}, Vec4{0.10f, 0.11f, 0.13f, 1.0f});
+        return;
+    }
     // 默认背景：直角填充（UI-142，面板默认直角化，消除与左侧导航交界处的圆角空隙）。
     // 有特殊视觉效果需求的容器用 layui class（layui-form-select-panel/layui-body/ws-menu
     // /layui-side-scroll）。固定头部（见另 draw 分支）背景与下方内容面板连续。

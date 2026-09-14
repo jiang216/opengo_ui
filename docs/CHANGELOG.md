@@ -3,6 +3,48 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-203: 容器支持 layui 底色类——VBox/ScrollBox 背景可主题化着色（气泡/消息面板独立表面）
+
+（ui/src/vbox.cpp + ui/src/scrollbox.cpp + ui/src/blockquote.cpp + ui/src/layui_style.cpp；宿主 agent/chat_shell
+消息面板同列版式 AG-776 实测）（2026-09-15）
+- **级别**：功能增强 + 缺陷修复（ui 库 `ui/src/vbox.cpp`、`ui/src/scrollbox.cpp`、`ui/src/blockquote.cpp`、`ui/src/layui_style.cpp`；宿主 agent/chat_shell「消息面板跟其他面板颜色无法区分」）。
+- **根因（ui 库 + 宿主）**：
+  1. 消息区 `ScrollBox`、左栏/顶栏/状态条 `HBox` 默认统一画 `theme.button_normal`，宿主无任何区域级独立表面——消息面板与其它面板一色，无分隔线可辨；
+  2. `VBox::on_draw` 仅处理 `layui-menu`，其余一律 `draw_rounded_rect(button_normal)`——宿主气泡 `add_class("layui-bg-blue"/"layui-bg-gray")`（AG-776 角色底色区分）为**死代码**，气泡永远渲染 button_normal；
+  3. `BlockQuote` 底 `#fafafa` 恒浅色（layui.css .layui-elem-quote）而文字取 `theme->text_secondary`——暗色默认主题下 text_secondary 为近白 → 浅底白字不可读（UI-201 同类）；
+  4. `layui_style.cpp` kBgColors 的 `gray` 仍为 layui 原版 `#fafafa` 浅底——容器颜色表主用于暗色主题，浅灰不适合作为暗色 UI 的卡片底。
+- **修复**：
+  1. `VBox::on_draw`：新增 `layui-bg-*` 类检测（镜像 button.cpp 的 `bg_class_name` 逻辑）——命中类则用 `layui::bg_fill(cls)` 填充底色，否则回落 button_normal。使任意 VBox 可作主题化底色卡片（气泡/色块）；
+  2. `ScrollBox::on_draw`：新增 `layui-chat-msg` 类——独立消息面板表面 `#282e3a` 深蓝灰内容井 + 左/上 1px 发丝线 `#191d21`（与左列/状态条的分隔）；其余 scrollbox 语义不变；
+  3. `BlockQuote::set_theme`：文字改恒深色 `#555`（与恒浅 #fafafa 底配套，layui 规范），不再依赖 `theme->text_secondary`（暗色主题下为近白）；
+  4. `layui_style.cpp` kBgColors `gray`：适配暗色主题——fill `#4a4f59` / text 近白（原 `#fafafa`/`#5f5f5f` 适浅色主题，本库主用暗色主题，与 UI-201 同思路按须适配）。
+- **回归清单（改动后核对）**：
+  1. `VBox` 无 `layui-bg-*`/`layui-menu` 类时仍画 button_normal（既有无类 VBox 外观不变）；
+  2. `VBox` 有 `layui-bg-*` 类时以 bg_fill 色填充（圆角 radius 不变）；`layui-menu` 白底+边框语义不变；
+  3. `ScrollBox` 无类时仍画 button_normal 直角（layui-round/layui-side-scroll/ws-menu/layui-form-select-panel 既有分支不变）；`layui-chat-msg` 仅承载消息面板独立表面 + 左/上发丝线，滚动/裁剪/滚动条行为不变；
+  4. `BlockQuote` 无底色变体（nm=true）不受文字恒深色影响（浅色主题下文字本就深色，可读性等价）；
+  5. `layui-bg-gray` 现为暗色卡片底 `#4a4f59`（配色表仅影响后加的类，既有 button/badge/progress 色块不受 gray 项影响）；
+  6. 宿主 agent/chat_shell：气泡蓝/灰可辨、消息面板与其它面板可分、右链全轨通过（详见 agent AG-783）；graphgen `--check` 0 错 0 警。
+- **验证**：Release (VS 18 2026, cmake install-all) 重建 `ui_ui.lib` + `cmake --install` 更新 `install/`；三个拷贝（build/install-all、opengl_UI/install、agent/install）`ui_ui.lib` MD5 一致（`E12BAF5B…`）。思路验证：VBox 类色照 button/badge 同款 `layui::bg_fill` 通路，非新自绘。冒烟/截图像素验证见 agent AG-783 人工冒烟项。
+- **影响范围**：`ui/src/vbox.cpp`、`ui/src/scrollbox.cpp`、`ui/src/blockquote.cpp`、`ui/src/layui_style.cpp`、`docs/CHANGELOG.md`
+
+## UI-202: IME 候选窗锚定只认 TextBox、多行 TextArea 中文输入候选框落窗口左上角——`update_ime_caret` 扩展 TextArea 双分支 + `TextArea::caret_anchor()` 公开光标像素锚点（ui/src/ime.cpp + ui/include/ui/ui/textarea.h + ui/src/textarea.cpp；宿主 agent/chat_shell 实测）（2026-09-13）
+- **级别**：缺陷修复（ui 库 `ui/src/ime.cpp`、`ui/include/ui/ui/textarea.h`、`ui/src/textarea.cpp`；宿主 agent/chat_shell 中文输入）。用户实测：聊天输入框（多行 TextArea）用中文输入法时，候选框固定在窗口左上角初始位置、不跟随输入框光标（中英文编辑本身可用）。
+- **根因（ui 库）**：`update_ime_caret`（UI-100 引入）锚定聚焦控件时仅 `dynamic_cast<TextBox*>`——单行框。聊天输入框为多行 `TextArea`（SendTextArea 子类），无锚定分支 → 不设置 `CFS_POINT/CFS_CANDIDATEPOS`，候选窗落 Win32 默认位置（窗口左上角）。叠加 agent/chat_shell 从未接线调用 `update_ime_caret`（见 agent AG-722），Gap 双向放大。
+- **修复**：
+  1. `TextArea::caret_anchor(float& x, float& y)` 公开：x = 光标列像素偏移（控件左边界起算，含 kPad），y = 光标所在行底部像素（控件顶部起算，含滚动平移）。复用 wrap 缓存（`cached_wrap_lines` / `cached_lines` / `cached_line_h`），与 `on_draw` 光标绘制算法同源（行定位 + `next_cp`/`char_width` 累加），保证锚点与绘制光标重合；
+  2. `ime.cpp::update_ime_caret`：`find_focused(root)` 后按 `dynamic_cast<TextBox*>`（保留 UI-100 语义）或 `dynamic_cast<TextArea*>`（新分支，取 `caret_anchor`）分别设置 `CFS_POINT/CFS_CANDIDATEPOS`；
+  3. 新 include `ui/ui/textarea.h`（触出 Windows min/max 宏污染，`ime.cpp` 补 `#ifndef NOMINMAX` + `<algorithm>`）。
+- **回归清单（改动后核对）**：
+  1. TextBox：候选窗 / 组合窗仍锚定输入框底边光标处（UI-100 语义不变）；
+  2. TextArea（多行）：候选窗锚定光标所在行底部（含滚动平移），多行时随光标行移动；
+  3. 非 Windows 平台 `update_ime_caret` 空操作不变；聚焦非文本控件（按钮/无焦点）不设置 IME 位置；
+  4. `TextArea::on_draw` 光标绘制路径不变（`caret_anchor` 仅新增只读查询，不改写 caret_/scroll_）；
+  5. 纯 UI 工程不破坏既有编译（`ime.cpp` 仅含新 include）；graphgen `--check` 0 错 0 警；
+  6. 宿主 agent/chat_shell：重链后 `tools/build.ps1` 全轨通过；人工冒烟输入中文候选窗跟随光标（详见 agent AG-722）。
+- **验证**：Release (VS 18 2026, cmake install-all) 重建 `ui_ui.lib` + `cmake --install` 更新 `install/`；三个拷贝（build/install-all、opengl_UI/install、agent/install）`ui_ui.lib`/`textarea.h`/`ime.h` MD5 一致（`68F74051…` / `270895C4…` / `1E645159…`）。agent 重建 + 冒烟见 AG-722。
+- **影响范围**：`ui/src/ime.cpp`、`ui/include/ui/ui/textarea.h`、`ui/src/textarea.cpp`、`ui/include/ui/ui/ime.h`、`docs/CHANGELOG.md`
+
 ## UI-201: 浅色面板上文本 token 选错致「白字白底」不可读——Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题改用可读深色 token text_secondary（ui/src/menu.cpp + ui/src/collapse.cpp；agent/chat_shell 实测）（2026-09-12）
 - **级别**：缺陷修复（ui 库 `ui/src/menu.cpp`、`ui/src/collapse.cpp`；宿主例：agent/chat_shell 顶栏历史会话下拉、右键上下文菜单、工具调用/权限卡片折叠标题）。用户实测：下拉/右键菜单项目与折叠标题「跟背景颜色一致、看不清」（对比度≈0），属浅色底上误用浅色文本 token。
 - **根因（ui 库）**：`Theme` 结构默认构造即暗色系「模板库」——`window_bg` 深色、`text` 近白（{0.92,0.93,0.95}），但 `panel` 恒为白（{1,1,1}）、若干浅底控件使用硬编码浅色底（如 Collapse 标题栏 `#fafafa`）。`Menu::draw_item`/`Menu::draw_sub_panel` 在 `t->panel`（白）上画 `t->text`（近白），`Collapse` 标题在 `#fafafa` 上画 `t->text` → 白底白字。宿主若用默认 `ui::Theme theme;`（agent/chat_shell 即此）即全量暴露；暗色主题下「白 panel + 白 text」是历史遗留的选色不对称。

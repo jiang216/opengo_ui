@@ -1,11 +1,25 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-12T18:18:31+08:00",
+  "generatedAt": "2026-09-15T04:35:20+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-203": {
+      "id": "BUG:UI-203",
+      "type": "BUG",
+      "label": "UI-203: 容器支持 layui 底色类——VBox/ScrollBox 背景可主题化着色（气泡/消息面板独立表面）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-203-容器支持-layui-底色类vboxscrollbox-背景可主题化着色气泡消息面板独立表面"
+    },
+    "BUG:UI-202": {
+      "id": "BUG:UI-202",
+      "type": "BUG",
+      "label": "UI-202: IME 候选窗锚定只认 TextBox、多行 TextArea 中文输入候选框落窗口左上角——`update_ime_caret` 扩展 TextArea 双分支 + `TextArea::caret_anchor()` 公开光标像素锚点（ui/src/ime.cpp + ui/include/ui/ui/textarea.h + ui/src/textarea.cpp；宿主 agent/chat_shell 实测）（2026-09-13）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-202-ime-候选窗锚定只认-textbox多行-textarea-中文输入候选框落窗口左上角updateimecaret-扩展-textarea-双分支--textareacaretanchor-公开光标像素锚点uisrcimecpp--uiincludeuiuitextareah--uisrctextareacpp宿主-agentchatshell-实测2026-09-13"
+    },
     "BUG:UI-201": {
       "id": "BUG:UI-201",
       "type": "BUG",
@@ -2401,7 +2415,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-100",
       "kind": "checklist",
-      "context": "回归清单#IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开"
+      "context": "回归清单#IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开；UI-202 扩展：聚焦 TextArea 亦锚定（`TextArea::caret_anchor` → 光标所在行底部像素）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-202",
+      "kind": "checklist",
+      "context": "回归清单#IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开；UI-202 扩展：聚焦 TextArea 亦锚定（`TextArea::caret_anchor` → 光标所在行底部像素）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -2696,6 +2716,18 @@
       "to": "BUG:UI-201",
       "kind": "checklist",
       "context": "回归清单#浅底表面文本对比度：Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题在浅底（`panel` 白 / 标题 `#fafafa`）上必须用可读深色 token `text_secondary`（#5f5f5f）绘制文字——默认 `Theme` 结构 `text` 为近白、白底白字不可读，禁止浅底复用近白 `text`（UI-201）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-022",
+      "kind": "checklist",
+      "context": "回归清单#容器底色类 + 消息面板独立表面（UI-203）：VBox 支持 `layui-bg-*` 类——命中类按 `layui::bg_fill` 填圆角底（气泡/色块，`layui-bg-blue`=蓝 #1e9fff、`layui-bg-gray`=暗色卡片 #4a4f59 配近白字），无类回落 `button_normal`，`layui-menu` 白底语义不变；ScrollBox 支持 `layui-chat-msg` 类——消息面板独立表面 #282e3a 深蓝灰井 + 左/上 1px 发丝线 #191d21（与并列面板分隔），无类仍均画 button_normal；BlockQuote（底恒 #fafafa）文字恒深色 #555（暗色主题下不再白字白底，UI-201 同类）；`layui-bg-gray` 为暗色主题适配色（非浅色主题的 #fafafa）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-203",
+      "kind": "checklist",
+      "context": "回归清单#容器底色类 + 消息面板独立表面（UI-203）：VBox 支持 `layui-bg-*` 类——命中类按 `layui::bg_fill` 填圆角底（气泡/色块，`layui-bg-blue`=蓝 #1e9fff、`layui-bg-gray`=暗色卡片 #4a4f59 配近白字），无类回落 `button_normal`，`layui-menu` 白底语义不变；ScrollBox 支持 `layui-chat-msg` 类——消息面板独立表面 #282e3a 深蓝灰井 + 左/上 1px 发丝线 #191d21（与并列面板分隔），无类仍均画 button_normal；BlockQuote（底恒 #fafafa）文字恒深色 #555（暗色主题下不再白字白底，UI-201 同类）；`layui-bg-gray` 为暗色主题适配色（非浅色主题的 #fafafa）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3755,6 +3787,20 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-203": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#容器底色类 + 消息面板独立表面（UI-203）：VBox 支持 `layui-bg-*` 类——命中类按 `layui::bg_fill` 填圆角底（气泡/色块，`layui-bg-blue`=蓝 #1e9fff、`layui-bg-gray`=暗色卡片 #4a4f59 配近白字），无类回落 `button_normal`，`layui-menu` 白底语义不变；ScrollBox 支持 `layui-chat-msg` 类——消息面板独立表面 #282e3a 深蓝灰井 + 左/上 1px 发丝线 #191d21（与并列面板分隔），无类仍均画 button_normal；BlockQuote（底恒 #fafafa）文字恒深色 #555（暗色主题下不再白字白底，UI-201 同类）；`layui-bg-gray` 为暗色主题适配色（非浅色主题的 #fafafa）"
+      }
+    ],
+    "BUG:UI-202": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开；UI-202 扩展：聚焦 TextArea 亦锚定（`TextArea::caret_anchor` → 光标所在行底部像素）"
+      }
+    ],
     "BUG:UI-201": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -4687,6 +4733,11 @@
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
         "context": "回归清单#浅底表面文本对比度：Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题在浅底（`panel` 白 / 标题 `#fafafa`）上必须用可读深色 token `text_secondary`（#5f5f5f）绘制文字——默认 `Theme` 结构 `text` 为近白、白底白字不可读，禁止浅底复用近白 `text`（UI-201）"
+      },
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#容器底色类 + 消息面板独立表面（UI-203）：VBox 支持 `layui-bg-*` 类——命中类按 `layui::bg_fill` 填圆角底（气泡/色块，`layui-bg-blue`=蓝 #1e9fff、`layui-bg-gray`=暗色卡片 #4a4f59 配近白字），无类回落 `button_normal`，`layui-menu` 白底语义不变；ScrollBox 支持 `layui-chat-msg` 类——消息面板独立表面 #282e3a 深蓝灰井 + 左/上 1px 发丝线 #191d21（与并列面板分隔），无类仍均画 button_normal；BlockQuote（底恒 #fafafa）文字恒深色 #555（暗色主题下不再白字白底，UI-201 同类）；`layui-bg-gray` 为暗色主题适配色（非浅色主题的 #fafafa）"
       },
       {
         "from": "DOC:ARCHITECTURE",
@@ -5652,7 +5703,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开"
+        "context": "回归清单#IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开；UI-202 扩展：聚焦 TextArea 亦锚定（`TextArea::caret_anchor` → 光标所在行底部像素）"
       }
     ],
     "BUG:UI-101": [

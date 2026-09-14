@@ -24,7 +24,7 @@ const NamedColor kBgColors[] = {
     {"blue",   {0.12f, 0.62f, 1.0f, 1.0f}, {1, 1, 1, 1}},   // #1e9fff
     {"purple", {0.64f, 0.20f, 0.78f, 1.0f}, {1, 1, 1, 1}},  // #a233c6
     {"black",  {0.224f, 0.239f, 0.286f, 1.0f}, {1, 1, 1, 1}},  // #393d49
-    {"gray",   {0.98f, 0.98f, 0.98f, 1.0f}, {0.37f, 0.37f, 0.37f, 1.0f}},  // #fafafa / #5f5f5f
+    {"gray",   {0.29f, 0.31f, 0.35f, 1.0f}, {0.88f, 0.89f, 0.91f, 1.0f}},  // 暗色主题灰卡片 #4a4f59 / 近白字（UI-203：layui 原 #fafafa 浅底仅适浅色主题，本库主用暗色主题——与 UI-201 同思路按须适配）
 };
 
 const NamedColor* find(const char* cls) {

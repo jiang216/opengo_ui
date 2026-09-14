@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 196（BUG 187 / DOC 7 / META 2）
-- 边: 397
+- 节点: 198（BUG 189 / DOC 7 / META 2）
+- 边: 400
 - lint: 0 错误 / 7 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
@@ -207,12 +207,13 @@
 ### BUG:UI-022 · UI-022: M17a layui 克隆·基础设施 + 轻量组件（2026-08-10）
 
 - 路径: `docs/CHANGELOG.md#ui-022-m17a-layui-克隆基础设施--轻量组件2026-08-10`
-- 反链(7):
+- 反链(8):
   - `META:CHANGELOG` (ref) — 相关历史条目
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Widget 类名机制：`add_class/remove_class/has_class`（空格分隔多类名去重），`classes()` 供样式层遍历
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui_style 解析层：`layui::has_class` 便捷查询、`layui::hex` 十六进制转色、`layui::bg_color/bg_fill` 工具色（8 个 layui-bg-*）
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Theme 语义色扩展：success/info/warning/danger/border/panel/text_secondary/text_muted + `Theme::make_layui()`（浅灰底、accent #16baaa、radius 2px）；`button_normal` 为中性底色（白，非主色）——HBox/VBox/Grid/Panel/ScrollBox/TextBox/CheckBox/Radio/MenuBar/PanelWindow 等容器/控件底不染色
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#浅底表面文本对比度：Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题在浅底（`panel` 白 / 标题 `#fafafa`）上必须用可读深色 token `text_secondary`（#5f5f5f）绘制文字——默认 `Theme` 结构 `text` 为近白、白底白字不可读，禁止浅底复用近白 `text`（UI-201）
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#容器底色类 + 消息面板独立表面（UI-203）：VBox 支持 `layui-bg-*` 类——命中类按 `layui::bg_fill` 填圆角底（气泡/色块，`layui-bg-blue`=蓝 #1e9fff、`layui-bg-gray`=暗色卡片 #4a4f59 配近白字），无类回落 `button_normal`，`layui-menu` 白底语义不变；ScrollBox 支持 `layui-chat-msg` 类——消息面板独立表面 #282e3a 深蓝灰井 + 左/上 1px 发丝线 #191d21（与并列面板分隔），无类仍均画 button_normal；BlockQuote（底恒 #fafafa）文字恒深色 #555（暗色主题下不再白字白底，UI-201 同类）；`layui-bg-gray` 为暗色主题适配色（非浅色主题的 #fafafa）
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Renderer `draw_polygon`：凸多边形三角扇填充（独立 flat 管线 + 动态 VBO），像素坐标 y 向下
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#轻量组件：Progress（layui-progress / layui-progress-big + layui-bg-* 色类填充、默认填充 #5fb878、`set_text_override` 自定义文本如分数"5 / 10"）、Badge（默认/rim 描边/dot 正圆 + layui-bg-* 叠加、`preferred_width()` 自适应）、Card（header+body 布局 + 两层阴影近似）、Breadcrumb（链接/当前项/分隔符 + `set_separator()` 自定义）、Timeline（左缘 #eee 竖线 + 20px 白底圆轴（内置 icon，`set_axis_icon` 换、`set_axis_rotate` 旋转动画、hover 变红描边）+ 富内容 `add_item_rich`（多行/列表/强调/图标，标题可 h3 大字））、Rate（5 星、已选实心/未选空心、hover 预览放大、点击取值、readonly）
 
@@ -764,7 +765,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-100-ime-候选窗跟随输入框光标2026-08-21`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开；UI-202 扩展：聚焦 TextArea 亦锚定（`TextArea::caret_anchor` → 光标所在行底部像素）
 
 ### BUG:UI-101 · UI-101: TextBox 选择/剪贴板能力（拖选/Shift 选择/Ctrl+A/C/X/V）（2026-08-21）
 
@@ -1297,6 +1298,18 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#浅底表面文本对比度：Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题在浅底（`panel` 白 / 标题 `#fafafa`）上必须用可读深色 token `text_secondary`（#5f5f5f）绘制文字——默认 `Theme` 结构 `text` 为近白、白底白字不可读，禁止浅底复用近白 `text`（UI-201）
 
+### BUG:UI-202 · UI-202: IME 候选窗锚定只认 TextBox、多行 TextArea 中文输入候选框落窗口左上角——`update_ime_caret` 扩展 TextArea 双分支 + `TextArea::caret_anchor()` 公开光标像素锚点（ui/src/ime.cpp + ui/include/ui/ui/textarea.h + ui/src/textarea.cpp；宿主 agent/chat_shell 实测）（2026-09-13）
+
+- 路径: `docs/CHANGELOG.md#ui-202-ime-候选窗锚定只认-textbox多行-textarea-中文输入候选框落窗口左上角updateimecaret-扩展-textarea-双分支--textareacaretanchor-公开光标像素锚点uisrcimecpp--uiincludeuiuitextareah--uisrctextareacpp宿主-agentchatshell-实测2026-09-13`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#IME 候选窗跟随：`update_ime_caret(window, root)` 每帧锚定聚焦 TextBox 光标（ImmSetCompositionWindow/CandidateWindow，屏幕坐标不变不重设，非 Windows 空操作）；TextBox::caret_offset 公开；UI-202 扩展：聚焦 TextArea 亦锚定（`TextArea::caret_anchor` → 光标所在行底部像素）
+
+### BUG:UI-203 · UI-203: 容器支持 layui 底色类——VBox/ScrollBox 背景可主题化着色（气泡/消息面板独立表面）
+
+- 路径: `docs/CHANGELOG.md#ui-203-容器支持-layui-底色类vboxscrollbox-背景可主题化着色气泡消息面板独立表面`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#容器底色类 + 消息面板独立表面（UI-203）：VBox 支持 `layui-bg-*` 类——命中类按 `layui::bg_fill` 填圆角底（气泡/色块，`layui-bg-blue`=蓝 #1e9fff、`layui-bg-gray`=暗色卡片 #4a4f59 配近白字），无类回落 `button_normal`，`layui-menu` 白底语义不变；ScrollBox 支持 `layui-chat-msg` 类——消息面板独立表面 #282e3a 深蓝灰井 + 左/上 1px 发丝线 #191d21（与并列面板分隔），无类仍均画 button_normal；BlockQuote（底恒 #fafafa）文字恒深色 #555（暗色主题下不再白字白底，UI-201 同类）；`layui-bg-gray` 为暗色主题适配色（非浅色主题的 #fafafa）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1586,6 +1599,8 @@
 | `BUG:UI-199` | BUG | UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07） | `docs/CHANGELOG.md` |
 | `BUG:UI-200` | BUG | UI-200: Table 流加载触底续灌失效修复——rebuild_rows 重建后重挂 body_ 的 on_scroll_to_bottom 钩子（ui/src/table.cpp；audio_text 指令预览等四表实测）（2026-09-07） | `docs/CHANGELOG.md` |
 | `BUG:UI-201` | BUG | UI-201: 浅色面板上文本 token 选错致「白字白底」不可读——Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题改用可读深色 token text_secondary（ui/src/menu.cpp + ui/src/collapse.cpp；agent/chat_shell 实测）（2026-09-12） | `docs/CHANGELOG.md` |
+| `BUG:UI-202` | BUG | UI-202: IME 候选窗锚定只认 TextBox、多行 TextArea 中文输入候选框落窗口左上角——`update_ime_caret` 扩展 TextArea 双分支 + `TextArea::caret_anchor()` 公开光标像素锚点（ui/src/ime.cpp + ui/include/ui/ui/textarea.h + ui/src/textarea.cpp；宿主 agent/chat_shell 实测）（2026-09-13） | `docs/CHANGELOG.md` |
+| `BUG:UI-203` | BUG | UI-203: 容器支持 layui 底色类——VBox/ScrollBox 背景可主题化着色（气泡/消息面板独立表面） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1648,6 +1663,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-020` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-020` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-021` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-022` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-022` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-022` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-022` | checklist |
@@ -1853,6 +1869,8 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-183` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-184` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-201` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-202` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-203` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

@@ -23,7 +23,10 @@ void BlockQuote::set_theme(const Theme* theme) {
     mark_dirty();
         theme_ = theme;
     label_->set_theme(theme);
-    label_->set_color(theme ? theme->text_secondary : Vec4{0.4f, 0.4f, 0.4f, 1.0f});
+    // UI-203：quote 底 #fafafa 为恒浅色（on_draw 内硬编码 layui.css .layui-elem-quote），
+    // 文字须恒深色可读（layui 规范 #555）——不能用 theme->text_secondary：暗色主题下
+    // text_secondary 为近白 → 白字白底（UI-201 同类缺陷）。灰卡片/蓝气泡底上均成立。
+    label_->set_color(Vec4{0.333f, 0.333f, 0.333f, 1.0f});
 }
 
 void BlockQuote::set_text(const char* text) {
