@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-15T04:35:20+08:00",
+  "generatedAt": "2026-09-15T06:03:56+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-204": {
+      "id": "BUG:UI-204",
+      "type": "BUG",
+      "label": "UI-204: `TextArea::set_text` 虚化——派生编辑器程序赋值可沿同一「文本变化」通知链触发回调（ui/include/ui/ui/textarea.h；宿主 agent/chat_shell 斜杠浮层重建 AG-785 实测）（2026-09-15）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-204-textareasettext-虚化派生编辑器程序赋值可沿同一文本变化通知链触发回调uiincludeuiuitextareah宿主-agentchatshell-斜杠浮层重建-ag-785-实测2026-09-15"
+    },
     "BUG:UI-203": {
       "id": "BUG:UI-203",
       "type": "BUG",
@@ -2425,6 +2432,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-204",
+      "kind": "checklist",
+      "context": "回归清单#TextArea 程序赋值统一「文本变化」通知链：`TextArea::set_text` 虚化（virtual）——派生编辑器（agent SendTextArea）override 后程序赋值可接自身变更回调（斜杠建议指纹同步，详见宿主 AG-785）；base「含程序 set_text 时回调」承诺一致"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-008",
       "kind": "checklist",
       "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）"
@@ -3787,6 +3800,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-204": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#TextArea 程序赋值统一「文本变化」通知链：`TextArea::set_text` 虚化（virtual）——派生编辑器（agent SendTextArea）override 后程序赋值可接自身变更回调（斜杠建议指纹同步，详见宿主 AG-785）；base「含程序 set_text 时回调」承诺一致"
+      }
+    ],
     "BUG:UI-203": [
       {
         "from": "DOC:ARCHITECTURE",

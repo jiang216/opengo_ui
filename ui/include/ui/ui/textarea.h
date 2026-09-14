@@ -30,7 +30,9 @@ public:
     void set_theme(const Theme* theme) {  theme_ = theme; mark_dirty(); }
     void set_placeholder(const char* text) {  placeholder_ = text ? text : ""; mark_dirty(); }
 
-    void set_text(const char* text);
+    // 程序化/用户编辑统一的文本替换入口。虚（send-textarea 等派生需在 set 后沿同一
+    // 通知链触发"文本变化（含程序 set_text）"回调；UI-204）。
+    virtual void set_text(const char* text);
     const std::string& text() const { return text_; }
     void set_caret(size_t pos) {  caret_ = (pos <= text_.size()) ? pos : text_.size(); mark_dirty(); }
     // 滚动到底部（日志自动跟踪最新内容）

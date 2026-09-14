@@ -3,6 +3,18 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-204: `TextArea::set_text` 虚化——派生编辑器程序赋值可沿同一「文本变化」通知链触发回调（ui/include/ui/ui/textarea.h；宿主 agent/chat_shell 斜杠浮层重建 AG-785 实测）（2026-09-15）
+- **级别**：功能增强（ui 库声明面 `ui/include/ui/ui/textarea.h`；宿主 agent/chat_shell SendTextArea 程序化 `set_text` 走统一通知链）。base 注释本就承诺「文本变化（含程序 set_text）时回调」（`set_on_change`），但 `set_text` 非虚 → 派生类（如 agent 的 SendTextArea）无法在程序赋值后接续自己的变更通知链。
+- **根因（ui 库声明面）**：`TextArea::set_text` 为非虚成员函数，`on_change_`（base 回调）与派生自建的变更钩子（agent SendTextArea `on_text_changed_`）是两条互不可见的链：程序赋值（`set_text`）只走 base 的 `on_change_`，派生类对程序性文本变化无感知 → 宿主斜杠建议的指纹读取不到程序性清空/补全（Esc 关浮层后重开 '/' 不弹建议）。
+- **修复**：`TextArea::set_text` 加 `virtual`（实现不变）。派生编辑器（SendTextArea）override `set_text`：先 `TextArea::set_text` 再发自身变更通知（AG-785 宿主侧实现；`slashes_apply/send_prompt` 已先对齐指纹，通知不产生失配重建）。
+- **回归清单（改动后核对）**：
+  1. `set_text` 签名与既有调用点兼容（仅加虚表槽，直接调用与覆盖行为不变；base 内部 `set_text` 调用不受影响）；
+  2. `on_change_`（base 通知链）：程序/用户文本变化时仍按原语义回调（行为不变）；
+  3. 派生类未 override `set_text` 时走 base 实现（行为等价）；
+  4. 宿主 agent/chat_shell：`--selftest-slash`（含 `--mock`）全绿、Esc 关浮层后 `set_text("")` 再键入 '/' 建议浮层正常重建（AG-785）。
+- **验证**：Release（VS 18 2026，cmake preset install）重建 `ui_ui.lib` 并 `cmake --install`；`opengl_UI/install` 与 `agent/install` 两份 `ui_ui.lib` MD5 一致（`19AAE87F…`）。宿主链接新版后 `--selftest-slash` → `SLASH_SELFTEST:OK` exit 0（`--mock` 与默认 EmptyFeed 形态均通过；详见 agent AG-785）。
+- **影响范围**：`ui/include/ui/ui/textarea.h`、`docs/CHANGELOG.md`
+
 ## UI-203: 容器支持 layui 底色类——VBox/ScrollBox 背景可主题化着色（气泡/消息面板独立表面）
 
 （ui/src/vbox.cpp + ui/src/scrollbox.cpp + ui/src/blockquote.cpp + ui/src/layui_style.cpp；宿主 agent/chat_shell

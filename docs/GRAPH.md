@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 198（BUG 189 / DOC 7 / META 2）
-- 边: 400
+- 节点: 199（BUG 190 / DOC 7 / META 2）
+- 边: 401
 - lint: 0 错误 / 7 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
@@ -1310,6 +1310,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#容器底色类 + 消息面板独立表面（UI-203）：VBox 支持 `layui-bg-*` 类——命中类按 `layui::bg_fill` 填圆角底（气泡/色块，`layui-bg-blue`=蓝 #1e9fff、`layui-bg-gray`=暗色卡片 #4a4f59 配近白字），无类回落 `button_normal`，`layui-menu` 白底语义不变；ScrollBox 支持 `layui-chat-msg` 类——消息面板独立表面 #282e3a 深蓝灰井 + 左/上 1px 发丝线 #191d21（与并列面板分隔），无类仍均画 button_normal；BlockQuote（底恒 #fafafa）文字恒深色 #555（暗色主题下不再白字白底，UI-201 同类）；`layui-bg-gray` 为暗色主题适配色（非浅色主题的 #fafafa）
 
+### BUG:UI-204 · UI-204: `TextArea::set_text` 虚化——派生编辑器程序赋值可沿同一「文本变化」通知链触发回调（ui/include/ui/ui/textarea.h；宿主 agent/chat_shell 斜杠浮层重建 AG-785 实测）（2026-09-15）
+
+- 路径: `docs/CHANGELOG.md#ui-204-textareasettext-虚化派生编辑器程序赋值可沿同一文本变化通知链触发回调uiincludeuiuitextareah宿主-agentchatshell-斜杠浮层重建-ag-785-实测2026-09-15`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#TextArea 程序赋值统一「文本变化」通知链：`TextArea::set_text` 虚化（virtual）——派生编辑器（agent SendTextArea）override 后程序赋值可接自身变更回调（斜杠建议指纹同步，详见宿主 AG-785）；base「含程序 set_text 时回调」承诺一致
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1601,6 +1607,7 @@
 | `BUG:UI-201` | BUG | UI-201: 浅色面板上文本 token 选错致「白字白底」不可读——Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题改用可读深色 token text_secondary（ui/src/menu.cpp + ui/src/collapse.cpp；agent/chat_shell 实测）（2026-09-12） | `docs/CHANGELOG.md` |
 | `BUG:UI-202` | BUG | UI-202: IME 候选窗锚定只认 TextBox、多行 TextArea 中文输入候选框落窗口左上角——`update_ime_caret` 扩展 TextArea 双分支 + `TextArea::caret_anchor()` 公开光标像素锚点（ui/src/ime.cpp + ui/include/ui/ui/textarea.h + ui/src/textarea.cpp；宿主 agent/chat_shell 实测）（2026-09-13） | `docs/CHANGELOG.md` |
 | `BUG:UI-203` | BUG | UI-203: 容器支持 layui 底色类——VBox/ScrollBox 背景可主题化着色（气泡/消息面板独立表面） | `docs/CHANGELOG.md` |
+| `BUG:UI-204` | BUG | UI-204: `TextArea::set_text` 虚化——派生编辑器程序赋值可沿同一「文本变化」通知链触发回调（ui/include/ui/ui/textarea.h；宿主 agent/chat_shell 斜杠浮层重建 AG-785 实测）（2026-09-15） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1871,6 +1878,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-201` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-202` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-203` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-204` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
