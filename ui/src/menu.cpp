@@ -163,10 +163,11 @@ void Menu::set_on_group_click(std::function<void(const char*)> cb) {
 
 float Menu::preferred_height() const {
     compute_visibility();
+    const float ih = item_h_ > 0.f ? item_h_ : (large_ ? kItemHLg : kItemH);
     float h = 0.f;
     for (const auto& it : items_) {
         if (!it.visible) continue;
-        h += (it.type == Item::Divider) ? kDividerH : (large_ ? kItemHLg : kItemH);
+        h += (it.type == Item::Divider) ? kDividerH : ih;
     }
     return h;
 }
@@ -176,7 +177,7 @@ void Menu::on_layout() { layout_items(); }
 void Menu::layout_items() {
     compute_visibility();
     float y = 0.f;
-    const float ih = large_ ? kItemHLg : kItemH;
+    const float ih = item_h_ > 0.f ? item_h_ : (large_ ? kItemHLg : kItemH);
     for (auto& it : items_) {
         if (!it.visible) {
             it.y0 = it.y1 = bounds_.y + y;
@@ -256,7 +257,7 @@ void Menu::draw_item(Renderer& renderer, Item& it, int /*index*/) {
     const Vec4 text2 = style_ov_ ? ov_text_ : t->text_secondary;
     const Vec4 muted = style_ov_ ? ov_text_ : t->text_muted;
     const Vec4 hover = style_ov_ ? ov_hover_ : Vec4{0.96f, 0.96f, 0.96f, 1.f};
-    const float ih = large_ ? kItemHLg : kItemH;
+    const float ih = item_h_ > 0.f ? item_h_ : (large_ ? kItemHLg : kItemH);
     const float line_h = font_->line_height();
     const float indent = it.level * kIndent;
 

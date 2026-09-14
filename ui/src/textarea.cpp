@@ -267,6 +267,23 @@ float TextArea::offset_to_y(size_t offset, float line_h,
     return (float)lines.size() * line_h;
 }
 
+void TextArea::caret_anchor(float& out_x, float& out_y) const {
+    out_x = kPad;
+    out_y = kPad;
+    if (!font_ || text_.empty()) return;
+    float line_h = 0.f;
+    const auto lines = cached_wrap_lines(const_cast<TextArea*>(this), text_, font_, avail_width(), &line_h);
+    size_t cr = 0;
+    for (size_t r = 0; r < lines.size(); ++r) {
+        if (caret_ >= lines[r].start && caret_ <= lines[r].end) { cr = r; break; }
+    }
+    float col = 0.f;
+    for (size_t j = lines[cr].start; j < caret_; j = next_cp(text_, j))
+        col += font_->char_width(decode_cp(text_, j));
+    out_x = kPad + col;
+    out_y = kPad - scroll_ + (float)cr * line_h + line_h;
+}
+
 // ---- Mouse events ----
 
 bool TextArea::on_mouse_down(float x, float y, int button) {

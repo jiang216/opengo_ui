@@ -68,6 +68,11 @@ public:
     bool on_drop(float x, float y, const std::vector<std::string>& paths) override;
     void on_draw(Renderer& renderer) override;
 
+    // 多行光标锚定点（UI-202，IME 候选窗跟随，与 TextBox::caret_offset 对称）：
+    // x = 光标列像素偏移（控件左边界起算，含 kPad）；
+    // y = 光标所在行底部像素（控件顶部起算，含滚动平移）。
+    void caret_anchor(float& x, float& y) const;
+
     // ---- 换行缓存读写（供 wrap_lines 缓存命中用）----
     bool lines_cache_valid() const { return !lines_dirty_; }
     const std::vector<LineSpan>& cached_lines() const { return cached_lines_; }

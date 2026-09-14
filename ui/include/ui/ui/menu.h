@@ -39,6 +39,8 @@ public:
     void set_large(bool large);
     void set_font(Font*);
     void set_theme(const Theme*);
+    // 自定义行高（UI-203）：<=0 时沿用默认 kItemH/kItemHLg；用于紧凑菜单（如模型下拉 28px）
+    void set_item_height(float h) { item_h_ = h; }
     // 自定义配色覆盖（bg/border/hover/文字），不设置则用主题默认
     void set_style_overrides(const Vec4& bg, const Vec4& border, const Vec4& hover, const Vec4& text);
     // 普通菜单项被点击时回调（title 文本），供宿主（如 Dropdown）做选中/收起
@@ -96,6 +98,7 @@ private:
     Font* font_ = nullptr;
     const Theme* theme_ = nullptr;
     bool large_ = false;
+    float item_h_ = 0.f;  // UI-203：自定义行高（0 = 默认 kItemH/kItemHLg）
     Item* hover_ = nullptr;
     Item* active_hover_ = nullptr;
     int current_level_ = 0;

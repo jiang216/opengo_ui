@@ -1,4 +1,7 @@
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX  // 防 Windows min/max 宏污染 std::max（textarea.h→scrollbar_style.h）
+#endif
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
@@ -10,7 +13,10 @@
 #include "ui/ui/ime.h"
 
 #include "ui/gl/window.h"
+#include "ui/ui/textarea.h"
 #include "ui/ui/textbox.h"
+
+#include <algorithm>
 
 namespace ui {
 namespace {
@@ -34,15 +40,24 @@ void update_ime_caret(const Window& window, Widget* root) {
     static POINT last = {-1, -1};
 
     if (!root) return;
-    auto* box = dynamic_cast<TextBox*>(find_focused(root));
-    if (!box) return;
+    Widget* focused = find_focused(root);
+    if (!focused) return;
 
-    // CFS_POINT / CFS_CANDIDATEPOS 的 ptCurrentPos 均为【客户区坐标】（MSDN），
-    // 禁止 ClientToScreen 换算（换算后候选窗落窗口原点+屏幕坐标处，等效失效）。
-    // y 取控件底边：候选窗弹在输入框下方而非顶部。
-    const auto& b = box->bounds();
-    POINT pt = {static_cast<LONG>(b.x + box->caret_offset()),
-                static_cast<LONG>(b.y + b.h)};
+    POINT pt = {};
+    if (auto* box = dynamic_cast<TextBox*>(focused)) {
+        // 单行 TextBox：候选窗锚到输入框底边光标处（UI-100）
+        const auto& b = box->bounds();
+        pt = {static_cast<LONG>(b.x + box->caret_offset()),
+              static_cast<LONG>(b.y + b.h)};
+    } else if (auto* ta = dynamic_cast<TextArea*>(focused)) {
+        // 多行 TextArea：候选窗锚到光标所在行底部（UI-202）
+        const auto& b = ta->bounds();
+        float ax = 0.f, ay = 0.f;
+        ta->caret_anchor(ax, ay);
+        pt = {static_cast<LONG>(b.x + ax), static_cast<LONG>(b.y + ay)};
+    } else {
+        return;
+    }
 
     HWND hwnd = glfwGetWin32Window(window.handle());
     if (!hwnd) return;

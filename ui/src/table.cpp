@@ -347,6 +347,8 @@ void Table::clear_rows() {
     row_depth_.clear();
     row_expanded_.clear();
     tree_visible_.clear();
+    combo_row_options_.clear();  // M20：数据行失效，行级下拉覆盖一并作废
+    cell_combo_.clear();         // M20-WP8：per-cell 下拉标记随行失效，重建后由调用方重注入
     radio_sel_ = -1;
     sel_row_ = -1;  // UI-124
     rebuild_rows();
@@ -432,6 +434,9 @@ void Table::prebake_visible_text() {
     for (const auto& lbl : btn_labels_) font_->prebake_text(lbl.c_str());
     for (const auto& opts : combo_options_)
         for (const auto& o : opts) font_->prebake_text(o.c_str());
+    for (const auto& rowOpts : combo_row_options_)   // M20：行级下拉覆盖文本同样预烘焙
+        for (const auto& opts : rowOpts)
+            for (const auto& o : opts) font_->prebake_text(o.c_str());
     for (int r : visible_rows_) {
         if (r < 0 || r >= static_cast<int>(rows_.size())) continue;
         for (const auto& cell : rows_[r]) font_->prebake_text(cell.c_str());
@@ -554,6 +559,44 @@ void Table::set_combobox_options(int col, const std::vector<std::string>& option
         if (col < 0) return;
     if ((int)combo_options_.size() <= col) combo_options_.resize(col + 1);
     combo_options_[col] = options;
+}
+
+// M20：单元格（数据行,列）选项覆盖；空集视为未覆盖（回退列级）。
+void Table::set_cell_combobox_options(int row, int col,
+                                      const std::vector<std::string>& options) {
+    mark_dirty();
+        if (row < 0 || col < 0) return;
+    if ((int)combo_row_options_.size() <= row) combo_row_options_.resize(row + 1);
+    if ((int)combo_row_options_[row].size() <= col)
+        combo_row_options_[row].resize(col + 1);
+    combo_row_options_[row][col] = options;
+}
+
+// M20-WP8：单元格级下拉开关（per-cell combo）；标记特定单元格为下拉型，独立于列级。
+void Table::set_cell_combo(int row, int col, bool on) {
+    mark_dirty();
+    if (row < 0 || col < 0) return;
+    if ((int)cell_combo_.size() <= row) cell_combo_.resize(row + 1);
+    if ((int)cell_combo_[row].size() <= col) cell_combo_[row].resize(col + 1);
+    cell_combo_[row][col] = on;
+}
+
+bool Table::is_cell_combo(int data_row, int col) const {
+    return data_row >= 0 && data_row < (int)cell_combo_.size() &&
+           col >= 0 && col < (int)cell_combo_[data_row].size() &&
+           cell_combo_[data_row][col];
+}
+
+// 下拉选项解析：行级覆盖优先（非空集），否则列级；均无返回空集。
+const std::vector<std::string>& Table::combo_options_for(int data, int col) const {
+    static const std::vector<std::string> kEmpty;
+    if (data >= 0 && data < (int)combo_row_options_.size() &&
+        col >= 0 && col < (int)combo_row_options_[data].size() &&
+        !combo_row_options_[data][col].empty())
+        return combo_row_options_[data][col];
+    if (col >= 0 && col < (int)combo_options_.size())
+        return combo_options_[col];
+    return kEmpty;
 }
 
 void Table::add_button_column(const char* title, float width,
@@ -796,6 +839,8 @@ void Table::reload(const std::vector<std::vector<std::string>>& new_rows) {
     row_checked_.resize(rows_.size(), false);
     row_depth_.assign(rows_.size(), 0);
     row_expanded_.assign(rows_.size(), true);
+    combo_row_options_.clear();  // M20：reload 清行级下拉覆盖（数据行下标失效）
+    cell_combo_.clear();         // M20-WP8：reload 清 per-cell 下拉标记
     radio_sel_ = -1;
     sel_row_ = -1;  // UI-124：reload 后选中态失效
     page_ = 0;
@@ -870,7 +915,9 @@ void Table::close_combo() {
 
 void Table::begin_combo(int row, int col) {
     if (row < 0 || row >= (int)visible_rows_.size() || col < 0 || col >= (int)cols_.size()) return;
-    if (cols_[col].kind != ColKind::ComboBox) return;
+    // UI-143 列级 ComboBox；M20-WP8：per-cell combo 的列仍为 Data 型，也允许展开
+    const int data = data_row_of(row);
+    if (cols_[col].kind != ColKind::ComboBox && !is_cell_combo(data, col)) return;
     commit_edit();
     close_combo();
 
@@ -879,7 +926,6 @@ void Table::begin_combo(int row, int col) {
     for (int i = 0; i < col; ++i) cx += col_width(i);
     const float cy = bounds_.y + header_h() + row * row_h() - body_->scroll_offset();
     const float cw = col_width(col);
-    const int data = data_row_of(row);
 
     if (!combo_box_) {
         combo_box_ = new ComboBox(cx, cy, cw, row_h());
@@ -889,13 +935,13 @@ void Table::begin_combo(int row, int col) {
     }
     combo_box_->set_bounds(cx, cy, cw, row_h());
     combo_box_->set_visible(true);  // UI-156
-    if ((int)combo_options_.size() <= col) combo_options_.resize(col + 1);
-    combo_box_->set_options(combo_options_[col]);
+    const std::vector<std::string>& rowOpts = combo_options_for(data, col);
+    combo_box_->set_options(rowOpts);
     // 恢复当前单元格文本对应的选中项（此时 on_change 未设置，select 仅复位显示）
     if (data >= 0 && data < (int)rows_.size() && col < (int)rows_[data].size()) {
         const std::string& cur = rows_[data][col];
-        for (int i = 0; i < (int)combo_options_[col].size(); ++i) {
-            if (combo_options_[col][i] == cur) {
+        for (int i = 0; i < (int)rowOpts.size(); ++i) {
+            if (rowOpts[i] == cur) {
                 combo_box_->select(i);
                 break;
             }
@@ -905,8 +951,9 @@ void Table::begin_combo(int row, int col) {
         // UI-143：选中即写回该格文本并通知调用方。处于 ComboBox::select 的 on_change
         // 回调栈内，故只写回 + 隐藏（不 delete），对象由下一次 begin_combo 复用。
         std::string text;
-        if (index >= 0 && col < (int)combo_options_.size() && index < (int)combo_options_[col].size())
-            text = combo_options_[col][index];
+        const std::vector<std::string>& curOpts = combo_options_for(data, col);
+        if (index >= 0 && index < (int)curOpts.size())
+            text = curOpts[index];
         if (data >= 0 && data < (int)rows_.size() && col < (int)rows_[data].size())
             rows_[data][col] = text;
         combo_box_->set_visible(false);  // UI-156
@@ -1047,7 +1094,12 @@ bool Table::on_mouse_down(float x, float y, int button) {
             return true;
         }
 
-        // 下拉单元格列（UI-143）：单击展开行内 ComboBox
+        // 下拉单元格列（UI-143/M20-WP8）：单击展开行内 ComboBox
+        // M20-WP8：per-cell combo 优先于列级 combo（某行某列独立标记下拉）
+        if (col >= 0 && is_cell_combo(data, col)) {
+            begin_combo(row, col);
+            return true;
+        }
         if (col >= 0 && is_cell_combobox(col)) {
             begin_combo(row, col);
             return true;

@@ -143,6 +143,15 @@ public:
     bool is_cell_combobox(int col) const;
     // 指定下拉列的可选项（与列下标平行；未设置视为空选项集）
     void set_combobox_options(int col, const std::vector<std::string>& options);
+    // 单元格（数据行, 列）级下拉选项覆盖（M20：每后端一行，各行语种独立声明）。
+    // row 为数据行下标（rows_ 下标，跨分页/排序稳定）；此后该格展开时优先用此覆盖集，
+    // 缺省（未设置/空集）回退列级 set_combobox_options。clear_rows/reload 后覆盖失效。
+    void set_cell_combobox_options(int row, int col, const std::vector<std::string>& options);
+    // 单元格级下拉开关（M20-WP8）：标记某特定单元格为下拉型，独立于列级 set_cell_combobox；
+    // 命中时展开行内 ComboBox（复用 combo_options_for 行级覆盖/列级回退）。
+    // row=数据行下标，col=列号；clear_rows/reload 后标记失效。
+    void set_cell_combo(int row, int col, bool on = true);
+    bool is_cell_combo(int data_row, int col) const;
     // 下拉选中回调（参数：可见行号, 列号, 选项下标, 选中文本）
     void set_on_cell_combobox(std::function<void(int visible_row, int col, int index, const std::string& text)> cb) { on_cell_combo_ = std::move(cb); }
 
@@ -335,6 +344,12 @@ private:
     int combo_data_row_ = -1;  // 展开对应的数据行下标
     // 下拉列选项集（与 cols_ 下标平行；未设置列留空）
     std::vector<std::vector<std::string>> combo_options_;
+    // 单元格级下拉选项覆盖（M20）：外层=数据行下标，中层=列下标，内层=选项集；
+    // 空集表示未覆盖，回退列级 combo_options_
+    std::vector<std::vector<std::vector<std::string>>> combo_row_options_;
+    // 单元格级下拉开关（M20-WP8）：per-cell combo 标记，结构同 combo_row_options_（外层=行，中层=列）
+    std::vector<std::vector<bool>> cell_combo_;
+    const std::vector<std::string>& combo_options_for(int data, int col) const;
     std::function<void(int, int, int, const std::string&)> on_cell_combo_;
 
     // 列宽自适应：容器宽 > 各列宽之和时，剩余空间按比例分配给所有列

@@ -185,6 +185,16 @@ void Dropdown::place_popup() {
         y = b.y + b.h;
         if (align_ == DropdownAlign::Center) x = b.x + (b.w - w) * 0.5f;
         else if (align_ == DropdownAlign::Right) x = b.x + b.w - w;
+        // UI-203：向下放不下时自动翻转向上（仿 ComboBox UI-110 sync_panel）
+        const Widget* rt = root();
+        if (rt) {
+            const float vis_bot = rt->bounds().y + rt->bounds().h;
+            if (y + h > vis_bot) {
+                const float flipped_y = b.y - h;
+                const float vis_top = rt->bounds().y;
+                y = (flipped_y < vis_top) ? vis_top : flipped_y;
+            }
+        }
     }
     const float dx = x - box->bounds().x;
     const float dy = y - box->bounds().y;
