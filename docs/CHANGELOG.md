@@ -3,6 +3,21 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-205: `Dropdown` 析构 Use-After-Free + `hide()` 只收 custom_ 不收 menu_——custom-content 模板下双击菜单项/外部点击删除触发崩溃（ui/src/dropdown.cpp；宿主 agent/chat_shell 斜杠命令浮层点选崩溃 AG-808）（2026-09-15）
+- **级别**：严重缺陷（ui 库崩溃修正：`ui/src/dropdown.cpp`）。宿主 agent/chat_shell「斜杠命令建议浮层」点选命令（或外部点击收起）时 0xC0000005 崩溃——AG-777 custom-content 模板（`set_custom_content(ScrollBox)` 内嵌 `Menu`）下 `Dropdown` 生命周期两处缺陷叠加，重建浮层路径命中即崩。
+- **根因（ui 库缺陷）**：
+  1. **析构 Use-After-Free**：`~Dropdown()` 原次序 = 先 `delete custom_` 再 `menu_->parent()->remove_child(menu_)`。custom-content 模板中 `menu_` 是 `custom_`（ScrollBox）的子控件（`sb->add_child(mn)`）——`delete custom_` 先把 `menu_` 连根拔掉，随后 `menu_->parent()` 读已释放内存（UAF）→ 崩溃。
+  2. **`hide()` 只收 custom_ 不收 menu_**：`hide()` 仅 `custom_->set_visible(false)`；`opened()` 判定 `(custom_&&visible)||(menu_&&visible)`——custom-content 下 menu_ 仍在 custom_ 内可见 → `opened()` 恒 true。事件回调内 `hide()` 后宿主再判 `opened()` 误以为仍打开 → 走「重建 → delete 旧 Dropdown」路径，命中根因 1 的 UAF 崩溃。
+- **修复**：
+  1. `~Dropdown()`：先 `menu_->parent()->remove_child(menu_)` 再 `delete custom_`（先摘 menu_、后删 custom_，杜绝访问已释放的 custom_）；
+  2. `hide()`：`custom_` 与 `menu_` **都** `set_visible(false)`（`opened()` 判定与 hide 收尾一致，消除「以为还开着」的二次 hide/重建路径）。
+- **回归清单（改动后核对）**：
+  1. `~Dropdown` 在纯菜单模板（无 custom_）下仍正常：`remove_child` 幂等、`delete custom_` 为 null 安全；
+  2. `hide()` 后 `opened()` 恒 false（custom-content 与纯菜单两种模板）；close_popups/hover_open_/show_at_ 收尾保留；
+  3. 宿主 agent/chat_shell 斜杠浮层：点选命令项 / Tab / Esc / 外部点击收起后，`opened()` 不再误判；重建浮层不触发析构 UAF（`--selftest-slash` 含 `--mock` 与默认两种形态）。
+- **验证**：`opengl_UI/install` 重建 `ui_ui.lib`（MSVC Release x64，`ui_ui.vcxproj` 直接 MSBuild——cmake 重配置受 VS18 CMake 4.2 `SameMajorVersion` 兼容性报错阻碍）；拷贝至 `agent/install/lib` 后宿主 `--selftest-slash` → `SLASH_SELFTEST:OK` exit 0（`--mock` 与默认 EmptyFeed 形态）；agent `tools/build.ps1` 全轨 exit 0（详见 agent AG-808）。
+- **影响范围**：`ui/src/dropdown.cpp`、`docs/CHANGELOG.md`
+
 ## UI-204: `TextArea::set_text` 虚化——派生编辑器程序赋值可沿同一「文本变化」通知链触发回调（ui/include/ui/ui/textarea.h；宿主 agent/chat_shell 斜杠浮层重建 AG-785 实测）（2026-09-15）
 - **级别**：功能增强（ui 库声明面 `ui/include/ui/ui/textarea.h`；宿主 agent/chat_shell SendTextArea 程序化 `set_text` 走统一通知链）。base 注释本就承诺「文本变化（含程序 set_text）时回调」（`set_on_change`），但 `set_text` 非虚 → 派生类（如 agent 的 SendTextArea）无法在程序赋值后接续自己的变更通知链。
 - **根因（ui 库声明面）**：`TextArea::set_text` 为非虚成员函数，`on_change_`（base 回调）与派生自建的变更钩子（agent SendTextArea `on_text_changed_`）是两条互不可见的链：程序赋值（`set_text`）只走 base 的 `on_change_`，派生类对程序性文本变化无感知 → 宿主斜杠建议的指纹读取不到程序性清空/补全（Esc 关浮层后重开 '/' 不弹建议）。

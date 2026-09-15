@@ -32,9 +32,12 @@ Dropdown::Dropdown(float x, float y, float w, float h, const char* title)
 }
 
 Dropdown::~Dropdown() {
+    // Fix: detach menu_ before custom_ — menu_ may be a child of custom_
+    // (AG-777 custom-content template: sb->add_child(mn)). Deleting custom_
+    // first then dereferencing menu_->parent() is a use-after-free.
+    if (menu_ && menu_->parent()) menu_->parent()->remove_child(menu_);
     if (custom_ && custom_->parent()) custom_->parent()->remove_child(custom_);
     delete custom_;
-    if (menu_ && menu_->parent()) menu_->parent()->remove_child(menu_);
     delete menu_;
 }
 
@@ -143,8 +146,11 @@ void Dropdown::show() {
 
 void Dropdown::hide() {
     mark_dirty();
-        Widget* box = custom_ ? static_cast<Widget*>(custom_) : menu_;
-    if (box) box->set_visible(false);  // UI-156
+    // Fix: hide both custom_ and menu_ — opened() checks both visible flags.
+    // If only custom_ is hidden, opened() still returns true (menu_ visible),
+    // causing double-hide and triggering the destructor UAF.
+    if (custom_) custom_->set_visible(false);
+    if (menu_) menu_->set_visible(false);
     close_popups();
     hover_open_ = false;
     show_at_ = false;

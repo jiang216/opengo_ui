@@ -1,11 +1,18 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-15T06:03:56+08:00",
+  "generatedAt": "2026-09-15T22:04:03+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-205": {
+      "id": "BUG:UI-205",
+      "type": "BUG",
+      "label": "UI-205: `Dropdown` 析构 Use-After-Free + `hide()` 只收 custom_ 不收 menu_——custom-content 模板下双击菜单项/外部点击删除触发崩溃（ui/src/dropdown.cpp；宿主 agent/chat_shell 斜杠命令浮层点选崩溃 AG-808）（2026-09-15）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-205-dropdown-析构-use-after-free--hide-只收-custom-不收-menucustom-content-模板下双击菜单项外部点击删除触发崩溃uisrcdropdowncpp宿主-agentchatshell-斜杠命令浮层点选崩溃-ag-8082026-09-15"
+    },
     "BUG:UI-204": {
       "id": "BUG:UI-204",
       "type": "BUG",
@@ -2438,6 +2445,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-205",
+      "kind": "checklist",
+      "context": "回归清单#`Dropdown` 生命周期安全（UI-205）：custom-content 模板（ScrollBox 内嵌 Menu）下析构/隐藏无 UAF——`~Dropdown` 先摘 `menu_`（`menu_->parent()->remove_child`）后删 `custom_`，杜绝「先删 custom_ 再读 menu_->parent()」访问已释放内存；`hide()` 同时收 `custom_` 与 `menu_` 两个 visible（与 `opened()` 判定口径一致，消除「只收一个导致 opened() 误判仍开着 → 二次删除」重建路径）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-008",
       "kind": "checklist",
       "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）"
@@ -3800,6 +3813,13 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-205": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#`Dropdown` 生命周期安全（UI-205）：custom-content 模板（ScrollBox 内嵌 Menu）下析构/隐藏无 UAF——`~Dropdown` 先摘 `menu_`（`menu_->parent()->remove_child`）后删 `custom_`，杜绝「先删 custom_ 再读 menu_->parent()」访问已释放内存；`hide()` 同时收 `custom_` 与 `menu_` 两个 visible（与 `opened()` 判定口径一致，消除「只收一个导致 opened() 误判仍开着 → 二次删除」重建路径）"
+      }
+    ],
     "BUG:UI-204": [
       {
         "from": "DOC:ARCHITECTURE",

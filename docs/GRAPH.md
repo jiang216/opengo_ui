@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 199（BUG 190 / DOC 7 / META 2）
-- 边: 401
+- 节点: 200（BUG 191 / DOC 7 / META 2）
+- 边: 402
 - lint: 0 错误 / 7 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
@@ -1316,6 +1316,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#TextArea 程序赋值统一「文本变化」通知链：`TextArea::set_text` 虚化（virtual）——派生编辑器（agent SendTextArea）override 后程序赋值可接自身变更回调（斜杠建议指纹同步，详见宿主 AG-785）；base「含程序 set_text 时回调」承诺一致
 
+### BUG:UI-205 · UI-205: `Dropdown` 析构 Use-After-Free + `hide()` 只收 custom_ 不收 menu_——custom-content 模板下双击菜单项/外部点击删除触发崩溃（ui/src/dropdown.cpp；宿主 agent/chat_shell 斜杠命令浮层点选崩溃 AG-808）（2026-09-15）
+
+- 路径: `docs/CHANGELOG.md#ui-205-dropdown-析构-use-after-free--hide-只收-custom-不收-menucustom-content-模板下双击菜单项外部点击删除触发崩溃uisrcdropdowncpp宿主-agentchatshell-斜杠命令浮层点选崩溃-ag-8082026-09-15`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#`Dropdown` 生命周期安全（UI-205）：custom-content 模板（ScrollBox 内嵌 Menu）下析构/隐藏无 UAF——`~Dropdown` 先摘 `menu_`（`menu_->parent()->remove_child`）后删 `custom_`，杜绝「先删 custom_ 再读 menu_->parent()」访问已释放内存；`hide()` 同时收 `custom_` 与 `menu_` 两个 visible（与 `opened()` 判定口径一致，消除「只收一个导致 opened() 误判仍开着 → 二次删除」重建路径）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1608,6 +1614,7 @@
 | `BUG:UI-202` | BUG | UI-202: IME 候选窗锚定只认 TextBox、多行 TextArea 中文输入候选框落窗口左上角——`update_ime_caret` 扩展 TextArea 双分支 + `TextArea::caret_anchor()` 公开光标像素锚点（ui/src/ime.cpp + ui/include/ui/ui/textarea.h + ui/src/textarea.cpp；宿主 agent/chat_shell 实测）（2026-09-13） | `docs/CHANGELOG.md` |
 | `BUG:UI-203` | BUG | UI-203: 容器支持 layui 底色类——VBox/ScrollBox 背景可主题化着色（气泡/消息面板独立表面） | `docs/CHANGELOG.md` |
 | `BUG:UI-204` | BUG | UI-204: `TextArea::set_text` 虚化——派生编辑器程序赋值可沿同一「文本变化」通知链触发回调（ui/include/ui/ui/textarea.h；宿主 agent/chat_shell 斜杠浮层重建 AG-785 实测）（2026-09-15） | `docs/CHANGELOG.md` |
+| `BUG:UI-205` | BUG | UI-205: `Dropdown` 析构 Use-After-Free + `hide()` 只收 custom_ 不收 menu_——custom-content 模板下双击菜单项/外部点击删除触发崩溃（ui/src/dropdown.cpp；宿主 agent/chat_shell 斜杠命令浮层点选崩溃 AG-808）（2026-09-15） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1879,6 +1886,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-202` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-203` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-204` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-205` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
