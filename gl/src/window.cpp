@@ -468,6 +468,31 @@ void Window::get_monitor_workarea(GLFWmonitor* monitor, int& xpos, int& ypos, in
     else { xpos = 0; ypos = 0; width = 0; height = 0; }
 }
 
+// 光标所在显示器工作区（UI-207）：
+// - Windows：GetCursorPos 得全局光标 → MonitorFromPoint(DEFAULTTONEAREST) → GetMonitorInfoW
+//   rcWork（工作区已排除任务栏等，与 glfwGetMonitorWorkarea 语义一致；坐标同虚拟屏体系，
+//   可直接 glfwSetWindowPos，无需匹配 GLFWmonitor 句柄）。
+// - 非 Windows：GLFW 无全局光标查询 API（glfwGetCursorPos 仅窗口相对坐标），回退主屏，返回 false。
+bool Window::get_monitor_workarea_at_cursor(int& xpos, int& ypos, int& width, int& height) {
+#if defined(_WIN32)
+    POINT pt;
+    if (GetCursorPos(&pt)) {
+        HMONITOR hmon = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO mi{};
+        mi.cbSize = sizeof(mi);
+        if (hmon && GetMonitorInfoW(hmon, &mi)) {
+            xpos = mi.rcWork.left;
+            ypos = mi.rcWork.top;
+            width = mi.rcWork.right - mi.rcWork.left;
+            height = mi.rcWork.bottom - mi.rcWork.top;
+            return true;
+        }
+    }
+#endif
+    get_monitor_workarea(get_primary_monitor(), xpos, ypos, width, height);
+    return false;
+}
+
 void Window::get_monitor_content_scale(GLFWmonitor* monitor, float& xscale, float& yscale) {
     if (monitor) glfwGetMonitorContentScale(monitor, &xscale, &yscale);
     else { xscale = 1.f; yscale = 1.f; }

@@ -5,9 +5,9 @@
 
 ## 统计
 
-- 节点: 200（BUG 191 / DOC 7 / META 2）
-- 边: 402
-- lint: 0 错误 / 7 警告
+- 节点: 202（BUG 193 / DOC 7 / META 2）
+- 边: 403
+- lint: 0 错误 / 8 警告
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-187
@@ -15,6 +15,7 @@
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-189
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-199
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-200
+  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-206
 
 ## 反链索引
 
@@ -1322,6 +1323,17 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#`Dropdown` 生命周期安全（UI-205）：custom-content 模板（ScrollBox 内嵌 Menu）下析构/隐藏无 UAF——`~Dropdown` 先摘 `menu_`（`menu_->parent()->remove_child`）后删 `custom_`，杜绝「先删 custom_ 再读 menu_->parent()」访问已释放内存；`hide()` 同时收 `custom_` 与 `menu_` 两个 visible（与 `opened()` 判定口径一致，消除「只收一个导致 opened() 误判仍开着 → 二次删除」重建路径）
 
+### BUG:UI-206 · UI-206: 按钮/菜单行内文字与图标垂直偏位——文字视觉中心高于行中线 |descent|/2，图标以行中心为基准致上下不齐（ui/src/button.cpp `draw_content`/下拉 dd/菜单 li + ui/src/menu.cpp `draw_item`/`draw_sub_panel`；宿主 agent/chat_shell 按钮/文件夹行视觉偏位 AG-822）
+
+- 路径: `docs/CHANGELOG.md#ui-206-按钮菜单行内文字与图标垂直偏位文字视觉中心高于行中线-descent2图标以行中心为基准致上下不齐uisrcbuttoncpp-drawcontent下拉-dd菜单-li--uisrcmenucpp-drawitemdrawsubpanel宿主-agentchatshell-按钮文件夹行视觉偏位-ag-822`
+- 反链: 无
+
+### BUG:UI-207 · UI-207: Window 新增「光标所在显示器工作区」API——get_monitor_workarea_at_cursor（win32 GetCursorPos+MonitorFromPoint，非 Windows 回退主屏）（gl/include/ui/gl/window.h + gl/src/window.cpp；宿主 audio_text 多屏 toast 定位）
+
+- 路径: `docs/CHANGELOG.md#ui-207-window-新增光标所在显示器工作区apigetmonitorworkareaatcursorwin32-getcursorposmonitorfrompoint非-windows-回退主屏glincludeuiglwindowh--glsrcwindowcpp宿主-audiotext-多屏-toast-定位`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#光标所在显示器工作区：`Window::get_monitor_workarea_at_cursor(x,y,w,h)` 返回光标当前所在显示器的工作区（多屏幕弹窗定位基座）——Windows 经 GetCursorPos+MonitorFromPoint+GetMonitorInfoW 取 rcWork（与 GLFW 虚拟屏坐标同体系，可直接用于 set_position）；非 Windows 回退主屏并返回 false，宿主失败时回落主屏逻辑
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1615,6 +1627,8 @@
 | `BUG:UI-203` | BUG | UI-203: 容器支持 layui 底色类——VBox/ScrollBox 背景可主题化着色（气泡/消息面板独立表面） | `docs/CHANGELOG.md` |
 | `BUG:UI-204` | BUG | UI-204: `TextArea::set_text` 虚化——派生编辑器程序赋值可沿同一「文本变化」通知链触发回调（ui/include/ui/ui/textarea.h；宿主 agent/chat_shell 斜杠浮层重建 AG-785 实测）（2026-09-15） | `docs/CHANGELOG.md` |
 | `BUG:UI-205` | BUG | UI-205: `Dropdown` 析构 Use-After-Free + `hide()` 只收 custom_ 不收 menu_——custom-content 模板下双击菜单项/外部点击删除触发崩溃（ui/src/dropdown.cpp；宿主 agent/chat_shell 斜杠命令浮层点选崩溃 AG-808）（2026-09-15） | `docs/CHANGELOG.md` |
+| `BUG:UI-206` | BUG | UI-206: 按钮/菜单行内文字与图标垂直偏位——文字视觉中心高于行中线 |descent|/2，图标以行中心为基准致上下不齐（ui/src/button.cpp `draw_content`/下拉 dd/菜单 li + ui/src/menu.cpp `draw_item`/`draw_sub_panel`；宿主 agent/chat_shell 按钮/文件夹行视觉偏位 AG-822） | `docs/CHANGELOG.md` |
+| `BUG:UI-207` | BUG | UI-207: Window 新增「光标所在显示器工作区」API——get_monitor_workarea_at_cursor（win32 GetCursorPos+MonitorFromPoint，非 Windows 回退主屏）（gl/include/ui/gl/window.h + gl/src/window.cpp；宿主 audio_text 多屏 toast 定位） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1887,6 +1901,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-203` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-204` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-205` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-207` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

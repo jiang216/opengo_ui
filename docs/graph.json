@@ -1,11 +1,25 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-15T22:04:03+08:00",
+  "generatedAt": "2026-09-20T15:17:41+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
   },
   "nodes": {
+    "BUG:UI-207": {
+      "id": "BUG:UI-207",
+      "type": "BUG",
+      "label": "UI-207: Window 新增「光标所在显示器工作区」API——get_monitor_workarea_at_cursor（win32 GetCursorPos+MonitorFromPoint，非 Windows 回退主屏）（gl/include/ui/gl/window.h + gl/src/window.cpp；宿主 audio_text 多屏 toast 定位）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-207-window-新增光标所在显示器工作区apigetmonitorworkareaatcursorwin32-getcursorposmonitorfrompoint非-windows-回退主屏glincludeuiglwindowh--glsrcwindowcpp宿主-audiotext-多屏-toast-定位"
+    },
+    "BUG:UI-206": {
+      "id": "BUG:UI-206",
+      "type": "BUG",
+      "label": "UI-206: 按钮/菜单行内文字与图标垂直偏位——文字视觉中心高于行中线 |descent|/2，图标以行中心为基准致上下不齐（ui/src/button.cpp `draw_content`/下拉 dd/菜单 li + ui/src/menu.cpp `draw_item`/`draw_sub_panel`；宿主 agent/chat_shell 按钮/文件夹行视觉偏位 AG-822）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-206-按钮菜单行内文字与图标垂直偏位文字视觉中心高于行中线-descent2图标以行中心为基准致上下不齐uisrcbuttoncpp-drawcontent下拉-dd菜单-li--uisrcmenucpp-drawitemdrawsubpanel宿主-agentchatshell-按钮文件夹行视觉偏位-ag-822"
+    },
     "BUG:UI-205": {
       "id": "BUG:UI-205",
       "type": "BUG",
@@ -2163,6 +2177,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-207",
+      "kind": "checklist",
+      "context": "回归清单#光标所在显示器工作区：`Window::get_monitor_workarea_at_cursor(x,y,w,h)` 返回光标当前所在显示器的工作区（多屏幕弹窗定位基座）——Windows 经 GetCursorPos+MonitorFromPoint+GetMonitorInfoW 取 rcWork（与 GLFW 虚拟屏坐标同体系，可直接用于 set_position）；非 Windows 回退主屏并返回 false，宿主失败时回落主屏逻辑"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-148",
       "kind": "checklist",
       "context": "回归清单#标题条交互相通：`ui::TitleBar` 右侧最小化/最大化(还原)/关闭三键（`iconify()/maximize()/restore()` 依 `is_maximized()` 切换）、关闭钮 `on_close_`；三键图标优先用 iconfont 码点（最小化减号 `layui_icon::subtraction`、最大化全屏 `screen_full`、还原退出全屏 `screen_restore`、关闭 `close`），`set_icon` 注入的 iconfont 优先，否则 ui 库经 `exe_directory()` 懒自载 exe 目录 `iconfont.ttf`，均不可得才回退文本字形 `—/□/⧉/×`；`set_icon(font,cp)` 左上角应用图标；三键点击须经控件树分发 `dispatch_mouse_down/up` 真正触发，若应用 Frame 订阅者先消费 `window.mouse_pressed` 边沿导致 Scene 控件树收不到按下/抬起，按钮会无响应（ui 库已用 Scene 分发前 peek 快照边沿修复）；`ui::Menu` 分组头折叠箭头用 `Font::draw_icon`（`layui_icon::down/right`）并新增 `set_on_group_click` 供宿主收起/展开外部子菜单列"
@@ -3813,6 +3833,14 @@
     }
   ],
   "backlinks": {
+    "BUG:UI-207": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#光标所在显示器工作区：`Window::get_monitor_workarea_at_cursor(x,y,w,h)` 返回光标当前所在显示器的工作区（多屏幕弹窗定位基座）——Windows 经 GetCursorPos+MonitorFromPoint+GetMonitorInfoW 取 rcWork（与 GLFW 虚拟屏坐标同体系，可直接用于 set_position）；非 Windows 回退主屏并返回 false，宿主失败时回落主屏逻辑"
+      }
+    ],
+    "BUG:UI-206": [],
     "BUG:UI-205": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -6225,7 +6253,8 @@
       "孤儿条目（无任何文档引用）: BUG:UI-188",
       "孤儿条目（无任何文档引用）: BUG:UI-189",
       "孤儿条目（无任何文档引用）: BUG:UI-199",
-      "孤儿条目（无任何文档引用）: BUG:UI-200"
+      "孤儿条目（无任何文档引用）: BUG:UI-200",
+      "孤儿条目（无任何文档引用）: BUG:UI-206"
     ]
   }
 }

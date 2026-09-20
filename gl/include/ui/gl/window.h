@@ -117,6 +117,11 @@ public:
     static const char* get_monitor_name(GLFWmonitor* monitor);
     static void get_video_modes(GLFWmonitor* monitor, int& count, void*& modes);
     static void get_video_mode(GLFWmonitor* monitor, void*& mode);
+    // 光标所在显示器的工作区（UI-207，多屏幕辅助）：
+    // Windows 用 GetCursorPos+MonitorFromPoint+GetMonitorInfoW 取 rcWork（与 GLFW 虚拟屏坐标
+    // 同体系，可直接用于 glfwSetWindowPos）；GLFW 无全局光标查询 API，非 Windows 回退主屏。
+    // 返回 true=取得光标所在屏工作区；false=已回退主显示器工作区。
+    static bool get_monitor_workarea_at_cursor(int& xpos, int& ypos, int& width, int& height);
 
     // ---- 输入（像素坐标，y 向下，(0,0)=左上角）----
     float mouse_x() const { return mouse_x_; }

@@ -302,6 +302,7 @@ while (!window.should_close()) {
 | `static const char* get_monitor_name(GLFWmonitor* monitor)` |  |
 | `static void get_video_modes(GLFWmonitor* monitor, int& count, void*& modes)` |  |
 | `static void get_video_mode(GLFWmonitor* monitor, void*& mode)` |  |
+| `static bool get_monitor_workarea_at_cursor(int& xpos, int& ypos, int& width, int& height)` | 光标所在显示器的工作区（多屏幕辅助）：Windows 用 GetCursorPos+MonitorFromPoint+GetMonitorInfoW 取 rcWork（与 GLFW 虚拟屏坐标同体系，可直接用于 set_position/glfwSetWindowPos）；非 Windows 回退主屏并返回 false |
 | `float mouse_x() const` | ---- 输入（像素坐标，y 向下，(0,0)=左上角）---- |
 | `float mouse_y() const` |  |
 | `bool mouse_down(int button) const` | button: 0=左键 1=右键 2=中键 |

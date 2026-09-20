@@ -3,6 +3,32 @@
 本文件为 Bug / 功能条目事实源。每条 `## 前缀-编号 标题（YYYY-MM-DD）` 对应一个图谱节点，
 修改涉及已有功能时核对「回归清单」，修 Bug / 加功能必须追加条目防错误复发。
 
+## UI-207: Window 新增「光标所在显示器工作区」API——get_monitor_workarea_at_cursor（win32 GetCursorPos+MonitorFromPoint，非 Windows 回退主屏）（gl/include/ui/gl/window.h + gl/src/window.cpp；宿主 audio_text 多屏 toast 定位）
+- **级别**：新功能（ui 库 `gl/window` 显示器辅助 API，多屏幕弹窗定位基座）。
+- **根因**：GLFW 无全局光标查询 API（`glfwGetCursorPos` 仅窗口相对坐标），ui 库此前只能查询主屏/枚举监视器，无法定位「光标当前所在显示器」——宿主需要把独立 GLFW 弹窗（如 toast）显示在光标所在的屏幕，库缺该能力。
+- **修复**：`Window` 新增静态 `bool get_monitor_workarea_at_cursor(int& x, int& y, int& w, int& h)`：
+  1. Windows：`GetCursorPos` 得全局光标 → `MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST)` → `GetMonitorInfoW(...).rcWork`（工作区已排除任务栏等，与 `glfwGetMonitorWorkarea` 语义一致；坐标与 GLFW 虚拟屏同体系，可直接用于 `set_position`/`glfwSetWindowPos`，无需匹配 `GLFWmonitor` 句柄）；
+  2. 非 Windows：GLFW 无全局光标 API（`glfwGetCursorPos` 仅窗口相对坐标），回退主屏工作区并返回 `false`（调用方如需可自定义回退，行为与旧逻辑一致）。
+- **回归清单（改动后核对）**：
+  1. `get_monitor_workarea(primary,…)` 行为不变（仍按 monitor 句柄查询）；
+  2. 非 Windows 编译不受 `windows.h` 影响（仅 `_WIN32` 分支包含 Win32 调用，沿用现有拖拽 `GetCursorPos` 分支风格）；
+  3. 返回值语义明确：`true`=光标所在屏工作区，`false`=已回退主屏。
+- **验证**：Release（VS 18 2026，cmake preset install-all）重建 `ui_gl.lib` + `cmake --install` 覆盖 `install/`；`install/include/ui/gl/window.h` 含新声明；宿主 audio_text Release 重链通过，多屏 toast 定位经 CLI 回归 + 人工冒烟验证。
+- **影响范围**：`gl/include/ui/gl/window.h`、`gl/src/window.cpp`、`docs/CHANGELOG.md`
+
+## UI-206: 按钮/菜单行内文字与图标垂直偏位——文字视觉中心高于行中线 |descent|/2，图标以行中心为基准致上下不齐（ui/src/button.cpp `draw_content`/下拉 dd/菜单 li + ui/src/menu.cpp `draw_item`/`draw_sub_panel`；宿主 agent/chat_shell 按钮/文件夹行视觉偏位 AG-822）
+- **级别**：视觉缺陷（ui 库绘制：`ui/src/button.cpp`、`ui/src/menu.cpp`）。宿主 agent/chat_shell 按钮/资源管理器行的**行内文字与图标垂直上下不齐**（文字偏高、图标居中偏低）。
+- **根因（ui 库）**：`draw_text`（font.cpp:559）以 `baseline = y + ascent` 定位，`y` = 文本框顶；`draw_icon`（font.cpp:647）以字形几何中心 = 传入 `cy` 绘制。按钮 `draw_content`/下拉 dd/菜单 li/menu 项文本用 `ty = y + (h - line_height) * 0.5`（line_height = ascent-descent，UI-053 起已修正旧 `(ascent+descent)` 少算 2|descent| 的整体下移），图标/箭头用 `cy = y + h*0.5` 行中线——**文本视觉中心（baseline 上移 ascent*0.5）比行中线高 |descent|/2 ≈ 2.5px**（20px 字号，ascent≈15/descent≈-5），纯文本按钮居中基准正确但**文字与图标（行中线）不再共线**。UI-053 只对齐文本-按钮中心，未处理 text-icon 共线。
+- **修复**：按钮 `draw_content`、下拉 dd、菜单 li、菜单 `draw_item`（Group 头/普通项）、`draw_sub_panel` 子项文本 ty 统一追加修正 `- font->descent() * 0.5`（descent 为负 → 文字下移 |descent|/2），使 `text 视觉中心 = 行顶 + (h-line)/2 + (ascent-descent)/2 = 行中心`，与图标/箭头行中线精确共线；badge/dot/subtitle 相对主文本 ty 的偏移保持不变。
+- **回归清单（改动后核对）**：
+  1. `Button::draw_content` 文本 ty 公式仍为 `line_height()` 的函数（未回退 `(ascent+descent)`，UI-053「文本垂直居中必须用 line_height」保证不破）；
+  2. 纯文本按钮视觉中心由「偏高 |descent|/2」变为「≈按钮中心」更居（UI-053 逐按钮墨迹中心 vs 按钮中心像素核验仍通过，方向为趋中）；
+  3. 文本+图标按钮/树行：文字与图标垂直中心共线（行中线）；
+  4. 下拉 dd / 菜单 li / menu 项（含 Group 折叠头与子菜单）：文本与行中线对齐，badge/dot/subtitle 相对偏移不变；
+  5. 宿主 agent/chat_shell 全链：`--selftest-explorer`、`--smoke`（UI 挂载/截图）不回归（详见 agent AG-822）。
+- **验证**：Release（VS 18 2026，cmake preset install）重建 `ui_ui.lib` + `cmake --install`；同步 `agent/install/lib/ui_ui.lib`（MD5 `895ADA6919…`）。宿主 agent 增量重链 chat_shell 后 `--selftest-explorer` `EXPLORER_SELFTEST:OK` exit 0（见 agent AG-822）。
+- **影响范围**：`ui/src/button.cpp`、`ui/src/menu.cpp`、`docs/CHANGELOG.md`
+
 ## UI-205: `Dropdown` 析构 Use-After-Free + `hide()` 只收 custom_ 不收 menu_——custom-content 模板下双击菜单项/外部点击删除触发崩溃（ui/src/dropdown.cpp；宿主 agent/chat_shell 斜杠命令浮层点选崩溃 AG-808）（2026-09-15）
 - **级别**：严重缺陷（ui 库崩溃修正：`ui/src/dropdown.cpp`）。宿主 agent/chat_shell「斜杠命令建议浮层」点选命令（或外部点击收起）时 0xC0000005 崩溃——AG-777 custom-content 模板（`set_custom_content(ScrollBox)` 内嵌 `Menu`）下 `Dropdown` 生命周期两处缺陷叠加，重建浮层路径命中即崩。
 - **根因（ui 库缺陷）**：
