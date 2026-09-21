@@ -27,6 +27,7 @@ scripts/build/build-opencv.ps1 OpenCV 4.5.2 world（CMake 配置+MSBuild+install
 | media ON 时 apps POST_BUILD 自动拷贝 glfw3.dll、FFmpeg `bin/*.dll`、OpenCV `*/vc16/bin/opencv_world*.dll` 及 `assets/test.{png,mp4}` 到可执行目录 | UI-010 |
 | 布局相关 constexpr 公开头（如 gl/font.h 字形数组尺寸）变更后，凡经历过编译失败/中断的构建树必须全量重建再验证；增量混合产物会触发 ODR 违例型堆崩溃（症状：仅个别页 0xC0000374/0xC0000005 且崩溃码漂移） | [UI-119](CHANGELOG.md#ui-119-表单选择框分页页崩溃排查陈旧增量构建产物-odr-混合布局--崩溃诊断钩子2026-08-22) |
 | layui_test 崩溃时自动打印符号化调用栈（SetUnhandledExceptionFilter + dbghelp）；定位崩溃帧需 Release+/Z7 生成 PDB | [UI-119](CHANGELOG.md#ui-119-表单选择框分页页崩溃排查陈旧增量构建产物-odr-混合布局--崩溃诊断钩子2026-08-22) |
+| 优化标志仅 Release 生效：`/O2` 用生成器表达式 `$<$<CONFIG:Release>:/O2>`（MSVC，GCC/Clang 对应 `-O3`），不得 configure 期无条件 `add_compile_options(/O2)`——Visual Studio 多配置生成器下会泄漏进 Debug 与默认 `/RTC1` 互斥报 D8016；`CMAKE_BUILD_TYPE` 仅决定单配置生成器（Ninja/Make Release 仍应用优化） | [UI-186](CHANGELOG.md#ui-186-msvc-debug-构建-error-d8016-o2-与-rtc1-不兼容cmakeliststxt2026-09-03) |
 | MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验 | [UI-208](CHANGELOG.md#ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcpserverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21) |
 
 ## MCP 知识服务资产生成（opengui）

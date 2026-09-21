@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-21T16:19:30+08:00",
+  "generatedAt": "2026-09-21T16:54:37+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -2070,6 +2070,12 @@
     },
     {
       "from": "DOC:README",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "智能体 MCP 知识服务（opengui）"
+    },
+    {
+      "from": "DOC:README",
       "to": "DOC:BUILD",
       "kind": "mention",
       "context": "示例应用（M16 收官）"
@@ -2334,6 +2340,12 @@
     },
     {
       "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-206",
+      "kind": "checklist",
+      "context": "回归清单#行内文字与图标/箭头共线：按钮 `draw_content` / 下拉 dd / 菜单 li / menu 项（Group 头、子菜单）文本 ty 在 `line_height` 居中基础上追加 `- font->descent() * 0.5`（descent 为负 → 文字下移其幅值的一半），使文字视觉中心与图标/箭头行中线精确共线（纯文本按钮视觉中心趋按钮中心）；badge/dot/subtitle 相对主文本 ty 偏移不变；不得回退 `(ascent+descent)`，UI-053 line_height 语义保持"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-055",
       "kind": "checklist",
       "context": "回归清单#文字像素对齐：`Font::draw_text`/`draw_icon` 字形左上角必须 `std::round` 对齐整数像素（`y+ascent_` 与 `xadvance` 累加均为小数，非整数坐标下 GL_LINEAR 双线性采样跨纹素混叠致文字发虚）；cursor 仍按浮点 advance 累加、尺寸/UV/`measure_text` 不变（行内间距与布局宽度不受影响）"
@@ -2505,6 +2517,24 @@
       "to": "BUG:UI-184",
       "kind": "checklist",
       "context": "回归清单#鼠标按下释放兜底（防「按下不释放」）：① 控件级/整窗拖拽 Windows 经 `SetCapture`（`Window::acquire/release_mouse_capture`，`Scene::frame` 依 `root.capture_widget()` 同步）保证移出窗口/失焦释放仍回调本窗口 → `dispatch_mouse_up` 正常复位；② 失焦/光标离开时有键按下 → `Window::mouse_capture_lost_` 暴露为抬起边沿 → 下一帧补发 up → `Scene::settle_mouse_reset` 收尾清标记+复位 `mouse_down_`，自愈悬死态；③ `set_visible(false)` 清 `pressed_/hovered_` 并摘 root `capture_/modal_`（对齐 set_enabled UI-167⑦）——隐藏控件不得残留按下高亮/独占捕获"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-185",
+      "kind": "checklist",
+      "context": "回归清单#鼠标捕获者抬起语义：`dispatch_mouse_up` 捕获者路径先 `cap->on_mouse_up()` 再由基类按 `was_pressed && !handled` 清态标脏（TitleBar 按钮自管 `pressed_` 判定生效，Slider/ScrollBox 由基类兜底）；捕获「卡住」安全网仅「OS 已抬起 + 捕获遗留」时补发（拖拽中 `mouse_down(0)==true` 不得误中断）；帧末 `settle_mouse_reset` 清除 `mouse_pressed_/mouse_released_` 边沿——`mouse_up_edge` 仅 GLFW_RELEASE 那一帧为真"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-187",
+      "kind": "checklist",
+      "context": "回归清单#控件树释放清悬空捕获/模态：`remove_child`/`clear_children`/`flush_pending_destroys`（摘除 w 之前）按 parent_ 链清理 `root.capture_/modal_` 中「命中 w 或其后代」的引用；`dispatch_mouse_up/move` 捕获路径回调后重验 `root()->capture_ == cap` 再清——不得调用脱树后失效的 `release_mouse_capture`，防对已释放捕获者的二次触碰"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-188",
+      "kind": "checklist",
+      "context": "回归清单#ScrollBox 回调生命周期失效清理：`Widget::clear_children()` 为虚；ScrollBox 覆写先置空 `on_scroll_/on_bottom_` 再释放子树——`add_pinned()` 锚定子控件随 clear 释放后 `set_scroll/reset_scroll` 不得触发引用已销毁 `bar*` 的回调（切页防悬空崩溃），正常滚动回调行为不变"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3224,7 +3254,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-126",
       "kind": "checklist",
-      "context": "回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化"
+      "context": "回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化；`rebuild_rows()` 每次重建后重挂 `body_->on_scroll_to_bottom`——`clear_children()` 清空钩子后触底续灌/首屏补满/数据耗尽「没有更多了」提示不得失效（UI-188 先清空防悬空语义保留）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-200",
+      "kind": "checklist",
+      "context": "回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化；`rebuild_rows()` 每次重建后重挂 `body_->on_scroll_to_bottom`——`clear_children()` 清空钩子后触底续灌/首屏补满/数据耗尽「没有更多了」提示不得失效（UI-188 先清空防悬空语义保留）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3326,7 +3362,13 @@
       "from": "DOC:ARCHITECTURE",
       "to": "BUG:UI-144",
       "kind": "checklist",
-      "context": "回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地"
+      "context": "回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地；跳转后置 `sb_.dragging=true` 本次按压即抓——长列表小滑块首按偏差 thumb 下也能拖动，松手前 move 延续拖动免二次按下（UI-144 跳转语义不变）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-199",
+      "kind": "checklist",
+      "context": "回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地；跳转后置 `sb_.dragging=true` 本次按压即抓——长列表小滑块首按偏差 thumb 下也能拖动，松手前 move 延续拖动免二次按下（UI-144 跳转语义不变）"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3357,6 +3399,12 @@
       "to": "BUG:UI-047",
       "kind": "checklist",
       "context": "回归清单#layui_test 页面管线：`page_registry` 注册表带 order 排序（std::map）；`show_page` 切页 `clear_children()` 释放旧页重建 + `preview/help.reset_scroll()` 滚动复位（UI-039 起由 ui 库 `Widget::clear_children` 统一递归释放，替代原应用侧 release_tree）；`--smoke <秒>` 逐页切换验证切页无崩溃、`--shot-page <n>` 首帧截图指定页；全 30 页可切换"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-189",
+      "kind": "checklist",
+      "context": "回归清单#layui_test「多级窗口」演示页：order=51（紧跟弹出层）多 GLFW 窗口逐层创建 4 层——各层独立 GL 上下文 / Renderer / Scene / Font，第 1 层主屏居中、深层从父窗位 (52,36) cascade 错位，每窗至多一子窗；Frame 阶段订阅一次观察者做快照迭代驱动（每帧切开窗 make_current→frame→swap 后切回主壳上下文）；切页 destroy 钩子统一 unsubscribe + 关闭全部窗口"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -3708,6 +3756,12 @@
     },
     {
       "from": "DOC:BUILD",
+      "to": "BUG:UI-186",
+      "kind": "checklist",
+      "context": "回归清单#优化标志仅 Release 生效：`/O2` 用生成器表达式 `$<$<CONFIG:Release>:/O2>`（MSVC，GCC/Clang 对应 `-O3`），不得 configure 期无条件 `add_compile_options(/O2)`——Visual Studio 多配置生成器下会泄漏进 Debug 与默认 `/RTC1` 互斥报 D8016；`CMAKE_BUILD_TYPE` 仅决定单配置生成器（Ninja/Make Release 仍应用优化）"
+    },
+    {
+      "from": "DOC:BUILD",
       "to": "BUG:UI-208",
       "kind": "checklist",
       "context": "回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验"
@@ -3883,7 +3937,13 @@
         "context": "回归清单#光标所在显示器工作区：`Window::get_monitor_workarea_at_cursor(x,y,w,h)` 返回光标当前所在显示器的工作区（多屏幕弹窗定位基座）——Windows 经 GetCursorPos+MonitorFromPoint+GetMonitorInfoW 取 rcWork（与 GLFW 虚拟屏坐标同体系，可直接用于 set_position）；非 Windows 回退主屏并返回 false，宿主失败时回落主屏逻辑"
       }
     ],
-    "BUG:UI-206": [],
+    "BUG:UI-206": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#行内文字与图标/箭头共线：按钮 `draw_content` / 下拉 dd / 菜单 li / menu 项（Group 头、子菜单）文本 ty 在 `line_height` 居中基础上追加 `- font->descent() * 0.5`（descent 为负 → 文字下移其幅值的一半），使文字视觉中心与图标/箭头行中线精确共线（纯文本按钮视觉中心趋按钮中心）；badge/dot/subtitle 相对主文本 ty 偏移不变；不得回退 `(ascent+descent)`，UI-053 line_height 语义保持"
+      }
+    ],
     "BUG:UI-205": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -3919,8 +3979,20 @@
         "context": "回归清单#浅底表面文本对比度：Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题在浅底（`panel` 白 / 标题 `#fafafa`）上必须用可读深色 token `text_secondary`（#5f5f5f）绘制文字——默认 `Theme` 结构 `text` 为近白、白底白字不可读，禁止浅底复用近白 `text`（UI-201）"
       }
     ],
-    "BUG:UI-199": [],
-    "BUG:UI-200": [],
+    "BUG:UI-199": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地；跳转后置 `sb_.dragging=true` 本次按压即抓——长列表小滑块首按偏差 thumb 下也能拖动，松手前 move 延续拖动免二次按下（UI-144 跳转语义不变）"
+      }
+    ],
+    "BUG:UI-200": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化；`rebuild_rows()` 每次重建后重挂 `body_->on_scroll_to_bottom`——`clear_children()` 清空钩子后触底续灌/首屏补满/数据耗尽「没有更多了」提示不得失效（UI-188 先清空防悬空语义保留）"
+      }
+    ],
     "BUG:UI-198": [
       {
         "from": "DOC:MEDIA_PIPELINE",
@@ -3993,7 +4065,13 @@
         "context": "回归清单#构建：`OPENGUI_MEDIA_CORE` 默认 OFF，纯 UI 工程不依赖媒体库；layui_test 以 media/core 合成源演示，无需 FFmpeg 即可构建运行；`api_gen.py` 覆盖新增公开头（video_container/pipeline/node/registry/ffmpeg_nodes）"
       }
     ],
-    "BUG:UI-189": [],
+    "BUG:UI-189": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#layui_test「多级窗口」演示页：order=51（紧跟弹出层）多 GLFW 窗口逐层创建 4 层——各层独立 GL 上下文 / Renderer / Scene / Font，第 1 层主屏居中、深层从父窗位 (52,36) cascade 错位，每窗至多一子窗；Frame 阶段订阅一次观察者做快照迭代驱动（每帧切开窗 make_current→frame→swap 后切回主壳上下文）；切页 destroy 钩子统一 unsubscribe + 关闭全部窗口"
+      }
+    ],
     "BUG:UI-184": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -4001,9 +4079,27 @@
         "context": "回归清单#鼠标按下释放兜底（防「按下不释放」）：① 控件级/整窗拖拽 Windows 经 `SetCapture`（`Window::acquire/release_mouse_capture`，`Scene::frame` 依 `root.capture_widget()` 同步）保证移出窗口/失焦释放仍回调本窗口 → `dispatch_mouse_up` 正常复位；② 失焦/光标离开时有键按下 → `Window::mouse_capture_lost_` 暴露为抬起边沿 → 下一帧补发 up → `Scene::settle_mouse_reset` 收尾清标记+复位 `mouse_down_`，自愈悬死态；③ `set_visible(false)` 清 `pressed_/hovered_` 并摘 root `capture_/modal_`（对齐 set_enabled UI-167⑦）——隐藏控件不得残留按下高亮/独占捕获"
       }
     ],
-    "BUG:UI-185": [],
-    "BUG:UI-187": [],
-    "BUG:UI-188": [],
+    "BUG:UI-185": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#鼠标捕获者抬起语义：`dispatch_mouse_up` 捕获者路径先 `cap->on_mouse_up()` 再由基类按 `was_pressed && !handled` 清态标脏（TitleBar 按钮自管 `pressed_` 判定生效，Slider/ScrollBox 由基类兜底）；捕获「卡住」安全网仅「OS 已抬起 + 捕获遗留」时补发（拖拽中 `mouse_down(0)==true` 不得误中断）；帧末 `settle_mouse_reset` 清除 `mouse_pressed_/mouse_released_` 边沿——`mouse_up_edge` 仅 GLFW_RELEASE 那一帧为真"
+      }
+    ],
+    "BUG:UI-187": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#控件树释放清悬空捕获/模态：`remove_child`/`clear_children`/`flush_pending_destroys`（摘除 w 之前）按 parent_ 链清理 `root.capture_/modal_` 中「命中 w 或其后代」的引用；`dispatch_mouse_up/move` 捕获路径回调后重验 `root()->capture_ == cap` 再清——不得调用脱树后失效的 `release_mouse_capture`，防对已释放捕获者的二次触碰"
+      }
+    ],
+    "BUG:UI-188": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#ScrollBox 回调生命周期失效清理：`Widget::clear_children()` 为虚；ScrollBox 覆写先置空 `on_scroll_/on_bottom_` 再释放子树——`add_pinned()` 锚定子控件随 clear 释放后 `set_scroll/reset_scroll` 不得触发引用已销毁 `bar*` 的回调（切页防悬空崩溃），正常滚动回调行为不变"
+      }
+    ],
     "BUG:UI-183": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -4243,7 +4339,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地"
+        "context": "回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地；跳转后置 `sb_.dragging=true` 本次按压即抓——长列表小滑块首按偏差 thumb 下也能拖动，松手前 move 延续拖动免二次按下（UI-144 跳转语义不变）"
       }
     ],
     "BUG:UI-141": [
@@ -4355,7 +4451,7 @@
       {
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
-        "context": "回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化"
+        "context": "回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化；`rebuild_rows()` 每次重建后重挂 `body_->on_scroll_to_bottom`——`clear_children()` 清空钩子后触底续灌/首屏补满/数据耗尽「没有更多了」提示不得失效（UI-188 先清空防悬空语义保留）"
       }
     ],
     "BUG:UI-125": [
@@ -6003,7 +6099,13 @@
         "context": "回归清单#Table `auto_page_size()` 按可视高自动计算每页行数（扣除表头+分页条高度）；`set_paginated(true,n)` 总页数缩小时保持当前页（钳制不回跳第 1 页）；应用侧手算 pageSize 公式可整体替换"
       }
     ],
-    "BUG:UI-186": [],
+    "BUG:UI-186": [
+      {
+        "from": "DOC:BUILD",
+        "kind": "checklist",
+        "context": "回归清单#优化标志仅 Release 生效：`/O2` 用生成器表达式 `$<$<CONFIG:Release>:/O2>`（MSVC，GCC/Clang 对应 `-O3`），不得 configure 期无条件 `add_compile_options(/O2)`——Visual Studio 多配置生成器下会泄漏进 Debug 与默认 `/RTC1` 互斥报 D8016；`CMAKE_BUILD_TYPE` 仅决定单配置生成器（Ninja/Make Release 仍应用优化）"
+      }
+    ],
     "BUG:UI-208": [
       {
         "from": "DOC:ARCHITECTURE",
@@ -6141,6 +6243,11 @@
         "from": "DOC:PLAN",
         "kind": "mention",
         "context": "完成定义（DoD）"
+      },
+      {
+        "from": "DOC:README",
+        "kind": "mention",
+        "context": "智能体 MCP 知识服务（opengui）"
       },
       {
         "from": "DOC:UI_API",
@@ -6321,18 +6428,7 @@
     ]
   },
   "lint": {
-    "errors": [
-      "docs/README.md:29 锚点不存在: CHANGELOG.md#ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcp-serverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21 -> META:CHANGELOG"
-    ],
-    "warnings": [
-      "孤儿条目（无任何文档引用）: BUG:UI-185",
-      "孤儿条目（无任何文档引用）: BUG:UI-186",
-      "孤儿条目（无任何文档引用）: BUG:UI-187",
-      "孤儿条目（无任何文档引用）: BUG:UI-188",
-      "孤儿条目（无任何文档引用）: BUG:UI-189",
-      "孤儿条目（无任何文档引用）: BUG:UI-199",
-      "孤儿条目（无任何文档引用）: BUG:UI-200",
-      "孤儿条目（无任何文档引用）: BUG:UI-206"
-    ]
+    "errors": [],
+    "warnings": []
   }
 }

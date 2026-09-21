@@ -6,17 +6,8 @@
 ## 统计
 
 - 节点: 203（BUG 194 / DOC 7 / META 2）
-- 边: 409
-- lint: 1 错误 / 8 警告
-  - ERROR: docs/README.md:29 锚点不存在: CHANGELOG.md#ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcp-serverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21 -> META:CHANGELOG
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-187
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-188
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-189
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-199
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-200
-  - WARN: 孤儿条目（无任何文档引用）: BUG:UI-206
+- 边: 418
+- lint: 0 错误 / 0 警告
 
 ## 反链索引
 
@@ -928,7 +919,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-126-table-流加载支持触底重检-rearm--尾注--onloadmore2026-08-22`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化；`rebuild_rows()` 每次重建后重挂 `body_->on_scroll_to_bottom`——`clear_children()` 清空钩子后触底续灌/首屏补满/数据耗尽「没有更多了」提示不得失效（UI-188 先清空防悬空语义保留）
 
 ### BUG:UI-127 · UI-127: 流加载/表格首显闪烁——触底重检分帧 + prebake_visible_text 字形预热（2026-08-22）
 
@@ -1036,7 +1027,7 @@
 
 - 路径: `docs/CHANGELOG.md#ui-144-scrollbox-滚动条按下滑块不再立即跳转点击轨道空白仍跳转2026-08-28`
 - 反链(1):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地；跳转后置 `sb_.dragging=true` 本次按压即抓——长列表小滑块首按偏差 thumb 下也能拖动，松手前 move 延续拖动免二次按下（UI-144 跳转语义不变）
 
 ### BUG:UI-145 · UI-145: 全方位优化批次——渲染性能/内存生命周期/代码去重/构建与清理（2026-08-31）
 
@@ -1220,27 +1211,32 @@
 ### BUG:UI-185 · UI-185: dispatch_mouse_up 捕获者路径提前清空 pressed_ 致 TitleBar 按钮失效 + 捕获卡住状态恢复（ui/src/widget.cpp + ui/src/scene.cpp + ui/include/ui/ui/scene.h）（2026-09-03）
 
 - 路径: `docs/CHANGELOG.md#ui-185-dispatchmouseup-捕获者路径提前清空-pressed-致-titlebar-按钮失效--捕获卡住状态恢复uisrcwidgetcpp--uisrcscenecpp--uiincludeuiuisceneh2026-09-03`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#鼠标捕获者抬起语义：`dispatch_mouse_up` 捕获者路径先 `cap->on_mouse_up()` 再由基类按 `was_pressed && !handled` 清态标脏（TitleBar 按钮自管 `pressed_` 判定生效，Slider/ScrollBox 由基类兜底）；捕获「卡住」安全网仅「OS 已抬起 + 捕获遗留」时补发（拖拽中 `mouse_down(0)==true` 不得误中断）；帧末 `settle_mouse_reset` 清除 `mouse_pressed_/mouse_released_` 边沿——`mouse_up_edge` 仅 GLFW_RELEASE 那一帧为真
 
 ### BUG:UI-186 · UI-186: MSVC Debug 构建 error D8016 /O2 与 /RTC1 不兼容（CMakeLists.txt）（2026-09-03）
 
 - 路径: `docs/CHANGELOG.md#ui-186-msvc-debug-构建-error-d8016-o2-与-rtc1-不兼容cmakeliststxt2026-09-03`
-- 反链: 无
+- 反链(1):
+  - `DOC:BUILD` (checklist) — 回归清单#优化标志仅 Release 生效：`/O2` 用生成器表达式 `$<$<CONFIG:Release>:/O2>`（MSVC，GCC/Clang 对应 `-O3`），不得 configure 期无条件 `add_compile_options(/O2)`——Visual Studio 多配置生成器下会泄漏进 Debug 与默认 `/RTC1` 互斥报 D8016；`CMAKE_BUILD_TYPE` 仅决定单配置生成器（Ninja/Make Release 仍应用优化）
 
 ### BUG:UI-187 · UI-187: 控件树释放后 root.capture_/root.modal_ 残留悬空指针致 dispatch 虚调用崩溃（ui/src/widget.cpp）（2026-09-03）
 
 - 路径: `docs/CHANGELOG.md#ui-187-控件树释放后-rootcapturerootmodal-残留悬空指针致-dispatch-虚调用崩溃uisrcwidgetcpp2026-09-03`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#控件树释放清悬空捕获/模态：`remove_child`/`clear_children`/`flush_pending_destroys`（摘除 w 之前）按 parent_ 链清理 `root.capture_/modal_` 中「命中 w 或其后代」的引用；`dispatch_mouse_up/move` 捕获路径回调后重验 `root()->capture_ == cap` 再清——不得调用脱树后失效的 `release_mouse_capture`，防对已释放捕获者的二次触碰
 
 ### BUG:UI-188 · UI-188: ScrollBox clear_children 未失效滚动回调致悬空调用崩溃（ui/src/scrollbox.cpp + ui/include/ui/ui/scrollbox.h + ui/include/ui/ui/widget.h）（2026-09-03）
 
 - 路径: `docs/CHANGELOG.md#ui-188-scrollbox-clearchildren-未失效滚动回调致悬空调用崩溃uisrcscrollboxcpp--uiincludeuiuiscrollboxh--uiincludeuiuiwidgeth2026-09-03`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBox 回调生命周期失效清理：`Widget::clear_children()` 为虚；ScrollBox 覆写先置空 `on_scroll_/on_bottom_` 再释放子树——`add_pinned()` 锚定子控件随 clear 释放后 `set_scroll/reset_scroll` 不得触发引用已销毁 `bar*` 的回调（切页防悬空崩溃），正常滚动回调行为不变
 
 ### BUG:UI-189 · UI-189: layui_test 新增「多级窗口」演示页——多 GLFW 窗口（各自独立 GL 上下文）逐层创建 4 层（layui_test/src/pages/multilevel_window_page.cpp）（2026-09-05）
 
 - 路径: `docs/CHANGELOG.md#ui-189-layuitest-新增多级窗口演示页多-glfw-窗口各自独立-gl-上下文逐层创建-4-层layuitestsrcpagesmultilevelwindowpagecpp2026-09-05`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#layui_test「多级窗口」演示页：order=51（紧跟弹出层）多 GLFW 窗口逐层创建 4 层——各层独立 GL 上下文 / Renderer / Scene / Font，第 1 层主屏居中、深层从父窗位 (52,36) cascade 错位，每窗至多一子窗；Frame 阶段订阅一次观察者做快照迭代驱动（每帧切开窗 make_current→frame→swap 后切回主壳上下文）；切页 destroy 钩子统一 unsubscribe + 关闭全部窗口
 
 ### BUG:UI-193 · UI-193: 媒体管线重构（MediaPipeline 节点化）与视频容器 VideoContainer —— VideoView 实现迁移到可运行期换节点的管线之上，layui_test 多媒体页（media/core、media/ffmpeg、layui_test/src/pages/media_page.cpp）（2026-09-05）
 
@@ -1287,12 +1283,14 @@
 ### BUG:UI-199 · UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）
 
 - 路径: `docs/CHANGELOG.md#ui-199-scrollbox-滚动条点击轨道空白仅跳转不抓取修复按下即抓--拖拽延续根治下拉列表滚动条首次点滑块没抓住松手再按才拖得动uisrcscrollboxcpplayuitest-仅编排验证--永久回归-lane2026-09-07`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#ScrollBox 滚动条按下不跳：`on_mouse_down` 命中滑块仅 `dragging=true` 不再按下瞬间 `set_scroll`（消除按住滑块即下跳）；命中轨道空白（滑块上/下）仍 `set_scroll` 跳转原地；跳转后置 `sb_.dragging=true` 本次按压即抓——长列表小滑块首按偏差 thumb 下也能拖动，松手前 move 延续拖动免二次按下（UI-144 跳转语义不变）
 
 ### BUG:UI-200 · UI-200: Table 流加载触底续灌失效修复——rebuild_rows 重建后重挂 body_ 的 on_scroll_to_bottom 钩子（ui/src/table.cpp；audio_text 指令预览等四表实测）（2026-09-07）
 
 - 路径: `docs/CHANGELOG.md#ui-200-table-流加载触底续灌失效修复rebuildrows-重建后重挂-body-的-onscrolltobottom-钩子uisrctablecppaudiotext-指令预览等四表实测2026-09-07`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 流加载（layui flow 滚动自动加载）：`set_on_load_more(cb)` 仅非分页模式生效（set_paginated 内同步挂/摘钩子防误触发）；rebuild_rows 尾部自动 `ScrollBox::rearm_bottom()` 挂起触底重检（UI-127 分帧）——触底→续灌→重建→重检直至填满一屏或耗尽断链，补齐「DOM 插入后再查一次」语义；`set_end_note()` 行尾只读尾注（不参与行号映射/命中）；`reset_scroll()` 回顶；分页模式与 UI-035/093/094 既有语义零变化；`rebuild_rows()` 每次重建后重挂 `body_->on_scroll_to_bottom`——`clear_children()` 清空钩子后触底续灌/首屏补满/数据耗尽「没有更多了」提示不得失效（UI-188 先清空防悬空语义保留）
 
 ### BUG:UI-201 · UI-201: 浅色面板上文本 token 选错致「白字白底」不可读——Menu 弹层项（主面板+flyout 子面板）与 Collapse 折叠标题改用可读深色 token text_secondary（ui/src/menu.cpp + ui/src/collapse.cpp；agent/chat_shell 实测）（2026-09-12）
 
@@ -1327,7 +1325,8 @@
 ### BUG:UI-206 · UI-206: 按钮/菜单行内文字与图标垂直偏位——文字视觉中心高于行中线 |descent|/2，图标以行中心为基准致上下不齐（ui/src/button.cpp `draw_content`/下拉 dd/菜单 li + ui/src/menu.cpp `draw_item`/`draw_sub_panel`；宿主 agent/chat_shell 按钮/文件夹行视觉偏位 AG-822）
 
 - 路径: `docs/CHANGELOG.md#ui-206-按钮菜单行内文字与图标垂直偏位文字视觉中心高于行中线-descent2图标以行中心为基准致上下不齐uisrcbuttoncpp-drawcontent下拉-dd菜单-li--uisrcmenucpp-drawitemdrawsubpanel宿主-agentchatshell-按钮文件夹行视觉偏位-ag-822`
-- 反链: 无
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#行内文字与图标/箭头共线：按钮 `draw_content` / 下拉 dd / 菜单 li / menu 项（Group 头、子菜单）文本 ty 在 `line_height` 居中基础上追加 `- font->descent() * 0.5`（descent 为负 → 文字下移其幅值的一半），使文字视觉中心与图标/箭头行中线精确共线（纯文本按钮视觉中心趋按钮中心）；badge/dot/subtitle 相对主文本 ty 偏移不变；不得回退 `(ascent+descent)`，UI-053 line_height 语义保持
 
 ### BUG:UI-207 · UI-207: Window 新增「光标所在显示器工作区」API——get_monitor_workarea_at_cursor（win32 GetCursorPos+MonitorFromPoint，非 Windows 回退主屏）（gl/include/ui/gl/window.h + gl/src/window.cpp；宿主 audio_text 多屏 toast 定位）
 
@@ -1415,7 +1414,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(27):
+- 反链(28):
   - `META:CHANGELOG` (mention) — UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）
   - `META:CHANGELOG` (mention) — UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
@@ -1440,6 +1439,7 @@
   - `DOC:MEDIA_PIPELINE` (mention) — MediaPipeline 媒体管线与视频容器
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
+  - `DOC:README` (mention) — 智能体 MCP 知识服务（opengui）
   - `DOC:UI_API` (mention) — UI 库 API 手册
   - `META:AGENTS` (mention) — 文档图谱 graphgen（已安装）
   - `META:AGENTS` (mention)
@@ -1909,11 +1909,18 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-182` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-183` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-184` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-185` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-187` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-188` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-189` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-199` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-200` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-201` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-202` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-203` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-204` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-205` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-206` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-207` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-208` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1926,6 +1933,7 @@
 | `DOC:BUILD` | `BUG:UI-010` | checklist |
 | `DOC:BUILD` | `BUG:UI-119` | checklist |
 | `DOC:BUILD` | `BUG:UI-119` | checklist |
+| `DOC:BUILD` | `BUG:UI-186` | checklist |
 | `DOC:BUILD` | `BUG:UI-208` | checklist |
 | `DOC:BUILD` | `DOC:README` | mention |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
@@ -1957,6 +1965,7 @@
 | `DOC:README` | `DOC:BUILD` | mention |
 | `DOC:README` | `DOC:BUILD` | mention |
 | `DOC:README` | `DOC:PLAN` | mention |
+| `DOC:README` | `META:CHANGELOG` | mention |
 | `DOC:UI_API` | `META:CHANGELOG` | mention |
 | `META:AGENTS` | `META:CHANGELOG` | mention |
 | `META:AGENTS` | `META:CHANGELOG` | mention |
