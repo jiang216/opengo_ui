@@ -78,8 +78,11 @@ void draw_content(Font* font, Renderer& renderer, const std::string& text, unsig
     const float content_w = text_w + (has_icon ? icon_size + gap : 0.f);
     const float left = bounds.x + (bounds.w - content_w) * 0.5f;
     // 文本块高度用 line_height（ascent-descent），descent 为负值；
-    // 旧式 (ascent+descent) 少算 2*|descent|，文本整体下移 ~4px（UI-053）
-    const float ty = bounds.y + (bounds.h - font->line_height()) * 0.5f;
+    // 旧式 (ascent+descent) 少算 2*|descent|，文本整体下移 ~4px（UI-053）；
+    // 文字视觉中心（baseline 与 cap 顶的中点）比文本框中心高 |descent|/2，
+    // 向下平移该偏移使文字视觉中心与图标中心（行中线）共线（UI-206）。
+    const float ty = bounds.y + (bounds.h - font->line_height()) * 0.5f
+                     - font->descent() * 0.5f;
     const float cy = bounds.y + bounds.h * 0.5f;
     if (has_icon) {
         const float cx = icon_right ? left + text_w + gap + icon_size * 0.5f
@@ -130,7 +133,8 @@ void Button::on_draw(Renderer& renderer) {
         if (font_ && !text_.empty()) {
             const float text_w = font_->measure_text(text_.c_str());
             const float tx = bounds_.x + 10.f;
-            const float ty = bounds_.y + (bounds_.h - font_->line_height()) * 0.5f;
+            const float ty = bounds_.y + (bounds_.h - font_->line_height()) * 0.5f
+                             - font_->descent() * 0.5f;
             font_->draw_text(renderer, text_.c_str(), tx, ty,
                              is_this ? t->success : t->text_secondary);
         }
@@ -149,7 +153,8 @@ void Button::on_draw(Renderer& renderer) {
         if (hovered_)
             renderer.draw_quad(bounds_, Vec4{0.973f, 0.973f, 0.973f, 1.0f});
         if (font_ && !text_.empty()) {
-            const float ty = bounds_.y + (bounds_.h - font_->line_height()) * 0.5f;
+            const float ty = bounds_.y + (bounds_.h - font_->line_height()) * 0.5f
+                             - font_->descent() * 0.5f;
             font_->draw_text(renderer, text_.c_str(), bounds_.x + 15.f, ty, t->text);
         }
         return;

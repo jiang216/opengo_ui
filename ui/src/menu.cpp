@@ -274,7 +274,9 @@ void Menu::draw_item(Renderer& renderer, Item& it, int /*index*/) {
         const Rect header_rect = {bounds_.x, it.y0, bounds_.w, ih};
         if (hover_ == &it) renderer.draw_quad(header_rect, hover);
 
-        const float ty = it.y0 + (ih - line_h) * 0.5f;
+        // 文本视觉中心偏移修正（UI-206）：与按钮 draw_content 一致，
+        // 文字视觉中心比文本框中心高 |descent|/2，向下平移与行内图标/箭头中心共线。
+        const float ty = it.y0 + (ih - line_h) * 0.5f - font_->descent() * 0.5f;
         const float tx = bounds_.x + kItemPad + indent;
         font_->draw_text(renderer, it.text.c_str(), tx, ty, text2);
 
@@ -288,7 +290,9 @@ void Menu::draw_item(Renderer& renderer, Item& it, int /*index*/) {
 
     if (hover_ == &it || active_hover_ == &it) renderer.draw_quad(row, hover);
 
-    const float ty = it.y0 + (ih - line_h) * 0.5f;
+    // 文本视觉中心偏移修正（UI-206）：同按钮 draw_content——文字视觉中心比
+    // 文本框中心高 |descent|/2，向下平移使主文本与副标题/徽章对齐行中线。
+    const float ty = it.y0 + (ih - line_h) * 0.5f - font_->descent() * 0.5f;
     const float tx = bounds_.x + kItemPad + indent;
     const Vec4 text_color = it.checked ? t->success : text;
 
@@ -402,7 +406,8 @@ void Menu::draw_sub_panel(Renderer& renderer, int parent_index) {
         Item& sub_it = items_[sub[si]];
         const float iy = panel_y + kSubPanelPad + (float)si * kSubItemH;
         const float ih = kSubItemH;
-        const float ty = iy + (ih - line_h) * 0.5f;
+        // 文本视觉中心偏移修正（UI-206）：子菜单项同主菜单，向下与行高中心对齐。
+        const float ty = iy + (ih - line_h) * 0.5f - font_->descent() * 0.5f;
         const float tx = panel_x + kSubPanelPad;
 
         if (active_hover_ == &sub_it)
