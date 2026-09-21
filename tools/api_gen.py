@@ -14,12 +14,18 @@ Generate docs/UI_API.md — UI 库全 API 手册（方法清单 + 调用示例 +
     - 调用示例 / 依赖说明：本文件 EXAMPLES 与 NOTES 字典（人工维护），生成时嵌入各节。
     - 文档为 AUTO-GENERATED，禁手改（内容统一在本文件维护）。
 """
+import json
 import os
 import re
 import sys
 
+import mcp_data
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "UI_API.md")
+
+# MCP 知识服务产物目录（AUTO-GENERATED，禁手改；内容统一在本文件 + tools/mcp_data.py 维护）
+MCP_OUT_DIR = os.path.join(ROOT, "docs", "mcp")
 
 # --------------------------------------------------------------------------
 # 模块清单：(显示名, include 前缀, include 根目录相对仓库的路径)
@@ -596,6 +602,285 @@ iv->set_bounds(0, 0, 400, 300);
 if (!iv->load_from_file("photo.jpg")) return;   // 中文路径 OK
 parent->add_child(iv);
 ```""",
+}
+
+# --------------------------------------------------------------------------
+# 人工维护组件分类（MCP 目录用）
+# --------------------------------------------------------------------------
+CATEGORIES = {
+    "core": "基础层（core/gl）：GL 渲染原语 / 纹理 / 字体渲染 / 数学 / 日志 / 键码",
+    "framework": "框架入口：WindowContainer（推荐入口）/ Scene / Window / Theme / 自绘标题栏",
+    "layout": "布局容器：VBox / HBox / Grid / ScrollBox / Panel",
+    "basic": "基础控件：Label / Button / Icon / Badge / Progress / Switch / 分隔线等",
+    "form": "表单控件：TextBox / ComboBox / CheckBox / Radio / Slider / Rate / Laydate / Upload",
+    "navigation": "导航控件：MenuBar / NavMenu / Dropdown / Tree / Breadcrumb / Tabs / Collapse",
+    "data": "数据展示：Table / Timeline / Transfer / Carousel / Code / Laypage / CountdownText",
+    "container": "容器 / 窗口 / 弹层：PanelWindow / WindowFrame / Panel / Card",
+    "media": "媒体（可选构建）：VideoView / VideoContainer / ImageView / AudioOut",
+}
+
+# --------------------------------------------------------------------------
+# 人工维护组件清单（MCP 目录用）。key = include 前缀路径（同 NOTES/EXAMPLES），
+# value = 该头下组件的最小事实源（name/category/summary/layui_classes）。
+# 完整类/方法签名一律以解析头文件为准（catalog.json 的 headers[] 全量携带）。
+# --------------------------------------------------------------------------
+COMPONENTS = {
+    "ui/gl/window.h": [
+        {"name": "Window", "category": "framework",
+         "summary": "GLFW 窗口封装：创建/轮询事件/鼠标键盘状态/交换缓冲/窗口尺寸与缩放回调",
+         "layui_classes": []},
+    ],
+    "ui/gl/renderer.h": [
+        {"name": "Renderer", "category": "core",
+         "summary": "GL 3.3 渲染器：init 一次 → 每帧 begin_frame；draw_quad/rounded_rect/outline/polygon/textured_quad/scissor",
+         "layui_classes": []},
+    ],
+    "ui/gl/texture.h": [
+        {"name": "Texture", "category": "core",
+         "summary": "GL 纹理：从 RGBA 像素/文件加载，draw_textured_quad 采样",
+         "layui_classes": []},
+    ],
+    "ui/gl/font.h": [
+        {"name": "Font", "category": "core",
+         "summary": "字体/图标图集渲染：load_from_file + load_cjk_font_auto(懒烘培) + load_icon_font；draw_text/draw_icon/measure_*；prebake_text 防中文首显闪",
+         "layui_classes": []},
+    ],
+    "ui/ui/widget.h": [
+        {"name": "Widget", "category": "framework",
+         "summary": "控件基类：bounds/set_theme/set_font/add_class/layui_*属性/事件分发/layout/advance/mark_dirty/destroy；子节点可为栈对象",
+         "layui_classes": []},
+    ],
+    "ui/ui/scene.h": [
+        {"name": "Scene", "category": "framework",
+         "summary": "场景生命周期：Ready→(visible/activated)×n→StandBy→cleanup；Subscribe 三阶段(in/input/layout) ；run/run_for 内部完成五段主循环；content_origin_y() 内容区原点",
+         "layui_classes": []},
+    ],
+    "ui/ui/theme.h": [
+        {"name": "Theme", "category": "framework",
+         "summary": "主题 token：make_layui/dark/light；控件 set_theme(&theme) 后切换指针即时生效",
+         "layui_classes": ["layui-bg-*"]},
+    ],
+    "ui/ui/badge.h": [
+        {"name": "Badge", "category": "basic",
+         "summary": "徽章：轻量圆/圆角小条", "layui_classes": ["layui-badge", "layui-badge-rim", "layui-badge-dot"]},
+    ],
+    "ui/ui/blockquote.h": [
+        {"name": "BlockQuote", "category": "basic",
+         "summary": "区块引用/附注条（layui-elem-quote）", "layui_classes": ["layui-elem-quote", "layui-quote-nm"]},
+    ],
+    "ui/ui/breadcrumb.h": [
+        {"name": "Breadcrumb", "category": "navigation",
+         "summary": "面包屑导航", "layui_classes": ["layui-breadcrumb"]},
+    ],
+    "ui/ui/button.h": [
+        {"name": "Button", "category": "basic",
+         "summary": "按钮：字体/图标/>半径/支持周边黑/禁用；单击/入口回调；set_size/soft/variant",
+         "layui_classes": ["layui-btn", "layui-btn-primary", "layui-btn-lg", "layui-btn-sm",
+                           "layui-btn-xs", "layui-btn-radius", "layui-btn-danger", "layui-btn-warm",
+                           "layui-btn-normal", "layui-btn-disabled"]},
+    ],
+    "ui/ui/card.h": [
+        {"name": "Card", "category": "container",
+         "summary": "卡片容器：头部文字 + 主体（面板式）", "layui_classes": ["layui-card", "layui-card-header", "layui-card-body"]},
+    ],
+    "ui/ui/carousel.h": [
+        {"name": "Carousel", "category": "data",
+         "summary": "轮播：自动/锚点/箭头/循环", "layui_classes": ["layui-carousel"]},
+    ],
+    "ui/ui/checkbox.h": [
+        {"name": "CheckBox", "category": "form",
+         "summary": "复选：圆形方形/禁止/复选框列表", "layui_classes": ["layui-form-checkbox", "layui-form-checked"]},
+    ],
+    "ui/ui/circle.h": [
+        {"name": "Circle", "category": "basic",
+         "summary": "圆形进度环（环形进度）", "layui_classes": ["layui-progress-circle"]},
+    ],
+    "ui/ui/code.h": [
+        {"name": "Code", "category": "data",
+         "summary": "代码块：C++ 关键字/注释/字符串着色（高亮）", "layui_classes": ["layui-code"]},
+    ],
+    "ui/ui/collapse.h": [
+        {"name": "Collapse", "category": "navigation",
+         "summary": "折叠面板：多开/单开（手风琴）/订阅回调", "layui_classes": ["layui-collapse", "layui-colla-item", "layui-colla-title", "layui-colla-content"]},
+    ],
+    "ui/ui/colorpicker.h": [
+        {"name": "ColorPicker", "category": "form",
+         "summary": "颜色选择器：实色/透明度面板、HSV 拖柄、predefine 快速色", "layui_classes": ["layui-colorpicker"]},
+    ],
+    "ui/ui/combobox.h": [
+        {"name": "ComboBox", "category": "form",
+         "summary": "下拉选择框：条目/选中回调/placeholder/清空", "layui_classes": ["layui-form-select"]},
+    ],
+    "ui/ui/countdown_text.h": [
+        {"name": "CountdownText", "category": "data",
+         "summary": "倒计时文案（冒号分隔/自定义宿主继承）", "layui_classes": ["layui-countdown"]},
+    ],
+    "ui/ui/dropdown.h": [
+        {"name": "Dropdown", "category": "navigation",
+         "summary": "下拉菜单：触发器 + 菜单项/分隔线 + 选中回调；可自定义菜单内容",
+         "layui_classes": ["layui-dropdown"]},
+    ],
+    "ui/ui/fieldset.h": [
+        {"name": "Fieldset", "category": "basic",
+         "summary": "字段集：左侧 legend 标题 + 内容（layui-elem-field）",
+         "layui_classes": ["layui-elem-field", "layui-field-title", "layui-field-legend"]},
+        {"name": "FieldsetTitle", "category": "basic",
+         "summary": "集成条幅型字段集（layui-elem-quote 同源）", "layui_classes": ["layui-field-title"]},
+    ],
+    "ui/ui/grid.h": [
+        {"name": "Grid", "category": "layout",
+         "summary": "栅格：12 列 span/offset；span 满列自动换行；无类控件等宽",
+         "layui_classes": ["layui-row", "layui-col-md*", "layui-col-lg*", "layui-col-xs*", "layui-col-sm*", "layui-col-md-offset*"]},
+    ],
+    "ui/ui/hbox.h": [
+        {"name": "HBox", "category": "layout",
+         "summary": "横向盒子：子控件等宽/顶部对齐", "layui_classes": []},
+    ],
+    "ui/ui/hline.h": [
+        {"name": "HLine", "category": "basic",
+         "summary": "水平分割线", "layui_classes": ["layui-hr"]},
+    ],
+    "ui/ui/icon.h": [
+        {"name": "Icon", "category": "basic",
+         "summary": "图标字（iconfont）：set_icon 渲染 + 可叠加主题色",
+         "layui_classes": ["layui-icon", "layui-icon-*"]},
+    ],
+    "ui/ui/image.h": [
+        {"name": "Image", "category": "basic",
+         "summary": "图片：load_from_file（CWD→exe 目录回退）/灰化/圆角，ImageWidget 前置渲染",
+         "layui_classes": []},
+    ],
+    "ui/ui/label.h": [
+        {"name": "Label", "category": "basic",
+         "summary": "文本标签：自适应文本宽高/换行", "layui_classes": ["layui-inline", "layui-form-label"]},
+    ],
+    "ui/ui/laydate.h": [
+        {"name": "Laydate", "category": "form",
+         "summary": "日期选择弹层（laydate 同款）：日历/时间面板、切换窗口、范围",
+         "layui_classes": ["laydate", "layui-laydate"]},
+        {"name": "LaydateBox", "category": "form",
+         "summary": "日期选择容器（内嵌 Calendar 控件目录）", "layui_classes": ["layui-laydate-box"]},
+    ],
+    "ui/ui/laypage.h": [
+        {"name": "Laypage", "category": "data",
+         "summary": "分页条：页码/上一页下一页/跳页/订阅回调", "layui_classes": ["layui-laypage", "layui-laypage-*"]},
+    ],
+    "ui/ui/laytpl.h": [
+        {"name": "LayTpl", "category": "data",
+         "summary": "模板引擎：{{ }} 渲染/逻辑层（lit 风格）", "layui_classes": []},
+    ],
+    "ui/ui/menubar.h": [
+        {"name": "MenuBar", "category": "navigation",
+         "summary": "顶级菜单：文字/图标/子域/竖排", "layui_classes": ["layui-nav", "layui-nav-item", "layui-nav-child", "layui-nav-tree"]},
+    ],
+    "ui/ui/menu.h": [
+        {"name": "Menu", "category": "navigation",
+         "summary": "菜单控件：条目/分隔线/右键触发", "layui_classes": ["layui-menu", "layui-menu-item"]},
+    ],
+    "ui/ui/navmenu.h": [
+        {"name": "NavMenu", "category": "navigation",
+         "summary": "纵向导航菜单（树形菜单项域）", "layui_classes": ["layui-nav", "layui-nav-tree", "layui-nav-item"]},
+    ],
+    "ui/ui/panel.h": [
+        {"name": "Panel", "category": "container",
+         "summary": "面板容器：主题背景/圆角/边框", "layui_classes": ["layui-panel", "layui-elem-quote-ln"]},
+    ],
+    "ui/ui/panelwindow.h": [
+        {"name": "PanelWindow", "category": "container",
+         "summary": "layer 弹层：拖拽/缩放/置顶/遮罩/关闭回调；footer 按钮、auto_close 自动关",
+         "layui_classes": []},
+    ],
+    "ui/ui/progress.h": [
+        {"name": "Progress", "category": "basic",
+         "summary": "进度条：横/竖/极速模式", "layui_classes": ["layui-progress", "layui-progress-big", "layui-progress-text"]},
+    ],
+    "ui/ui/radiobutton.h": [
+        {"name": "RadioButton", "category": "form",
+         "summary": "单选按钮单项", "layui_classes": ["layui-form-radio"]},
+    ],
+    "ui/ui/radiogroup.h": [
+        {"name": "RadioGroup", "category": "form",
+         "summary": "单选组：add_item/选中回调/横排", "layui_classes": ["layui-form-radio"]},
+    ],
+    "ui/ui/rate.h": [
+        {"name": "Rate", "category": "form",
+         "summary": "评分：星形只读/半选/自定义图标", "layui_classes": ["layui-rate"]},
+    ],
+    "ui/ui/scrollbox.h": [
+        {"name": "ScrollBox", "category": "layout",
+         "summary": "滚动容器：内容超高滚动 + scissor；视口锚定 fixed 条；触底回调/需改即滚动回底",
+         "layui_classes": ["layui-side-fixed", "layui-round"]},
+    ],
+    "ui/ui/slider.h": [
+        {"name": "Slider", "category": "form",
+         "summary": "滑动条：单值/范围/自定义拖柄事件/输入框联动", "layui_classes": ["layui-slider"]},
+    ],
+    "ui/ui/switch.h": [
+        {"name": "Switch", "category": "basic",
+         "summary": "开关切换：轨道/圆钮/开态", "layui_classes": ["layui-form-switch"]},
+    ],
+    "ui/ui/table.h": [
+        {"name": "Table", "category": "data",
+         "summary": "数据表格：列/排序/皮肤/尺寸/双击编辑/分页/流加载切换/操作按钮列",
+         "layui_classes": ["layui-table", "layui-form-checkbox", "layui-btn"]},
+    ],
+    "ui/ui/tabs.h": [
+        {"name": "Tabs", "category": "navigation",
+         "summary": "标签页：切换/插槽递归页面/水平滚动", "layui_classes": ["layui-tab", "layui-tab-title", "layui-tab-content", "layui-tab-item"]},
+    ],
+    "ui/ui/textbox.h": [
+        {"name": "TextBox", "category": "form",
+         "summary": "单行输入框：minSize 自适应/字数/输入法/PW 回显/scrollbar 等", "layui_classes": ["layui-input", "layui-form-pane"]},
+    ],
+    "ui/ui/timeline.h": [
+        {"name": "Timeline", "category": "data",
+         "summary": "时间线：时间戳 + 左侧微分类={'xm' 尖标} 竖线列表", "layui_classes": ["layui-timeline", "layui-timeline-axis", "layui-timeline-item"]},
+    ],
+    "ui/ui/titlebar.h": [
+        {"name": "TitleBar", "category": "container",
+         "summary": "自绘标题栏：图标/标题/最小化最大化关闭/拖拽", "layui_classes": []},
+    ],
+    "ui/ui/transfer.h": [
+        {"name": "Transfer", "category": "data",
+         "summary": "穿梭框：左源右目标/穿梭全收回收/数据流", "layui_classes": ["layui-transfer"]},
+    ],
+    "ui/ui/tree.h": [
+        {"name": "Tree", "category": "navigation",
+         "summary": "树控件：节点/展开收起/选中/右键菜单", "layui_classes": ["layui-tree", "layui-tree-entry", "layui-tree-main"]},
+    ],
+    "ui/ui/upload.h": [
+        {"name": "Upload", "category": "form",
+         "summary": "文件上传：选择回调/拖拽样式", "layui_classes": ["layui-upload", "layui-upload-drag", "layui-upload-button"]},
+    ],
+    "ui/ui/vbox.h": [
+        {"name": "VBox", "category": "layout",
+         "summary": "纵向盒子：等宽填满或子控件自适应高", "layui_classes": []},
+    ],
+    "ui/ui/window_frame.h": [
+        {"name": "WindowFrame", "category": "container",
+         "summary": "窗口容器：自绘标题栏 + 内容区（子控件相对 titlebar 底缘定位）/关闭回调",
+         "layui_classes": []},
+    ],
+    "ui/media/video_view.h": [
+        {"name": "VideoView", "category": "media",
+         "summary": "视频播放控件（FFmpeg=ON）：open_source/play/pause/seek/speed/volume/step_frame；每帧 advance(dt) 上传纹理",
+         "layui_classes": []},
+    ],
+    "ui/media/video_container.h": [
+        {"name": "VideoContainer", "category": "media",
+         "summary": "视频容器：边框 + 标题 + 底部控制条 + 内置播放控件（支持 synthetic: 合成源，无需 FFmpeg）",
+         "layui_classes": []},
+    ],
+    "ui/media/image_view.h": [
+        {"name": "ImageView", "category": "media",
+         "summary": "图片查看控件（OpenCV=ON）：中文路径安全装载显示",
+         "layui_classes": []},
+    ],
+    "ui/media/audio_out.h": [
+        {"name": "AudioOut", "category": "media",
+         "summary": "winmm 音频输出：open(rate,ch)/write(s16)/flush（seek/回卷清缓冲），回调无死锁",
+         "layui_classes": []},
+    ],
 }
 
 # --------------------------------------------------------------------------
@@ -1242,23 +1527,127 @@ def build():
     return '\n'.join(lines)
 
 
+def _library_version():
+    try:
+        vh = os.path.join(ROOT, "core", "include", "ui", "core", "version.h")
+        with open(vh, encoding="utf-8") as f:
+            t = f.read()
+        m = re.search(r'OPENGUI_VERSION_MAJOR\s+(\d+).*?VERSION_MINOR\s+(\d+).*?VERSION_PATCH\s+(\d+)', t, re.S)
+        if m:
+            return ".".join(m.groups())
+    except OSError:
+        pass
+    return "0.0.0"
+
+
+def iter_headers():
+    """yield (module, header_incroot, rel) 覆盖 MODULES 全部公共头（含 media 三根）。
+    与 build() 保持同一遍历逻辑（共享 MODULES/CORE_ORDER/GL_ORDER/UI_ORDER）。"""
+    for _mod_title, prefix, incroot in MODULES:
+        order = None
+        if prefix == "ui/core":
+            order = CORE_ORDER
+        elif prefix == "ui/gl":
+            order = GL_ORDER
+        elif prefix == "ui/ui":
+            order = UI_ORDER
+        hdr_dir = os.path.join(ROOT, incroot)
+        files = {}
+        for root_dir, _, fnames in os.walk(hdr_dir):
+            for fn in fnames:
+                if fn.endswith('.h'):
+                    rel = os.path.relpath(os.path.join(root_dir, fn), hdr_dir)
+                    files[fn] = rel.replace('\\', '/')
+        keys = [f for f in files if files[f].startswith(prefix)]
+        if order:
+            keys = [k for k in order if k in files]
+        module = "core" if prefix == "ui/core" else ("gl" if prefix == "ui/gl"
+                                                     else ("ui" if prefix == "ui/ui" else "media"))
+        for fn in keys:
+            yield module, incroot, files[fn]
+
+
+def build_catalog():
+    """MCP 知识服务目录：components[]（人工元数据 + EXAMPLES）+ headers[]（解析全量）。
+    产物 docs/mcp/catalog.json，AUTO-GENERATED 禁手改。"""
+    components = []
+    headers = []
+    for module, incroot, rel in iter_headers():
+        parsed = scan_file(os.path.join(incroot, rel))
+        cls_records = []
+        for cls in parsed["classes"]:
+            cls_records.append({
+                "name": cls["name"],
+                "base": cls["base"],
+                "doc": cls["doc"],
+                "methods": [{"name": it["name"], "sig": it["sig"], "doc": it["doc"]}
+                            for it in cls["items"] if it["kind"] == "method"],
+                "fields": [{"name": it["name"], "sig": it["sig"], "doc": it["doc"]}
+                           for it in cls["items"] if it["kind"] == "field"],
+            })
+        headers.append({
+            "header": rel,
+            "module": module,
+            "notes": NOTES.get(rel, ""),
+            "example": EXAMPLES.get(rel, ""),
+            "includes": [d for d in parsed["includes"]
+                         if not (d.startswith('<') or d.startswith('"'))],
+            "classes": cls_records,
+            "funcs": [{"name": f["name"], "sig": f["sig"], "doc": f["doc"]}
+                      for f in parsed["funcs"]],
+            "enums": parsed["enums"],
+            "consts": parsed["consts"],
+        })
+        for c in COMPONENTS.get(rel, []):
+            components.append({
+                "name": c["name"],
+                "header": rel,
+                "category": c["category"],
+                "summary": c["summary"],
+                "layui_classes": c.get("layui_classes", []),
+                "example": EXAMPLES.get(rel, ""),
+            })
+    return json.dumps({
+        "schema_version": "1",
+        "generated_by": "tools/api_gen.py",
+        "library_version": _library_version(),
+        "categories": CATEGORIES,
+        "components": components,
+        "headers": headers,
+    }, ensure_ascii=False, indent=1)
+
+
 def main():
-    content = build()
+    outputs = {
+        OUT: build(),
+        os.path.join(MCP_OUT_DIR, "catalog.json"): build_catalog(),
+        os.path.join(MCP_OUT_DIR, "templates.json"): mcp_data.dump_templates(),
+        os.path.join(MCP_OUT_DIR, "constraints.json"): mcp_data.dump_constraints(),
+    }
     if '--check' in sys.argv:
-        try:
-            with open(OUT, 'r', encoding='utf-8') as f:
-                cur = f.read()
-        except OSError:
-            print('UI_API.md missing')
+        bad = []
+        for path, text in outputs.items():
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    cur = f.read()
+            except OSError:
+                bad.append(path + ' (missing)')
+                continue
+            if cur != text:
+                bad.append(path + ' (out of date)')
+        if bad:
+            print('OUT OF DATE:')
+            for b in bad:
+                print('  ' + b)
+            print('run: python tools/api_gen.py')
             sys.exit(1)
-        if cur != content:
-            print('UI_API.md out of date: run `python tools/api_gen.py`')
-            sys.exit(1)
-        print('UI_API.md up to date')
+        print('all generated docs up to date (UI_API.md + docs/mcp/*.json)')
         sys.exit(0)
-    with open(OUT, 'w', encoding='utf-8') as f:
-        f.write(content)
-    print('generated %s (%d bytes)' % (OUT, len(content.encode('utf-8'))))
+    for path, text in outputs.items():
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(text)
+        print('generated %s (%d bytes)' % (path, len(text.encode('utf-8'))))
 
 
 if __name__ == '__main__':

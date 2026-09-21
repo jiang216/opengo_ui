@@ -171,3 +171,23 @@ install(FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/docs/distribution/API_REFERENCE.md"
     DESTINATION ${CMAKE_INSTALL_DOCDIR}
 )
+
+# ---- MCP 知识服务（opengui）：随包发布，供 IDE / CLI 智能体查证 API 与模板 ----
+# server.py + 数据 JSON 同目录部署（--data 免配置）；CHANGELOG/ARCHITECTURE 供检索溯源。
+# 消费入口：share/opengl_ui/OPENGUI_AGENT.md；注入命令：share/opengl_ui/register-mcp.ps1。
+install(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/tools/mcp/server.py"
+    "${CMAKE_CURRENT_SOURCE_DIR}/docs/mcp/catalog.json"
+    "${CMAKE_CURRENT_SOURCE_DIR}/docs/mcp/templates.json"
+    "${CMAKE_CURRENT_SOURCE_DIR}/docs/mcp/constraints.json"
+    "${CMAKE_CURRENT_SOURCE_DIR}/docs/CHANGELOG.md"
+    "${CMAKE_CURRENT_SOURCE_DIR}/docs/ARCHITECTURE.md"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/opengl_ui/mcp
+)
+
+install(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/publish/register-mcp.ps1"
+    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/publish/OPENGUI_AGENT.md"
+    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/publish/publish.ps1"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/opengl_ui
+)

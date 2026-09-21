@@ -5135,3 +5135,26 @@ regression.ps1 全 PASS。
 - **验证**：VS Debug x64 重新生成全部成功（2 成功，0 失败）。
 - **影响范围**：根 `CMakeLists.txt` 第 13-26 行。
 
+## UI-208: opengui MCP 知识服务——零依赖 stdlib 服务 + api_gen 同源目录 + 发布期一键注入 IDE/CLI 智能体（tools/mcp/server.py + tools/api_gen.py + tools/mcp_data.py + scripts/publish/register-mcp.ps1；2026-09-21）
+- **级别**：新功能（工具链 / 发布增强，非 ui 库运行库）。目的：其它智能体（opencode / Claude Code）写 opengl_ui 代码时「忘记库功能 / 调用细节」，把组件、模板、回归约束封装成可查询的 MCP 知识层，发布时注入客户端配置，形成「查证 → 代码生成 → 脚手架 → 约束核对」闭环。
+- **根因**：库 API 数百个、易错约束分散在 CHANGELOG/ARCHITECTURE，独立智能体缺少按需查证通道；且目标环境不一定能装 Python MCP SDK（`pip install mcp` 依赖 anyio/httpx/pydantic/pydantic_core，pydantic_core 为编译期 wheel，ABI/版本易碎、离线不可装），官方 SDK 方案在此不可依赖。
+- **修复**：
+  1. **数据同源生成**：`tools/api_gen.py` 新增人工维护 `CATEGORIES`/`COMPONENTS`（仿 NOTES/EXAMPLES 先例）与 `build_catalog()`；`tools/mcp_data.py`（新建，唯一事实源）维护 `TEMPLATES`/`SCAFFOLDS`/`CONSTRAINTS`（每条带 CHANGELOG UI-### 溯源）。生成 `docs/mcp/{catalog,templates,constraints}.json`（AUTO-GENERATED 禁手改），`--check` 扩展到四产物（UI_API.md + 三份 JSON）。
+  2. **零依赖 MCP stdio 服务** `tools/mcp/server.py`（约 500 行纯 stdlib，Python 3.9+）：协议 2025-06-18；`tools/list|call`（9 个 `opengui_*`：help/list_components/get_component/get_template/get_scaffold/search/find_class/get_regression/get_changelog）、`resources/list|read`（opengui://catalog | component/{name} | template/{id} | changelog/{UI-###}）、`prompts/list|get`（opengui-build-app）；`initialize` 声明三能力；未知方法 -32601、非法参数 -32602；newline-delimited 或 Content-Length 帧兼容；数据就近 `Path(__file__).parent`（`--data` 可覆盖）；`--selfcheck` 内部回环 9 项断言。
+  3. **发布打包**：根 `CMakeLists.txt` 新增 install 规则 → `share/opengl_ui/mcp/`（server.py + 三 JSON + CHANGELOG.md + ARCHITECTURE.md）、`share/opengl_ui/`（register-mcp.ps1 + OPENGUI_AGENT.md + publish.ps1）；安装目录整体搬迁无需改配置（server 与数据同目录）。
+  4. **一键注入** `scripts/publish/register-mcp.ps1`：`-Mode register|unregister|status`、`-Targets opencode|claude|mcpjson`、`-Install/-Python/-ProjectDir/-ConfigRoot`（测试钩子）/`-WriteNotes`；register 前强制 `python server.py --selfcheck`（无 venv/pip）；opencode 写 `~/.config/opencode/opencode.json` 的 `mcp."opengui"`（type=local, command 数组），Claude Code 写 `~/.claude.json` 的 `projects.<absPath>.mcpServers.opengui`（type=stdio），`.mcp.json` 写项目根 `mcpServers.opengui`；深合并保留既有 mcpServers、写前备份 `.bak`、无 BOM UTF-8 原子写。
+  5. **消费指引**：`scripts/publish/OPENGUI_AGENT.md` 随包发布，`opengui_help` 工具内嵌流程与铁律；`-WriteNotes` 把指引追加到消费项目 AGENTS.md。
+- **回归清单（改动后核对）**：
+  1. `tools/api_gen.py` 对 `ui/include` 全量解析结果不变（`scan_file` 未动），`docs/UI_API.md` 输出逐字节不变（本轮仅打印差异一致）；
+  2. `--check` 校验覆盖范围从 UI_API.md 扩展到 `docs/mcp/*.json`，缺失/过期任一均报 OUT OF DATE 并 exit 1；
+  3. `server.py` 零第三方依赖，`--selfcheck` 在无外网 / 无 venv（本机 Python 3.14.6 无 `mcp` 模块）下 exit 0，9 项断言全 PASS；
+  4. `register-mcp.ps1` 三目标 register → 既有配置键（`mcp.keep` / `other` / 项目其它 mcpServers）全部保留；unregister → opengui 移除且保留键不丢、`status` 正确反映；
+  5. MCP 服务不触碰屏幕/自动化（只读文本知识层，符合仓库「无 ai_ocr_tools 类 GUI 工具」原则）；
+  6. install 布局：`share/opengl_ui/mcp/` 含 server.py + catalog/templates/constraints.json + CHANGELOG.md + ARCHITECTURE.md，`share/opengl_ui/` 含注入脚本与指引（由 cmake --install 整目录搬运验证）。
+- **验证**：
+  1. `python tools/api_gen.py` 生成 UI_API.md + 三份 JSON；`--check` 0 差异 exit 0；catalog 含 59 组件 / 67 头文件（含 media 7 头）/ 15 条约束 / 版本 0.1.0；
+  2. `python tools/mcp/server.py --selfcheck --data docs/mcp` 9/9 PASS exit 0；stdio 端到端：newline-delimited 7 请求 + Content-Length 帧均正确响应（JSON-RPC 错误码 -32601/-32602 生效）；
+  3. `register-mcp.ps1` 在临时 `-Install`/`-ConfigRoot`/`-ProjectDir` 沙箱：opencode/claude/.mcp.json 三目标配置 JSON 结构正确、深合并保留既有键、unregister 键清除、`status` 三目标还原、AGENTS.md 指引块为干净 UTF-8 追加；
+  4. 全量 `python tools/graphgen.py --check` 0 错误 0 警告（docs 改动后重生成）。
+- **影响范围**：`tools/api_gen.py`、`tools/mcp_data.py`（新）、`tools/mcp/server.py`（新）、`docs/mcp/*.json`（新，生成产物）、`CMakeLists.txt`、`scripts/publish/{register-mcp.ps1,OPENGUI_AGENT.md,publish.ps1}`（新）、`docs/CHANGELOG.md`、`docs/ARCHITECTURE.md`、`docs/README.md`、`docs/BUILD.md`、`AGENTS.md`。
+

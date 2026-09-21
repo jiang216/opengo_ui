@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-20T15:17:41+08:00",
+  "generatedAt": "2026-09-21T16:19:30+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -1356,6 +1356,13 @@
       "label": "UI-186: MSVC Debug 构建 error D8016 /O2 与 /RTC1 不兼容（CMakeLists.txt）（2026-09-03）",
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-186-msvc-debug-构建-error-d8016-o2-与-rtc1-不兼容cmakeliststxt2026-09-03"
+    },
+    "BUG:UI-208": {
+      "id": "BUG:UI-208",
+      "type": "BUG",
+      "label": "UI-208: opengui MCP 知识服务——零依赖 stdlib 服务 + api_gen 同源目录 + 发布期一键注入 IDE/CLI 智能体（tools/mcp/server.py + tools/api_gen.py + tools/mcp_data.py + scripts/publish/register-mcp.ps1；2026-09-21）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcpserverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21"
     },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
@@ -3634,6 +3641,12 @@
       "context": "回归清单#优化批次契约（不改 API 语义）：Renderer 投影矩阵在 `set_viewport` 缓存、颜色/纹理管线状态合并（不得逐 draw 重算/重传投影）；字形旋转三角函数 CPU 预计算经 uniform 下传；事件分发子节点遍历用 ≤32 栈数组快照免堆分配（语义同 UI-073）；标准光标一次创建缓存复用（`StandardCursorCache`）；`Image::texture_` 为独占 `unique_ptr` 随控件释放；`Font::draw_text` 双载合并共享实现；UTF-8 解码统一 `core/ui/core/utf8.h`（textbox/textarea/table 收敛）；scissor/标准光标 helper 去重"
     },
     {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-208",
+      "kind": "checklist",
+      "context": "回归清单#opengui MCP 知识服务：随 install/ 发布 `share/opengl_ui/mcp/`（零依赖 stdlib `server.py` + `docs/mcp/{catalog,templates,constraints}.json` + CHANGELOG/ARCHITECTURE），供 opencode / Claude Code 等智能体查证组件/模板/回归约束；`api_gen.py --check` 同时校验 UI_API.md 与三份 JSON；`register-mcp.ps1` 注入 opencode / Claude Code / `.mcp.json`（深合并保留既有 mcpServers、写前备份 `.bak`、register 前强制 `python server.py --selfcheck`）；MCP 服务为只读文本知识层，不触碰屏幕/自动化（对齐「无 ai_ocr_tools 类 GUI 工具」原则）"
+    },
+    {
       "from": "DOC:BUILD",
       "to": "BUG:UI-002",
       "kind": "checklist",
@@ -3692,6 +3705,12 @@
       "to": "BUG:UI-119",
       "kind": "checklist",
       "context": "回归清单#layui_test 崩溃时自动打印符号化调用栈（SetUnhandledExceptionFilter + dbghelp）；定位崩溃帧需 Release+/Z7 生成 PDB"
+    },
+    {
+      "from": "DOC:BUILD",
+      "to": "BUG:UI-208",
+      "kind": "checklist",
+      "context": "回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验"
     },
     {
       "from": "DOC:MEDIA_PIPELINE",
@@ -3796,6 +3815,18 @@
       "context": "回归清单#Demo（apps/opengl_ui_demo）开窗渲染可运行，media ON/OFF 双配置均可编译；左侧列用 `ScrollBox`+`VBox` 流式堆叠：起始 y 让出内容区原点下方（标题条+菜单栏），整列可滚动、随窗口高度同步"
     },
     {
+      "from": "DOC:README",
+      "to": "BUG:UI-208",
+      "kind": "checklist",
+      "context": "回归清单#opengui MCP 知识服务随 `install/` 发布（`share/opengl_ui/mcp/`），`scripts/publish/register-mcp.ps1` 可一键注入 opencode / Claude Code / `.mcp.json`"
+    },
+    {
+      "from": "DOC:BUILD",
+      "to": "DOC:README",
+      "kind": "mention",
+      "context": ""
+    },
+    {
       "from": "META:CHANGELOG",
       "to": "DOC:MEDIA_PIPELINE",
       "kind": "mention",
@@ -3822,6 +3853,18 @@
     {
       "from": "META:CHANGELOG",
       "to": "DOC:API_REFERENCE",
+      "kind": "mention",
+      "context": ""
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "DOC:BUILD",
+      "kind": "mention",
+      "context": ""
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "META:AGENTS",
       "kind": "mention",
       "context": ""
     },
@@ -5961,6 +6004,23 @@
       }
     ],
     "BUG:UI-186": [],
+    "BUG:UI-208": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#opengui MCP 知识服务：随 install/ 发布 `share/opengl_ui/mcp/`（零依赖 stdlib `server.py` + `docs/mcp/{catalog,templates,constraints}.json` + CHANGELOG/ARCHITECTURE），供 opencode / Claude Code 等智能体查证组件/模板/回归约束；`api_gen.py --check` 同时校验 UI_API.md 与三份 JSON；`register-mcp.ps1` 注入 opencode / Claude Code / `.mcp.json`（深合并保留既有 mcpServers、写前备份 `.bak`、register 前强制 `python server.py --selfcheck`）；MCP 服务为只读文本知识层，不触碰屏幕/自动化（对齐「无 ai_ocr_tools 类 GUI 工具」原则）"
+      },
+      {
+        "from": "DOC:BUILD",
+        "kind": "checklist",
+        "context": "回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验"
+      },
+      {
+        "from": "DOC:README",
+        "kind": "checklist",
+        "context": "回归清单#opengui MCP 知识服务随 `install/` 发布（`share/opengl_ui/mcp/`），`scripts/publish/register-mcp.ps1` 可一键注入 opencode / Claude Code / `.mcp.json`"
+      }
+    ],
     "META:CHANGELOG": [
       {
         "from": "META:CHANGELOG",
@@ -6205,6 +6265,11 @@
         "from": "DOC:README",
         "kind": "mention",
         "context": "示例应用（M16 收官）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": ""
       }
     ],
     "DOC:MEDIA_PIPELINE": [
@@ -6222,6 +6287,11 @@
       }
     ],
     "DOC:README": [
+      {
+        "from": "DOC:BUILD",
+        "kind": "mention",
+        "context": ""
+      },
       {
         "from": "META:CHANGELOG",
         "kind": "mention",
@@ -6242,10 +6312,18 @@
         "context": ""
       }
     ],
-    "META:AGENTS": []
+    "META:AGENTS": [
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": ""
+      }
+    ]
   },
   "lint": {
-    "errors": [],
+    "errors": [
+      "docs/README.md:29 锚点不存在: CHANGELOG.md#ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcp-serverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21 -> META:CHANGELOG"
+    ],
     "warnings": [
       "孤儿条目（无任何文档引用）: BUG:UI-185",
       "孤儿条目（无任何文档引用）: BUG:UI-186",

@@ -1,0 +1,168 @@
+{
+  "kind": "opengui_constraints",
+  "constraints": [
+    {
+      "id": "C001",
+      "rule": "文本垂直居中必须用 Font::line_height()（= ascent−descent，descent 为负），禁止 (ascent+descent) 写法（少算 2×|descent|）；draw_text 字形左上角需 std::round 对齐整数像素。",
+      "ui_ids": [
+        "UI-053",
+        "UI-055"
+      ],
+      "danger": "文本下移约 4px / 文字发虚"
+    },
+    {
+      "id": "C002",
+      "rule": "Renderer::init() 在 GL 上下文就绪后调用一次；每帧绘制前必须 begin_frame()（内部清空/关 scissor）；push_scissor/pop_scissor 必须配对，退化矩形 push 静默不入栈。",
+      "ui_ids": [
+        "UI-008",
+        "UI-057",
+        "UI-169"
+      ],
+      "danger": "滚动内容穿透标题栏/Header、跨帧脏裁剪"
+    },
+    {
+      "id": "C003",
+      "rule": "推荐 ui::WindowContainer + Scene::run()/run_for()。禁/慎手写五段主循环；若手写：帧末必须 root.advance(dt) 或 Widget::flush_pending_destroys()，否则 destroy() 控件永不释放（泄漏 + 僵尸模态）。set_chrome() 须在首帧 frame() 之前。",
+      "ui_ids": [
+        "UI-146",
+        "UI-157",
+        "UI-161",
+        "UI-167",
+        "UI-168",
+        "UI-153"
+      ],
+      "danger": "内存泄漏、控件不重排、(0,0) 闪帧、标题条与内容错位"
+    },
+    {
+      "id": "C004",
+      "rule": "Widget 容器不拥有子树，root 子节点可为栈对象：释放子树用 Widget::clear_children()（递归 delete），单个控件用 destroy()（调用后指针失效）；禁止对栈对象 delete（堆损坏 0xC0000374）。Scene 清理只清库内自管对象，禁止 clear_children()。",
+      "ui_ids": [
+        "UI-146",
+        "UI-032",
+        "UI-040"
+      ],
+      "danger": "double-free / 堆损坏崩溃"
+    },
+    {
+      "id": "C005",
+      "rule": "draw_quad 为 radius=0 的 draw_rounded_rect 别名，SDF 必须含内部距离项 min(max(q.x,q.y),0)（缺则内部 50% 半透明、全界面灰蒙蒙）；圆角描边必须 draw_rounded_rect_outline 中空环（a_out*(1-a_in)），禁止回退矩形描边。",
+      "ui_ids": [
+        "UI-004",
+        "UI-037",
+        "UI-038",
+        "UI-053",
+        "UI-054"
+      ],
+      "danger": "半透明灰蒙 / 描边内部被整块盖满"
+    },
+    {
+      "id": "C006",
+      "rule": "帧级门控渲染：Widget::draw() 全树绘制（脏标记仅作门控）；事件回调内直接改状态必须显式 mark_dirty() 自报（状态写自报金芯）；三处 draw 根节点入口带（dirty_‖dirty_children_）门控 layout，防事件阶段新建控件 (0,0) 闪帧。",
+      "ui_ids": [
+        "UI-135",
+        "UI-137",
+        "UI-138",
+        "UI-154",
+        "UI-156",
+        "UI-157",
+        "UI-175"
+      ],
+      "danger": "开关/下拉/输入需要多次交互才刷新"
+    },
+    {
+      "id": "C007",
+      "rule": "CJK 字形惰性烘培按 16ms 配额限量（默认 12 字形）；UI_125 起懒烘培超标帧回退方块宽、后续帧补齐；首显防闪用 Font::prebake_text()/Table::prebake_visible_text() 预热。中文字体须 load_cjk_font* 后才可绘制非 ASCII。",
+      "ui_ids": [
+        "UI-036",
+        "UI-125",
+        "UI-127",
+        "UI-136"
+      ],
+      "danger": "首显方块字 / 单帧卡顿 / 中文不显示"
+    },
+    {
+      "id": "C008",
+      "rule": "多窗口：每窗口独立 GL 上下文 + Scene；绘制前 window.make_current()；禁止同上下文运行两个 Renderer（实例级缓存冲突）。",
+      "ui_ids": [
+        "UI-146"
+      ],
+      "danger": "GL 状态串扰/错误绘制"
+    },
+    {
+      "id": "C009",
+      "rule": "media 模块默认 OFF；开启须 media ON 且 -DCMAKE_BUILD_TYPE=Release（OpenCV 仅发布库，Debug 下 debug_build_guard 命名空间错位 → LNK2019）；VideoView 头不暴露 FFmpeg C 头。",
+      "ui_ids": [
+        "UI-010",
+        "UI-011",
+        "UI-021"
+      ],
+      "danger": "LNK2019 / 头文件污染"
+    },
+    {
+      "id": "C010",
+      "rule": "浅色底上文本不得用近白 token：默认 Theme 结构 text 近白、panel 恒白——白底面板菜单项/折叠标题等须用 text_secondary（深色）绘制（UI-201）；容器 layui-bg-* 类由 table 用主题化着色（UI-203）。",
+      "ui_ids": [
+        "UI-201",
+        "UI-203"
+      ],
+      "danger": "白字白底不可读"
+    },
+    {
+      "id": "C011",
+      "rule": "字体/图标：ASCII 与图标（U+E600..ECFF + U+1000..100F）全量烘培，stbtt_BakeFontBitmap 返回值为 bottom_y 非字数；advance 不得为 0；图集 2x 过采样（pixel_height×2）。emoji 回退链防 .notdef tofu 入图集。",
+      "ui_ids": [
+        "UI-046",
+        "UI-056",
+        "UI-128",
+        "UI-026"
+      ],
+      "danger": "字形缺失（如 '6/12' 只渲染 '/1'）"
+    },
+    {
+      "id": "C012",
+      "rule": "状态写自报标脏（金芯）：Switch/ComboBox/Slider/TextBox/TextArea/Menu/Transfer/ScrollBox 等事件内直接改成员状态必须显式 mark_dirty()；ScrollBox/Code 覆写 draw 末尾必须清自身脏（dirty_=dirty_children_=false）。",
+      "ui_ids": [
+        "UI-137",
+        "UI-138",
+        "UI-139",
+        "UI-140",
+        "UI-141",
+        "UI-156",
+        "UI-158"
+      ],
+      "danger": "状态变更不即时重绘"
+    },
+    {
+      "id": "C013",
+      "rule": "子控件 bounds 为绝对坐标：Header/TitleBar 子项必须叠加父 bounds_.y 偏移；内容区原点以 Scene::content_origin_y() 为单一来源派生，禁止硬编码标题条高偏移。",
+      "ui_ids": [
+        "UI-149",
+        "UI-151",
+        "UI-153",
+        "UI-155"
+      ],
+      "danger": "与标题条重叠 / 顶部导航错位"
+    },
+    {
+      "id": "C014",
+      "rule": "模态/捕获：set_modal() 后事件仅路由给模态子树；dispatch 模态分支须判 modal_->visible（隐藏即解除拦截，防僵尸模态死锁）；on_mouse_down 返回 true 即捕获；移出窗口/失焦按下不释放由 Window SetCapture + settle_mouse_reset 自愈（应用侧勿手工清 pressed_）。",
+      "ui_ids": [
+        "UI-009",
+        "UI-019",
+        "UI-133",
+        "UI-184",
+        "UI-185"
+      ],
+      "danger": "输入锁死 / pressed 悬死"
+    },
+    {
+      "id": "C015",
+      "rule": "图片等运行时资产：裸文件名加载先 CWD、miss 回退 exe 目录，勿在应用内堆叠 CWD 相对路径回退链（Image::load_from_file 自带 exe 回退）；POST_BUILD 拷 logo.png/iconfont.ttf/glfw3.dll 到 exe 目录。",
+      "ui_ids": [
+        "UI-047",
+        "UI-048"
+      ],
+      "danger": "资产找不到 / 加载噪音错误"
+    }
+  ]
+}

@@ -302,7 +302,7 @@ while (!window.should_close()) {
 | `static const char* get_monitor_name(GLFWmonitor* monitor)` |  |
 | `static void get_video_modes(GLFWmonitor* monitor, int& count, void*& modes)` |  |
 | `static void get_video_mode(GLFWmonitor* monitor, void*& mode)` |  |
-| `static bool get_monitor_workarea_at_cursor(int& xpos, int& ypos, int& width, int& height)` | 光标所在显示器的工作区（多屏幕辅助）：Windows 用 GetCursorPos+MonitorFromPoint+GetMonitorInfoW 取 rcWork（与 GLFW 虚拟屏坐标同体系，可直接用于 set_position/glfwSetWindowPos）；非 Windows 回退主屏并返回 false |
+| `static bool get_monitor_workarea_at_cursor(int& xpos, int& ypos, int& width, int& height)` | 光标所在显示器的工作区（UI-207，多屏幕辅助）： Windows 用 GetCursorPos+MonitorFromPoint+GetMonitorInfoW 取 rcWork（与 GLFW 虚拟屏坐标 同体系，可直接用于 glfwSetWindowPos）；GLFW 无全局光标查询 API，非 Windows 回退主屏。 返回 true=取得光标所在屏工作区；false=已回退主显示器工作区。 |
 | `float mouse_x() const` | ---- 输入（像素坐标，y 向下，(0,0)=左上角）---- |
 | `float mouse_y() const` |  |
 | `bool mouse_down(int button) const` | button: 0=左键 1=右键 2=中键 |
@@ -2041,6 +2041,7 @@ parent->add_child(mb);
 | `void set_large(bool large)` |  |
 | `void set_font(Font*)` |  |
 | `void set_theme(const Theme*)` |  |
+| `void set_item_height(float h)` | 自定义行高（UI-203）：<=0 时沿用默认 kItemH/kItemHLg；用于紧凑菜单（如模型下拉 28px） |
 | `void set_style_overrides(const Vec4& bg, const Vec4& border, const Vec4& hover, const Vec4& text)` | 自定义配色覆盖（bg/border/hover/文字），不设置则用主题默认 |
 | `void set_on_item_click(std::function<void(const char*)> cb)` | 普通菜单项被点击时回调（title 文本），供宿主（如 Dropdown）做选中/收起 |
 | `void set_on_group_click(std::function<void(const char*)> cb)` | 分组头被点击时回调（title 文本，spread 已切换后触发），供宿主联动收起/展开外部面板 |
@@ -2600,6 +2601,9 @@ parent->add_child(tb);
 | `void set_cell_combobox(int col)` | —— 下拉单元格列（UI-143：表格行内下拉选择，复用 ComboBox layui-form-select 皮肤）—— 该列每格渲染文本 + 右侧下拉三角，单击单元格展开行内 ComboBox； 选项选中后写回该格文本并触发选中回调。 |
 | `bool is_cell_combobox(int col) const` |  |
 | `void set_combobox_options(int col, const std::vector<std::string>& options)` | 指定下拉列的可选项（与列下标平行；未设置视为空选项集） |
+| `void set_cell_combobox_options(int row, int col, const std::vector<std::string>& options)` | 单元格（数据行, 列）级下拉选项覆盖（M20：每后端一行，各行语种独立声明）。 row 为数据行下标（rows_ 下标，跨分页/排序稳定）；此后该格展开时优先用此覆盖集， 缺省（未设置/空集）回退列级 set_combobox_options。clear_rows/reload 后覆盖失效。 |
+| `void set_cell_combo(int row, int col, bool on = true)` | 单元格级下拉开关（M20-WP8）：标记某特定单元格为下拉型，独立于列级 set_cell_combobox； 命中时展开行内 ComboBox（复用 combo_options_for 行级覆盖/列级回退）。 row=数据行下标，col=列号；clear_rows/reload 后标记失效。 |
+| `bool is_cell_combo(int data_row, int col) const` |  |
 | `void set_on_cell_combobox(std::function<void(int visible_row, int col, int index, const std::string& text)> cb)` | 下拉选中回调（参数：可见行号, 列号, 选项下标, 选中文本） |
 | `void set_total_row(bool on)` | —— 合计行（layui totalRow，totalRow.html / parseData.html）—— |
 | `bool total_row() const` |  |
@@ -2672,6 +2676,7 @@ parent->add_child(tb);
 | `int header_col_at(float x) const` |  |
 | `int col_hit(float x) const` |  |
 | `float col_x(int c) const` | 第 c 列起始 x（布局后有效） |
+| `const std::vector<std::string>& combo_options_for(int data, int col) const` |  |
 
 **常量**：
 

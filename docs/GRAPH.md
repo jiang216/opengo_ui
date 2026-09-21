@@ -5,9 +5,10 @@
 
 ## 统计
 
-- 节点: 202（BUG 193 / DOC 7 / META 2）
-- 边: 403
-- lint: 0 错误 / 8 警告
+- 节点: 203（BUG 194 / DOC 7 / META 2）
+- 边: 409
+- lint: 1 错误 / 8 警告
+  - ERROR: docs/README.md:29 锚点不存在: CHANGELOG.md#ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcp-serverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21 -> META:CHANGELOG
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-185
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-186
   - WARN: 孤儿条目（无任何文档引用）: BUG:UI-187
@@ -1334,6 +1335,14 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#光标所在显示器工作区：`Window::get_monitor_workarea_at_cursor(x,y,w,h)` 返回光标当前所在显示器的工作区（多屏幕弹窗定位基座）——Windows 经 GetCursorPos+MonitorFromPoint+GetMonitorInfoW 取 rcWork（与 GLFW 虚拟屏坐标同体系，可直接用于 set_position）；非 Windows 回退主屏并返回 false，宿主失败时回落主屏逻辑
 
+### BUG:UI-208 · UI-208: opengui MCP 知识服务——零依赖 stdlib 服务 + api_gen 同源目录 + 发布期一键注入 IDE/CLI 智能体（tools/mcp/server.py + tools/api_gen.py + tools/mcp_data.py + scripts/publish/register-mcp.ps1；2026-09-21）
+
+- 路径: `docs/CHANGELOG.md#ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcpserverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21`
+- 反链(3):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#opengui MCP 知识服务：随 install/ 发布 `share/opengl_ui/mcp/`（零依赖 stdlib `server.py` + `docs/mcp/{catalog,templates,constraints}.json` + CHANGELOG/ARCHITECTURE），供 opencode / Claude Code 等智能体查证组件/模板/回归约束；`api_gen.py --check` 同时校验 UI_API.md 与三份 JSON；`register-mcp.ps1` 注入 opencode / Claude Code / `.mcp.json`（深合并保留既有 mcpServers、写前备份 `.bak`、register 前强制 `python server.py --selfcheck`）；MCP 服务为只读文本知识层，不触碰屏幕/自动化（对齐「无 ai_ocr_tools 类 GUI 工具」原则）
+  - `DOC:BUILD` (checklist) — 回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验
+  - `DOC:README` (checklist) — 回归清单#opengui MCP 知识服务随 `install/` 发布（`share/opengl_ui/mcp/`），`scripts/publish/register-mcp.ps1` 可一键注入 opencode / Claude Code / `.mcp.json`
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1364,12 +1373,13 @@
 ### DOC:BUILD · BUILD
 
 - 路径: `docs/BUILD.md`
-- 反链(5):
+- 反链(6):
   - `META:CHANGELOG` (mention) — UI-002: 3rdparty 依赖构建管线（2026-08-09）
   - `META:CHANGELOG` (mention) — UI-010: M6 媒体模块点亮：ImageView/VideoView（2026-08-09）
   - `META:CHANGELOG` (mention) — UI-011: M7 视频解码线程化 + 播放控制（2026-08-09）
   - `DOC:README` (mention) — OpenGL UI
   - `DOC:README` (mention) — 示例应用（M16 收官）
+  - `META:CHANGELOG` (mention)
 
 ### DOC:MEDIA_PIPELINE · MEDIA_PIPELINE
 
@@ -1386,7 +1396,8 @@
 ### DOC:README · README
 
 - 路径: `docs/README.md`
-- 反链(1):
+- 反链(2):
+  - `DOC:BUILD` (mention)
   - `META:CHANGELOG` (mention)
 
 ### DOC:UI_API · UI_API
@@ -1398,7 +1409,8 @@
 ### META:AGENTS · AGENTS
 
 - 路径: `AGENTS.md`
-- 反链: 无
+- 反链(1):
+  - `META:CHANGELOG` (mention)
 
 ### META:CHANGELOG · CHANGELOG
 
@@ -1629,6 +1641,7 @@
 | `BUG:UI-205` | BUG | UI-205: `Dropdown` 析构 Use-After-Free + `hide()` 只收 custom_ 不收 menu_——custom-content 模板下双击菜单项/外部点击删除触发崩溃（ui/src/dropdown.cpp；宿主 agent/chat_shell 斜杠命令浮层点选崩溃 AG-808）（2026-09-15） | `docs/CHANGELOG.md` |
 | `BUG:UI-206` | BUG | UI-206: 按钮/菜单行内文字与图标垂直偏位——文字视觉中心高于行中线 |descent|/2，图标以行中心为基准致上下不齐（ui/src/button.cpp `draw_content`/下拉 dd/菜单 li + ui/src/menu.cpp `draw_item`/`draw_sub_panel`；宿主 agent/chat_shell 按钮/文件夹行视觉偏位 AG-822） | `docs/CHANGELOG.md` |
 | `BUG:UI-207` | BUG | UI-207: Window 新增「光标所在显示器工作区」API——get_monitor_workarea_at_cursor（win32 GetCursorPos+MonitorFromPoint，非 Windows 回退主屏）（gl/include/ui/gl/window.h + gl/src/window.cpp；宿主 audio_text 多屏 toast 定位） | `docs/CHANGELOG.md` |
+| `BUG:UI-208` | BUG | UI-208: opengui MCP 知识服务——零依赖 stdlib 服务 + api_gen 同源目录 + 发布期一键注入 IDE/CLI 智能体（tools/mcp/server.py + tools/api_gen.py + tools/mcp_data.py + scripts/publish/register-mcp.ps1；2026-09-21） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1902,6 +1915,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-204` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-205` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-207` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-208` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1912,6 +1926,8 @@
 | `DOC:BUILD` | `BUG:UI-010` | checklist |
 | `DOC:BUILD` | `BUG:UI-119` | checklist |
 | `DOC:BUILD` | `BUG:UI-119` | checklist |
+| `DOC:BUILD` | `BUG:UI-208` | checklist |
+| `DOC:BUILD` | `DOC:README` | mention |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
@@ -1936,6 +1952,7 @@
 | `DOC:README` | `BUG:UI-003` | checklist |
 | `DOC:README` | `BUG:UI-003` | checklist |
 | `DOC:README` | `BUG:UI-174` | checklist |
+| `DOC:README` | `BUG:UI-208` | checklist |
 | `DOC:README` | `DOC:ARCHITECTURE` | mention |
 | `DOC:README` | `DOC:BUILD` | mention |
 | `DOC:README` | `DOC:BUILD` | mention |
@@ -2022,9 +2039,11 @@
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:BUILD` | mention |
+| `META:CHANGELOG` | `DOC:BUILD` | mention |
 | `META:CHANGELOG` | `DOC:MEDIA_PIPELINE` | mention |
 | `META:CHANGELOG` | `DOC:README` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
+| `META:CHANGELOG` | `META:AGENTS` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |

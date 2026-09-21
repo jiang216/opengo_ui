@@ -1,0 +1,129 @@
+{
+  "kind": "opengui_templates",
+  "templates": {
+    "window-skeleton": {
+      "title": "最小应用骨架（推荐入口 WindowContainer + Scene::run）",
+      "category": "framework",
+      "uses": [
+        "WindowContainer",
+        "Scene",
+        "Font",
+        "Theme",
+        "Button",
+        "Label"
+      ],
+      "code": "// 推荐入口：WindowContainer 收敛「窗口 + 渲染器 + 自绘标题栏 + Scene」。\n// Scene::run() 内部完成 poll → frame（layout/输入分发/advance/绘制）→ swap，\n// 并自动冲刷 destroy() 队列、处理弹窗自动关闭与 CJK 字体续帧烘焙（勿手写五段主循环）。\n#include \"ui/all.h\"\n\nint main() {\n    ui::Font font;\n    font.load_from_file(\"C:/Windows/Fonts/arial.ttf\", 18.f);  // ASCII\n    font.load_cjk_font_auto();                                // 中文懒烘培\n    font.load_icon_font(\"iconfont.ttf\", 18.f);                // layui 图标字体\n\n    ui::Theme theme = ui::Theme::make_layui();                // make_layui()/dark()/light()\n\n    ui::WindowContainer wc(1280, 800, \"My App\");\n    if (!wc.ok()) return 1;\n    wc.titlebar().set_font(&font);\n    wc.titlebar().set_theme(&theme);\n    wc.titlebar().set_icon(&font, ui::layui_icon::app);\n    wc.scene().set_root_background(theme.window_bg);\n\n    // 内容控件以 content_origin_y()（=标题栏高）为单一原点派生，禁止硬编码偏移。\n    const float y = wc.content_origin_y();\n    auto* btn = new ui::Button(0.f, y, 120.f, 40.f, \"Click Me\");\n    btn->set_font(&font);\n    btn->set_theme(&theme);\n    btn->add_class(\"layui-btn layui-btn-primary\");\n    btn->set_on_click([] { ui::log_info(\"Button clicked!\"); });\n    wc.root().add_child(btn);\n\n    wc.run();\n    return 0;\n}\n"
+    },
+    "hand-roll-loop": {
+      "title": "裸 Window + Scene 自定义主循环（谨慎，需自行履行生命周期契约）",
+      "category": "framework",
+      "uses": [
+        "Window",
+        "Renderer",
+        "Scene",
+        "Font",
+        "Widget"
+      ],
+      "code": "// 仅当需要完全自绘/自管时才手写循环。必须履行的契约（违反会在运行期静默复现历史 Bug）：\n//   ① set_chrome() 需在首帧 frame() 之前（UI-153/168）；② 每帧 renderer.begin_frame();\n//   ③ 帧末 root.advance(dt) 或 Widget::flush_pending_destroys()（否则 destroy() 永不释放，UI-161/167）；\n//   ④ 尺寸变化后 resized() -> renderer.set_viewport + root 重排；⑤ scissor 必须配对（UI-057/169）。\n#include \"ui/all.h\"\n\nint main() {\n    ui::Window window(1280, 900, \"demo\");\n    if (!window.handle()) return 1;\n    ui::Renderer renderer;\n    if (!renderer.init()) return 1;\n    renderer.set_viewport(window.width(), window.height());\n\n    ui::Font font;\n    font.load_from_file(\"C:/Windows/Fonts/arial.ttf\", 18.f);\n    font.load_cjk_font_auto();\n\n    ui::Theme theme = ui::Theme::make_layui();\n    ui::Widget root;                                     // 根节点可栈对象\n    root.set_bounds(0, 0, (float)window.width(), (float)window.height());\n\n    auto* btn = new ui::Button(0, 0, 120, 40, \"OK\");\n    btn->set_font(&font);\n    btn->set_theme(&theme);\n    root.add_child(btn);\n\n    while (!window.should_close()) {\n        window.poll_events();\n        if (window.resized())\n            renderer.set_viewport(window.width(), window.height());\n        root.layout();\n        root.dispatch_mouse_move(window.mouse_x(), window.mouse_y());\n        if (window.mouse_pressed(0))\n            root.dispatch_mouse_down(window.mouse_x(), window.mouse_y(), 0);\n        if (window.mouse_released(0))\n            root.dispatch_mouse_up(window.mouse_x(), window.mouse_y(), 0);\n        renderer.begin_frame(theme.window_bg);\n        root.draw(renderer);\n        root.advance(1.f / 60.f);                        // 冲刷销毁队列 + 动画/计时器\n        window.swap_buffers();\n    }\n    return 0;\n}\n"
+    },
+    "table-page": {
+      "title": "数据表格：列 / 行 / 排序 / 皮肤尺寸 / 双击编辑",
+      "category": "data",
+      "uses": [
+        "Table",
+        "ScrollBox"
+      ],
+      "code": "// 数据表格（layui-table 外观 + 排序 + 皮肤/尺寸 + 双击行内编辑 + 分页可另开）。\nauto* tb = new ui::Table(0, 0, 800, 400);\ntb->set_font(&font);\ntb->set_theme(&theme);\ntb->add_class(\"layui-table\");\ntb->add_column(\"ID\", 80.f, /*sortable=*/true);\ntb->add_column(\"姓名\", 160.f, /*sortable=*/true);\ntb->add_column(\"状态\", 120.f);\ntb->add_row({\"1\", \"张三\", \"在职\"});\ntb->add_row({\"2\", \"李四\", \"离职\"});\ntb->set_skin(ui::TableSkin::Line);     // Default/Line/Row/Nob\ntb->set_size(ui::TableSize::Normal);   // Normal=38/Lg=50/Sm=30\ntb->set_even(true);                    // 偶数行浅底\ntb->set_init_sort(0, true);            // 初始按第 0 列升序\ntb->set_on_sort([](int col, bool asc) { ui::log_info(\"sort col=%d asc=%d\", col, asc); });\ntb->set_on_row_click([](int row) { ui::log_info(\"click row %d\", row); });\ntb->set_on_row_double_click([](int row) { ui::log_info(\"dblclick row %d\", row); });\nparent->add_child(tb);\n// 分页：tb->set_paginated(true, 10); tb->auto_page_size();（按可视高自动页行数）\n// 行内开关/复选：tb->set_cell_switch(col); tb->set_cell_checkbox(col); set_on_cell_form(cb)\n// 操作按钮列：tb->add_button_column(\"操作\", 180, {\"查看\",\"编辑\",\"删除\"}, {\"view\",\"edit\",\"del\"});\n//              tb->set_on_action([](int row, const std::string& ev){});\n// 流加载触底：tb->set_on_load_more(cb); tb->set_end_note(\"— 加载完成 —\");\n"
+    },
+    "form-page": {
+      "title": "表单：TextBox / ComboBox / CheckBox / Switch / RadioGroup / 提交按钮",
+      "category": "form",
+      "uses": [
+        "TextBox",
+        "ComboBox",
+        "CheckBox",
+        "Switch",
+        "RadioGroup",
+        "Button",
+        "VBox"
+      ],
+      "code": "// 表单页布局常用 VBox 纵向堆叠 + HBox 横向排布（先建控件、后 add_child）。\nauto* form = new ui::VBox(0, 0, 600, 0);           // h=0 时 preferred_height 自适应\nform->set_font(&font);\nform->set_theme(&theme);\nform->set_spacing(10.f);\nform->set_padding(8.f);\n\nauto* name = new ui::TextBox(0, 0, 300, 36, \"\");\nname->set_font(&font);\nname->set_theme(&theme);\nname->set_placeholder(\"请输入姓名\");\nname->set_on_change([](const char* s) { ui::log_info(\"name=%s\", s); });\nform->add_child(name);\n\nauto* city = new ui::ComboBox(0, 0, 300, 36, \"选择城市\");\ncity->set_font(&font);\ncity->set_theme(&theme);\ncity->add_item(\"北京\"); city->add_item(\"上海\"); city->add_item(\"广州\");\ncity->set_on_change([](int idx) { ui::log_info(\"city=%d\", idx); });\nform->add_child(city);\n\nauto* ag = new ui::RadioGroup(0, 0, 300, 28);\nag->set_font(&font);\nag->set_theme(&theme);\nag->add_item(\"男\"); ag->add_item(\"女\");\nag->set_on_change([](const char* v, int idx) { ui::log_info(\"gender=%s\", v); });\nform->add_child(ag);\n\nauto* cb = new ui::CheckBox(0, 0, 160, 28, \"同意协议\");\ncb->set_font(&font); cb->set_theme(&theme);\ncb->set_on_change([](bool on) { ui::log_info(\"agree=%d\", on); });\nform->add_child(cb);\n\nauto* sw = new ui::Switch(0, 0, 56, 28);\nsw->set_font(&font); sw->set_theme(&theme);\nsw->set_checked(true);\nsw->set_on_change([](bool on) { ui::log_info(\"switch=%d\", on); });\nform->add_child(sw);\n\nauto* submit = new ui::Button(0, 0, 120, 40, \"提交\");\nsubmit->set_font(&font); submit->set_theme(&theme);\nsubmit->add_class(\"layui-btn layui-btn-primary\");\nsubmit->set_on_click([] { ui::log_info(\"submit\"); });\nform->add_child(submit);\n\nparent->add_child(form);\n"
+    },
+    "video-player": {
+      "title": "视频播放（媒体模块，OPENGUI_MEDIA_FFMPEG=ON 构建）",
+      "category": "media",
+      "uses": [
+        "VideoView",
+        "Scene",
+        "WindowContainer"
+      ],
+      "code": "// VideoView 为 Widget（ui/media/video_view.h，需 OPENGUI_MEDIA_FFMPEG=ON）；\n// 播放进度的推进由每帧 Scene::Frame 订阅里调用 advance(dt) 驱动（不要用主循环自旋）。\n#include \"ui/media/video_view.h\"\n\n// 在 WindowContainer/Scene 就绪后（root = scene.root()）：\nauto* vv = new ui::media::VideoView;\nvv->set_bounds(0, top, 960, 540);\nroot.add_child(vv);\n\nif (vv->open_source(\"C:/path/video.mp4\")) {   // 宽字符/中文路径安全\n    vv->play();\n    vv->set_loop(false);\n    vv->set_speed(1.f);                        // 0.5x..2x\n    vv->set_volume(0.8f);                      // 0..1\n}\n\nscene.subscribe(ui::ScenePhase::Frame, [&] {\n    if (vv->advance(1.f / 60.f)) { /* 有帧，纹理已更新 */ }\n});\n// 控制：vv->pause(); vv->seek(seconds); vv->position(); vv->duration();\n// 暂停中 step_frame() 精确推一帧；EOF 且 loop 时自动回卷。\n// 其它媒体：ImageView（OPENGUI_MEDIA_OPENCV，ui/media/image_view.h）、AudioOut（winmm）。\n"
+    },
+    "layer-popup": {
+      "title": "layer 弹层：PanelWindow 模态 + 遮罩 + 底部按钮 + 自动关闭",
+      "category": "container",
+      "uses": [
+        "PanelWindow",
+        "Button"
+      ],
+      "code": "// PanelWindow 即 layer 弹层：拖拽移动 / 右下缩放 / 置顶 / 关闭回调。\nauto* pw = new ui::PanelWindow(0, 0, 400, 260, \"提示\");\npw->set_font(&font);\npw->set_theme(&theme);\npw->set_shade(0.3f);                             // 遮罩覆盖视口\npw->set_title_visible(true);\npw->set_close_visible(true);\npw->set_maxmin(true);                            // 最大化/还原按钮\npw->set_footer_buttons({\"取消\", \"确定\"}, 1,       // 1=居中 / 2=右对齐\n    [](int idx) { ui::log_info(\"footer btn %d\", idx); });\npw->set_on_close([] { ui::log_info(\"window closed\"); });\npw->add_child(new ui::Label(0, 0, 0, 0, \"弹窗内容\"));\nroot.add_child(pw);                              // 挂根（模态由点击触发 set_modal 语义）\n// pw->set_auto_close(2.f);   // 秒后自动关闭（需 root.advance(dt) 驱动）\n// 注：弹窗控件生命周期随根树回收；页面级弹窗在切页 destroy 钩子统一清理，防悬空引用。\n"
+    },
+    "scroll-list": {
+      "title": "滚动列表：ScrollBox + VBox 流式堆叠 + 触底加载",
+      "category": "layout",
+      "uses": [
+        "ScrollBox",
+        "VBox",
+        "Label"
+      ],
+      "code": "// 内容超高自动滚动 + scissor 裁剪；配合 VBox 流式排布（追加项 mark_dirty 触发重排）。\nauto* sb = new ui::ScrollBox(0, 0, 300, 400);\nsb->set_font(&font);\nsb->set_theme(&theme);\nsb->set_padding(12.f);\nsb->set_spacing(8.f);\nsb->add_class(\"layui-side-fixed\");               // 或 layui-round 圆角化\n\nauto* list = new ui::VBox(0, 0, 0, 0);\nlist->set_font(&font); list->set_theme(&theme);\nlist->set_spacing(4.f);\nsb->add_child(list);\n\nfor (int i = 0; i < 100; ++i) {                  // 运行期继续 add_child 即时重排\n    auto* item = new ui::Label(0, 0, 0, 28, (\"第 \" + std::to_string(i) + \" 条\").c_str());\n    item->set_font(&font); item->set_theme(&theme);\n    list->add_child(item);\n}\n\n// 触底加载：距底部不足 mb (=0 严格到底) 触发一次，再滚回底部重新武装\nsb->set_on_scroll_to_bottom([] { ui::log_info(\"reached bottom\"); });\nsb->set_bottom_margin(20.f);\n// 视口锚定（不参与流式排布/滚动的固定条，如“返回顶部”）：\n// sb->add_pinned(new ui::Button(...), 1, 16.f, 16.f);\nparent->add_child(sb);\n"
+    },
+    "grid-page": {
+      "title": "layui 栅格：Grid 12 列 span/offset（页面布局骨架）",
+      "category": "layout",
+      "uses": [
+        "Grid",
+        "Panel"
+      ],
+      "code": "// 12 列基准：子控件带 layui-col-md{n}（span）与 layui-col-md-offset{n}（偏移）。\n// 行内 span 满 12 自动换行、offset 计入已用列数；无类仍保持等宽模式。\nui::Grid* row = new ui::Grid(0, 0, 800, 60, 12);   // 12 列等宽基础\nrow->set_theme(&theme);\nrow->add_class(\"layui-row\");                        // 行容器不画底色\nauto* cell = new ui::Panel(0, 0, 0, 0);\ncell->add_class(\"layui-col-md4 layui-col-md-offset2\");  // span 4 + 偏移 2\nrow->add_child(cell);\nparent->add_child(row);\n\n// 栅格列演示色块：未着色格子用 grid-demo 基础色 #79C48C；工具色 layui-bg-* 优先\nauto* demo = new ui::Panel(0, 0, 0, 0);\ndemo->add_class(\"layui-col-md3 layui-bg-green\");    // span 3 + 工具色\nrow->add_child(demo);\n"
+    },
+    "dropdown-menu": {
+      "title": "下拉菜单：Dropdown 触发器 + 菜单项 / 分隔线 + 选中回调",
+      "category": "navigation",
+      "uses": [
+        "Dropdown",
+        "Menu"
+      ],
+      "code": "auto* dd = new ui::Dropdown(0, 0, 88, 38, \"周边\");\ndd->set_font(&font);\ndd->set_theme(&theme);\ndd->add_item(\"官方网站\", [] { ui::log_info(\"官网\"); });\ndd->add_separator();\ndd->add_item(\"开源地址\", [] { ui::log_info(\"开源\"); });\n// 触发器形态/事件/对齐：set_trigger(ui::Dropdown::Trigger)... \n// 自定义内容模板：dd->set_custom_content(scrollbox_containing_menu);\n// 回调：dd->set_on_select([](const std::string& title){});\nparent->add_child(dd);\n"
+    },
+    "multi-window": {
+      "title": "多窗口：各自独立 GL 上下文 + Scene（逐层创建子窗口）",
+      "category": "framework",
+      "uses": [
+        "Window",
+        "Renderer",
+        "Scene",
+        "Font",
+        "TitleBar"
+      ],
+      "code": "// 每窗口 = 独立 Window + Renderer + Font + root 或 Scene。\n// 绘制某窗口前必须先 window.make_current()；禁止同上下文运行两个 Renderer（UI-146）。\nui::Window win1(800, 600, \"w1\");\nui::Renderer r1; r1.init();\nui::Widget root1; root1.set_bounds(0, 0, 800, 600);\nui::Font f1; f1.load_from_file(\"C:/Windows/Fonts/arial.ttf\", 18.f);\n\nwhile (!win1.should_close()) {\n    win1.poll_events();\n    win1.make_current();                       // 关键：切换上下文\n    // ... layout/dispatch/begin_frame/draw ...\n    win1.swap_buffers();\n}\n// 更推荐每窗口一个 ui::Scene（生命周期统一驱动）；多窗口循环须两窗口都关才退出。\n"
+    }
+  },
+  "scaffolds": {
+    "app": {
+      "title": "最小应用工程（无媒体）",
+      "files": {
+        "CMakeLists.txt": "cmake_minimum_required(VERSION 3.24)\nproject(<APP_NAME> LANGUAGES CXX)\n\nset(CMAKE_CXX_STANDARD 17)\nset(CMAKE_CXX_STANDARD_REQUIRED ON)\n\n# 指向 opengl_ui 分发 install/ 目录\nlist(APPEND CMAKE_PREFIX_PATH \"<OPENGUI_INSTALL_DIR>\")\nfind_package(opengl_ui REQUIRED)\n\nadd_executable(<APP_NAME> main.cpp)\ntarget_link_libraries(<APP_NAME> PRIVATE opengl_ui::ui_ui)\n\n# 若启用媒体构建（FFmpeg=ON/OpenCV=ON 的库），追加：\n# target_link_libraries(<APP_NAME> PRIVATE opengl_ui::ui_media_ffmpeg opengl_ui::ui_media_opencv)\n",
+        "main.cpp": "// <APP_NAME> —— 基于 opengl_ui 的应用（WindowContainer 安全入口）\n#include \"ui/all.h\"\n\nint main() {\n    ui::Font font;\n    font.load_from_file(\"C:/Windows/Fonts/arial.ttf\", 18.f);\n    font.load_cjk_font_auto();\n    font.load_icon_font(\"iconfont.ttf\", 18.f);\n\n    ui::Theme theme = ui::Theme::make_layui();\n\n    ui::WindowContainer wc(1280, 800, \"My App\");\n    if (!wc.ok()) return 1;\n    wc.titlebar().set_font(&font);\n    wc.titlebar().set_theme(&theme);\n    wc.titlebar().set_icon(&font, ui::layui_icon::app);\n    wc.scene().set_root_background(theme.window_bg);\n\n    const float y = wc.content_origin_y();\n    auto* btn = new ui::Button(0.f, y, 120.f, 40.f, \"Click Me\");\n    btn->set_font(&font);\n    btn->set_theme(&theme);\n    btn->add_class(\"layui-btn layui-btn-primary\");\n    btn->set_on_click([] { ui::log_info(\"Button clicked!\"); });\n    wc.root().add_child(btn);\n\n    wc.run();\n    return 0;\n}\n",
+        "README.md": "# <APP_NAME>\n\n基于 opengl_ui 的最小应用。构建后请把 glfw3.dll 拷至 exe 目录（或走 install 的 bin/）。\n"
+      }
+    },
+    "app-media": {
+      "title": "带媒体能力（FFmpeg/OpenCV）的应用工程",
+      "files": {
+        "CMakeLists.txt": "cmake_minimum_required(VERSION 3.24)\nproject(<APP_NAME> LANGUAGES CXX)\n\nset(CMAKE_CXX_STANDARD 17)\nset(CMAKE_CXX_STANDARD_REQUIRED ON)\n\nlist(APPEND CMAKE_PREFIX_PATH \"<OPENGUI_INSTALL_DIR>\")\nfind_package(opengl_ui REQUIRED)\n\nadd_executable(<APP_NAME> main.cpp)\ntarget_link_libraries(<APP_NAME> PRIVATE opengl_ui::ui_ui\n    opengl_ui::ui_media_ffmpeg opengl_ui::ui_media_opencv)\n",
+        "main.cpp": "// 媒体应用：video_player / image_viewer 模式见模板 opengui_get_template(\"video-player\")。\n#include \"ui/all.h\"\nint main() { return 0; }\n"
+      }
+    }
+  }
+}

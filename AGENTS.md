@@ -20,6 +20,13 @@
   即可不依赖 CWD 加载；需新素材优先从上述镜像库取，**禁止**在测试程序内堆叠 CWD 相对路径回退链。
 - **无 ocr 屏幕 GUI 工具**：本项目（仓库 `.opencode/skills/`）**不提供** `ocr_capture_ocr` / `ocr_mouse_action` / `ocr_list_windows` / `ocr_activate_window` 等屏幕 OCR/鼠标操作工具，
   亦不提供 `ai_ocr_tools` MCP 类 GUI 工具集成。UI 交互验证一律用测试程序自带编排参数：`--smoke` / `--click x,y` / `--shot-page <idx>` / `--page <idx>` / `--shot-scroll`；不得虚构或引用此类 GUI 工具。
+- **opengui MCP 知识服务（随 install/ 发布，本仓库自产）**：
+  - `tools/mcp/server.py` 为**零依赖纯 stdlib MCP stdio 服务**（本仓库不引入 Python MCP SDK，不依赖 pip/venv/外网）；
+  - `docs/mcp/{catalog,templates,constraints}.json` 为 **AUTO-GENERATED，禁手改**——由 `tools/api_gen.py` 同源生成，
+    内容事实源在 `tools/api_gen.py`（`COMPONENTS`/`CATEGORIES`）与 `tools/mcp_data.py`（`TEMPLATES`/`SCAFFOLDS`/`CONSTRAINTS`，约束条目必须带 CHANGELOG UI-### 溯源）；
+    改动后重跑 `python tools/api_gen.py`（Windows 先 `$env:PYTHONIOENCODING='utf-8'`）并同步 `--check`；
+  - 一致性自检：`python tools/mcp/server.py --selfcheck --data docs/mcp`（发布注入前必经）；
+  - 注入 / 卸载 / 状态：`scripts/publish/register-mcp.ps1`（opencode / Claude Code / `.mcp.json`，详见 docs/README.md / docs/BUILD.md 的 MCP 小节）。
 
 ### 改动工作流（强制，防错误复发）
 
