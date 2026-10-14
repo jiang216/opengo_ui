@@ -142,7 +142,9 @@ public:
     // 边沿触发：本轮 poll 内滚轮滚动量（dx,dy，读一次后清零）
     float scroll_dx();
     float scroll_dy();
-    // 键盘（key 用 ui::Key 常量）：当前按住 / 本轮按下边沿 / 本轮抬起边沿
+    // 键盘（key 用 ui::Key 常量）：当前按住 / 本轮按下边沿 / 本轮抬起边沿。
+    // UI-209：key_pressed 对按住的可重复键在 OS 自动重复（GLFW_REPEAT）时亦置边沿，
+    // 故长按 Backspace/Delete/方向/Home/End 会持续产生事件（非字符键；字母走 char 队列）。
     bool key_down(int key) const;
     bool key_pressed(int key);
     bool key_released(int key);

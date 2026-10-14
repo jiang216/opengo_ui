@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 203（BUG 194 / DOC 7 / META 2）
-- 边: 418
+- 节点: 204（BUG 195 / DOC 7 / META 2）
+- 边: 419
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1342,6 +1342,12 @@
   - `DOC:BUILD` (checklist) — 回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验
   - `DOC:README` (checklist) — 回归清单#opengui MCP 知识服务随 `install/` 发布（`share/opengl_ui/mcp/`），`scripts/publish/register-mcp.ps1` 可一键注入 opencode / Claude Code / `.mcp.json`
 
+### BUG:UI-209 · UI-209: Window `key_cb` 忽略 `GLFW_REPEAT` 致长按非字符键不重复（Backspace/Delete/方向/Home/End 仅触发一次）（gl/src/window.cpp + gl/include/ui/gl/window.h；宿主 listary_Everything_anytext 独立程序实测）（2026-10-14）
+
+- 路径: `docs/CHANGELOG.md#ui-209-window-keycb-忽略-glfwrepeat-致长按非字符键不重复backspacedelete方向homeend-仅触发一次glsrcwindowcpp--glincludeuiglwindowh宿主-listaryeverythinganytext-独立程序实测2026-10-14`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#键盘自动重复：`Window::key_cb` 将 `GLFW_REPEAT` 与 `GLFW_PRESS` 合并——按住的非字符键（Backspace/Delete/方向/Home/End）持续产生按下边沿（`key_state_`/`key_pressed_`/`key_mods_` 同步置位），长按可连续删除/移动；字母经 `char_cb` 队列不受影响，单击仍只触发一次
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1642,6 +1648,7 @@
 | `BUG:UI-206` | BUG | UI-206: 按钮/菜单行内文字与图标垂直偏位——文字视觉中心高于行中线 |descent|/2，图标以行中心为基准致上下不齐（ui/src/button.cpp `draw_content`/下拉 dd/菜单 li + ui/src/menu.cpp `draw_item`/`draw_sub_panel`；宿主 agent/chat_shell 按钮/文件夹行视觉偏位 AG-822） | `docs/CHANGELOG.md` |
 | `BUG:UI-207` | BUG | UI-207: Window 新增「光标所在显示器工作区」API——get_monitor_workarea_at_cursor（win32 GetCursorPos+MonitorFromPoint，非 Windows 回退主屏）（gl/include/ui/gl/window.h + gl/src/window.cpp；宿主 audio_text 多屏 toast 定位） | `docs/CHANGELOG.md` |
 | `BUG:UI-208` | BUG | UI-208: opengui MCP 知识服务——零依赖 stdlib 服务 + api_gen 同源目录 + 发布期一键注入 IDE/CLI 智能体（tools/mcp/server.py + tools/api_gen.py + tools/mcp_data.py + scripts/publish/register-mcp.ps1；2026-09-21） | `docs/CHANGELOG.md` |
+| `BUG:UI-209` | BUG | UI-209: Window `key_cb` 忽略 `GLFW_REPEAT` 致长按非字符键不重复（Backspace/Delete/方向/Home/End 仅触发一次）（gl/src/window.cpp + gl/include/ui/gl/window.h；宿主 listary_Everything_anytext 独立程序实测）（2026-10-14） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1923,6 +1930,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-206` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-207` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-208` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-209` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

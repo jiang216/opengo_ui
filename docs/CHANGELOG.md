@@ -5158,3 +5158,21 @@ regression.ps1 全 PASS。
   4. 全量 `python tools/graphgen.py --check` 0 错误 0 警告（docs 改动后重生成）。
 - **影响范围**：`tools/api_gen.py`、`tools/mcp_data.py`（新）、`tools/mcp/server.py`（新）、`docs/mcp/*.json`（新，生成产物）、`CMakeLists.txt`、`scripts/publish/{register-mcp.ps1,OPENGUI_AGENT.md,publish.ps1}`（新）、`docs/CHANGELOG.md`、`docs/ARCHITECTURE.md`、`docs/README.md`、`docs/BUILD.md`、`AGENTS.md`。
 
+## UI-209: Window `key_cb` 忽略 `GLFW_REPEAT` 致长按非字符键不重复（Backspace/Delete/方向/Home/End 仅触发一次）（gl/src/window.cpp + gl/include/ui/gl/window.h；宿主 listary_Everything_anytext 独立程序实测）（2026-10-14）
+- **严重度**：中（长按 Backspace/Delete/方向键只生效一次，无法连续删除/移动，影响全部文本编辑与列表导航）。
+- **根因（gl 库）**：`Window::key_cb` 只处理 `GLFW_PRESS` / `GLFW_RELEASE`，**丢弃 `GLFW_REPEAT`**。GLFW 对按住的键先发一次 `GLFW_PRESS`、随后循环发 `GLFW_REPEAT`；而 `Scene` 键盘分发按 `key_pressed()`（按下边沿）下发 → 边沿只在首帧置位一次，控件只收到一次 → 长按只删一个字符。字母键不受影响（走 `char_cb` 的 WM_CHAR 队列，系统自带重复），故受影响面为全部**非字符键**。
+- **修复**：
+  1. `gl/src/window.cpp` `key_cb`：将 `GLFW_REPEAT` 与 `GLFW_PRESS` 合并处理——置 `key_state_[key]=true`、`key_pressed_[key]=true`、记录 `key_mods_[key]=mods`（保持 UI-102 语义）；`GLFW_RELEASE` 分支不变。
+  2. `gl/include/ui/gl/window.h`：`key_down/key_pressed/key_released` 注释补充 UI-209 重复边沿语义（供 `tools/api_gen.py` 生成 UI_API.md）。
+- **回归清单（改动后核对）：**
+  1. 长按 Backspace → 连续删除；长按 Delete → 连续删除；长按方向键 → 连续移动（文本框光标 / 列表选择）。
+  2. 单击（一次按下抬起）行为不变，仍只触发一次。
+  3. `key_down()` 电平语义不变（按住期间恒 true）；`key_released()` 仅在抬起时置位一次。
+  4. 字母/数字/IME 输入仍走 `char_cb` 队列，重复插入行为不受影响。
+  5. `key_pressed_mods()`（UI-102）在 REPEAT 边沿仍返回当次 mods 快照；快速 SendInput 序列语义不变。
+- **验证**：
+  1. `ui_gl`（Release，VS 生成器 `build/install`）重编通过，`window.cpp` 重新编译；
+  2. `python tools/api_gen.py` 重新生成 UI_API.md（`--check` 0 差异）；`python tools/graphgen.py --check` 0 错误 0 警告；
+  3.宿主 listary_Everything_anytext 独立程序（链接刷新后 `ui_gl.lib`）人工冒烟：长按 Backspace 连续删除、方向键连续移动、单击仍单次。
+- **影响范围**：`gl/src/window.cpp`、`gl/include/ui/gl/window.h`、`docs/UI_API.md`（生成产物）、`docs/CHANGELOG.md`。
+

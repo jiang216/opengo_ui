@@ -274,7 +274,9 @@ void Window::key_cb(GLFWwindow* w, int key, int scancode, int action, int mods) 
     (void)scancode;
     Window* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
     if (!self || key < 0 || key >= 512) return;
-    if (action == GLFW_PRESS) {
+    // UI-209：GLFW_REPEAT 亦视为按下边沿，使长按非字符键（Backspace/Delete/
+    // 方向/Home/End）产生重复边沿（字母走 char 队列，本就不经此路径）。
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         self->key_state_[key] = true;
         self->key_pressed_[key] = true;
         self->key_mods_[key] = mods;  // UI-102：记录按下瞬间修饰键

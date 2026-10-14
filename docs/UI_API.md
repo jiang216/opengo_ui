@@ -313,7 +313,7 @@ while (!window.should_close()) {
 | `void settle_mouse_reset()` | UI-184：Scene 鼠标分发后调用——清除失焦/光标离开触发的「释放丢失待复位」标记， 并将对应键的按下状态复位为 false（peek 非消耗读由调用方每帧读一次后在此收尾）。 |
 | `float scroll_dx()` | 边沿触发：本轮 poll 内滚轮滚动量（dx,dy，读一次后清零） |
 | `float scroll_dy()` |  |
-| `bool key_down(int key) const` | 键盘（key 用 ui::Key 常量）：当前按住 / 本轮按下边沿 / 本轮抬起边沿 |
+| `bool key_down(int key) const` | 键盘（key 用 ui::Key 常量）：当前按住 / 本轮按下边沿 / 本轮抬起边沿。 UI-209：key_pressed 对按住的可重复键在 OS 自动重复（GLFW_REPEAT）时亦置边沿， 故长按 Backspace/Delete/方向/Home/End 会持续产生事件（非字符键；字母走 char 队列）。 |
 | `bool key_pressed(int key)` |  |
 | `bool key_released(int key)` |  |
 | `int key_pressed_mods(int key) const` | 本轮按下边沿发生时的修饰键快照（UI-102）：SendInput 等快速序列在主循环 轮询时可能已全部抬起，实时查询 key_down 拼 mods 会丢失；本方法返回 PRESS 回调瞬间的 mods，与 key_pressed 配合使用（先调 key_pressed 再取）。 |

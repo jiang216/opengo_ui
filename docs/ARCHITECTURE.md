@@ -70,6 +70,7 @@ core   ui_core 静态库（纯 C++：math/log/version，禁止 include GL/媒体
 | TextBox 单行输入：字符/Backspace/Delete/左右移/Home/End；聚焦光标 + 超宽 scissor 裁剪横向滚动 | UI-008 |
 | TextBox 选择/剪贴板：Shift+方向/Home/End 与鼠标拖选（accent 高亮）、Ctrl+A/C/X/V 全选/复制/剪切/粘贴（Window::primary_handle 剪贴板句柄）、Backspace/Delete/输入优先删选中 | [UI-101](CHANGELOG.md#ui-101-textbox-选择剪贴板能力拖选shift-选择ctrlacxv2026-08-21) |
 | 键盘 mods 快照：key_cb PRESS 时记录修饰键，`key_pressed_mods(key)` 供应用在边沿消费时取用（SendInput 快速序列实时查询丢 mods）；TextBox::on_char 过滤 C0/DEL 控制字符 | [UI-102](CHANGELOG.md#ui-102-键盘修饰键快照sendinput-粘贴到自绘输入框丢失-mods2026-08-21) |
+| 键盘自动重复：`Window::key_cb` 将 `GLFW_REPEAT` 与 `GLFW_PRESS` 合并——按住的非字符键（Backspace/Delete/方向/Home/End）持续产生按下边沿（`key_state_`/`key_pressed_`/`key_mods_` 同步置位），长按可连续删除/移动；字母经 `char_cb` 队列不受影响，单击仍只触发一次 | [UI-209](CHANGELOG.md#ui-209-window-key_cb-忽略-glfw_repeat-致长按非字符键不重复backspacedelete方向homeend-仅触发一次glsrcwindowcpp-glincludeuiglwindowh-宿主-listary_everything_anytext-独立程序实测2026-10-14) |
 | TextArea 剪贴板兜底：未注入 on_copy_/on_paste_ 时内置 GLFW 剪贴板读写（primary_handle），已注入时优先覆盖；消除「漏注入即静默失效」 | [UI-103](CHANGELOG.md#ui-103-textarea-剪贴板默认实现回调未注入时-ctrlcxv-静默失效2026-08-21) |
 | TextArea 垂直滚动条：内容溢出时右缘绘制 track/thumb，点击轨道跳转 + 拖拽映射 scroll_；avail_width 恒定让出滚动条列防换行跳动 | [UI-115](CHANGELOG.md#ui-115-textarea-垂直滚动条2026-08-22) |
 | 垂直滚动条 overlay 风格化（TextArea+ScrollBox 共享 scrollbar_style.h）：自动隐藏（悬停/拖拽/2s 内滚过才显示）、悬停右缘列 6→8px 加宽、thumb 三态色（默认半透明→悬停全色→拖拽 accent）；隐藏期间滚轮照常滚动 | [UI-116](CHANGELOG.md#ui-116-垂直滚动条-overlay-风格化自动隐藏--悬停加宽--三态色2026-08-22) |

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-21T16:54:37+08:00",
+  "generatedAt": "2026-10-14T15:03:51+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -1364,6 +1364,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcpserverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21"
     },
+    "BUG:UI-209": {
+      "id": "BUG:UI-209",
+      "type": "BUG",
+      "label": "UI-209: Window `key_cb` 忽略 `GLFW_REPEAT` 致长按非字符键不重复（Backspace/Delete/方向/Home/End 仅触发一次）（gl/src/window.cpp + gl/include/ui/gl/window.h；宿主 listary_Everything_anytext 独立程序实测）（2026-10-14）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-209-window-keycb-忽略-glfwrepeat-致长按非字符键不重复backspacedelete方向homeend-仅触发一次glsrcwindowcpp--glincludeuiglwindowh宿主-listaryeverythinganytext-独立程序实测2026-10-14"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -2445,6 +2452,12 @@
       "to": "BUG:UI-102",
       "kind": "checklist",
       "context": "回归清单#键盘 mods 快照：key_cb PRESS 时记录修饰键，`key_pressed_mods(key)` 供应用在边沿消费时取用（SendInput 快速序列实时查询丢 mods）；TextBox::on_char 过滤 C0/DEL 控制字符"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-209",
+      "kind": "checklist",
+      "context": "回归清单#键盘自动重复：`Window::key_cb` 将 `GLFW_REPEAT` 与 `GLFW_PRESS` 合并——按住的非字符键（Backspace/Delete/方向/Home/End）持续产生按下边沿（`key_state_`/`key_pressed_`/`key_mods_` 同步置位），长按可连续删除/移动；字母经 `char_cb` 队列不受影响，单击仍只触发一次"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -6121,6 +6134,13 @@
         "from": "DOC:README",
         "kind": "checklist",
         "context": "回归清单#opengui MCP 知识服务随 `install/` 发布（`share/opengl_ui/mcp/`），`scripts/publish/register-mcp.ps1` 可一键注入 opencode / Claude Code / `.mcp.json`"
+      }
+    ],
+    "BUG:UI-209": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#键盘自动重复：`Window::key_cb` 将 `GLFW_REPEAT` 与 `GLFW_PRESS` 合并——按住的非字符键（Backspace/Delete/方向/Home/End）持续产生按下边沿（`key_state_`/`key_pressed_`/`key_mods_` 同步置位），长按可连续删除/移动；字母经 `char_cb` 队列不受影响，单击仍只触发一次"
       }
     ],
     "META:CHANGELOG": [
