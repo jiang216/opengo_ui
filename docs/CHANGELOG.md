@@ -5216,7 +5216,7 @@ regression.ps1 全 PASS。
   2. 宿主 listary_Everything_anytext Release 重编通过、链接新库正常；
   3. 人工冒烟：结果表头拖动「名称/大小/修改时间/路径」分隔线可调宽，弹性列（路径/片段）实时吸收，光标悬停高亮，重启后宽度保持（宿主持久化）；
   4. `python tools/graphgen.py --check` 0 错误 0 警告。
-- **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`、`docs/CHANGELOG.md`。
+- **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`、`docs/ARCHITECTURE.md`、`docs/CHANGELOG.md`。
 
 ## UI-212: media 任一具体模块开启未隐含 MEDIA_CORE——x64-ffmpeg/opencv/all/install-all 预设 ffmpeg 模块 C1083 找不到 ui/media/pipeline 头（根 CMakeLists.txt）（2026-10-16）
 - **严重度**：高（构建系统缺陷：`cmake` 预设 `x64-ffmpeg`/`x64-opencv`/`x64-all`/`install-all` 全部无法构建 `ui_media_ffmpeg`，`cmake --build build/install-all` 直接 C1083；发布包重建流程被阻断）。
@@ -5249,4 +5249,27 @@ regression.ps1 全 PASS。
   1. `scripts/publish/package.ps1 -Rebuild` 端到端：重建 + install + 校验通过 + 生成 `dist/opengl_ui-x64-all-release.zip`；解压核对 `bin/` 含示例 exe 与 `iconfont.ttf`、`share/opengl_ui/mcp/` 存在；
   2. `.gitignore` 生效：`dist/` 与 `opengl_ui-*-release.zip`、`*.pam` 不再出现在 `git status`；
   3. `python tools/graphgen.py --check` 0 错误 0 警告。
-- **影响范围**：`apps/CMakeLists.txt`、`scripts/publish/package.ps1`（新）、`.gitignore`、`docs/BUILD.md`、`docs/distribution/README.md`、`docs/CHANGELOG.md`。
+ - **影响范围**：`apps/CMakeLists.txt`、`scripts/publish/package.ps1`（新）、`.gitignore`、`docs/BUILD.md`、`docs/distribution/README.md`、`docs/CHANGELOG.md`。
+
+## UI-214: Table 双击表头分隔线 → 该列自适应内容宽度（弹性列吸收保持表宽恒定，与拖动共用 UI-211 通道）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16）
+- **严重度**：缺功能（资源管理器式列宽交互的另一半：UI-211 只做了拖动调宽，双击分隔线「按内容自适应」缺失；长名称/路径需手拖多次才能看到全貌）。
+- **根因（ui 库）**：`Table` 无「按内容计算列宽」的能力，也无分隔线双击识别；`cols_[i].width` 仅由 `add_column` 初值与 `on_layout` 比例分摊决定，宿主无法自行测量（`measure_text` 属 Font，行文本与内边距在库内）。
+- **功能**：
+  1. `column_resize_begin`（ui/src/table.cpp）在命中分隔线时先判双击（同一列 + ≤350ms，与行双击同阈值）：命中则调 `auto_fit_column(col)` 并消费事件、**不进入拖动**；否则照旧进入 UI-211 拖动；
+  2. 新增私有 `auto_fit_column(col)`：取「表头标题 + 该列所有单元格文本」经 `font_->measure_text` 的最大宽度，加左右 `cell_pad_x()` 内边距为期望宽，下夹 `set_column_min_width`；
+  3. 弹性列（`set_flex_col`）反向吸收差额保持总宽恒定；目标列恰为弹性列时直接设宽（无其它列可吸）；
+  4. 抽出私有 `recalc_eff_widths()`（`on_layout` 复用），并在拖动抬起/自适应回调 **前** 即时刷新 `eff_widths_`，使 `col_width()` 在回调内即反映新值（原先回调读到的是上一帧旧值，同步自适应场景下会写盘旧宽度）。
+- **回归清单（改动后核对）：**
+  1. 未调用 `set_column_resizable(true)` 的表格：双击表头分隔线不触发任何自适应（`column_resize_begin` 关闭时直接返回 false），排序/全选行为不变；
+  2. 单击分隔线仍为拖动（首次点击不误判为双击）；单击未移动列宽不变；
+  3. 双击同一分隔线（≤350ms）该列夹取到内容宽（不低于其 min），弹性列反向吸收、两列宽和不变；
+  4. 目标列为弹性列自身时直接设宽、不越界不崩溃；
+  5. `on_column_resize` 在自适应后回调一次，且回调内 `col_width()` 即等于新宽度（无需等下一帧布局）；
+  6. `set_flex_col(-1)` 表格双击自适应照常改目标列宽，`on_layout` 仍按比例分摊（旧语义不变）。
+- **验证**：
+  1. Release（VS 18 2026，cmake preset `install-all`）重编 `ui_ui.lib`，替换 `opengl_UI/install/lib/ui_ui.lib` 与宿主 `listary_Everything_anytext/install/lib/ui_ui.lib`，并同步 `install/include/ui/ui/table.h`；
+  2. 库侧 MSVC 独立单测（`ui_ui.lib`，无 GL 上下文）：单击分隔线进入拖动、抬起回调 w=300 不变；同列 ≤350ms 再点 → 不进入拖动、回调 col=0 w=200（夹取 min200）、`col_width(0)=200`、弹性列=650、总宽恒定，13 项断言全通过；
+  3. 宿主 listary_Everything_anytext Release 重编通过、启动冒烟无崩溃；
+  4. `python tools/api_gen.py` 重新生成 UI_API.md + mcp catalog（补 `auto_fit_column`/`recalc_eff_widths` 私有成员条目与 `divider_index` 方向注释）后 `--check` 0 差异；
+  5. `python tools/graphgen.py --check` 0 错误 0 警告。
+- **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`、`docs/ARCHITECTURE.md`、`docs/UI_API.md`（生成产物）、`docs/mcp/catalog.json`（生成产物）、`docs/CHANGELOG.md`。

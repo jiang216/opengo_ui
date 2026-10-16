@@ -2686,7 +2686,9 @@ parent->add_child(tb);
 | `bool in_header(float x, float y) const` |  |
 | `int header_col_at(float x) const` |  |
 | `int col_hit(float x) const` |  |
-| `int divider_index(float x, float y) const` | UI-211：表头列分隔线命中（±kDividerHit px）→ 右侧列下标，未命中 -1 |
+| `int divider_index(float x, float y) const` | UI-211：表头列分隔线命中（±kDividerHit px）→ 左侧列下标，未命中 -1 |
+| `void auto_fit_column(int col)` | UI-214：双击分隔线 → 该列自适应内容宽度（弹性列吸收，总宽恒定） |
+| `void recalc_eff_widths()` | UI-211/214：按当前 cols_ 宽度重算 eff_widths_（供拖动/自适应回调前即时取值） |
 | `float col_x(int c) const` | 第 c 列起始 x（布局后有效） |
 | `const std::vector<std::string>& combo_options_for(int data, int col) const` |  |
 

@@ -8941,7 +8941,17 @@
     {
      "name": "divider_index",
      "sig": "int divider_index(float x, float y) const",
-     "doc": "UI-211：表头列分隔线命中（±kDividerHit px）→ 右侧列下标，未命中 -1"
+     "doc": "UI-211：表头列分隔线命中（±kDividerHit px）→ 左侧列下标，未命中 -1"
+    },
+    {
+     "name": "auto_fit_column",
+     "sig": "void auto_fit_column(int col)",
+     "doc": "UI-214：双击分隔线 → 该列自适应内容宽度（弹性列吸收，总宽恒定）"
+    },
+    {
+     "name": "recalc_eff_widths",
+     "sig": "void recalc_eff_widths()",
+     "doc": "UI-211/214：按当前 cols_ 宽度重算 eff_widths_（供拖动/自适应回调前即时取值）"
     },
     {
      "name": "col_x",

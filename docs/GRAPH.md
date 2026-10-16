@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 208（BUG 199 / DOC 7 / META 2）
-- 边: 424
+- 节点: 209（BUG 200 / DOC 7 / META 2）
+- 边: 426
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1372,6 +1372,13 @@
 - 反链(1):
   - `DOC:BUILD` (checklist) — 回归清单#示例应用随 `cmake --install` 发布到 `bin/`（`install(TARGETS ${_APP_TARGETS})` + 素材）：`OPENGUI_BUILD_APPS=OFF` 时的纯库分发包不含示例 exe
 
+### BUG:UI-214 · UI-214: Table 双击表头分隔线 → 该列自适应内容宽度（弹性列吸收保持表宽恒定，与拖动共用 UI-211 通道）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16）
+
+- 路径: `docs/CHANGELOG.md#ui-214-table-双击表头分隔线--该列自适应内容宽度弹性列吸收保持表宽恒定与拖动共用-ui-211-通道uiincludeuiuitableh--uisrctablecpp宿主-listaryeverythinganytext-实测2026-10-16`
+- 反链(2):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 双击分隔线自适应列宽（UI-214）：350ms 内对同一分隔线二次按下 → `auto_fit_column(col)` 把该列宽设为「表头标题与全部行该列文本最宽值 + `cell_pad_x()*2`」，下限 `set_column_min_width`；弹性列反向吸收保持总宽恒定（目标列为弹性列时直接设宽），复用 `on_col_resize` 回调；`on_layout` 的余量分摊抽为私有 `recalc_eff_widths()`（`on_layout`/拖动抬起/自适应共用以即时刷新 `col_width()`）；单击仍进入拖动、双击不进入拖动
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 列宽双击自适应（UI-214）：`column_resize_begin` 命中分隔线时先判双击（同列 + ≤350ms，与行双击同阈值）→ `auto_fit_column(col)` 按「表头标题 + 该列单元格文本」`measure_text` 最大宽加内边距设宽、下夹 `set_column_min_width`，弹性列反向吸收保持总宽恒定（目标列即弹性列时直接设宽）；双击消费事件不进入拖动、单击仍为拖动；抽出 `recalc_eff_widths()` 并在回调前即时刷新，保证 `on_column_resize` 内 `col_width()` 即新值
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1678,6 +1685,7 @@
 | `BUG:UI-211` | BUG | UI-211: Table 新增列宽拖动调节（表头分隔线拖拽 ±3px 高亮，弹性列吸收保持表宽恒定，可选持久化回调）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16） | `docs/CHANGELOG.md` |
 | `BUG:UI-212` | BUG | UI-212: media 任一具体模块开启未隐含 MEDIA_CORE——x64-ffmpeg/opencv/all/install-all 预设 ffmpeg 模块 C1083 找不到 ui/media/pipeline 头（根 CMakeLists.txt）（2026-10-16） | `docs/CHANGELOG.md` |
 | `BUG:UI-213` | BUG | UI-213: 发布包生成脚本 package.ps1 + 示例应用与运行时素材随 install 发布（apps/CMakeLists.txt + scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16） | `docs/CHANGELOG.md` |
+| `BUG:UI-214` | BUG | UI-214: Table 双击表头分隔线 → 该列自适应内容宽度（弹性列吸收保持表宽恒定，与拖动共用 UI-211 通道）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1962,6 +1970,8 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-209` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-210` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-211` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-214` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-214` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |

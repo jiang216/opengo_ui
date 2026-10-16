@@ -284,8 +284,12 @@ private:
     bool in_header(float x, float y) const;
     int header_col_at(float x) const;
     int col_hit(float x) const;
-    // UI-211：表头列分隔线命中（±kDividerHit px）→ 右侧列下标，未命中 -1
+    // UI-211：表头列分隔线命中（±kDividerHit px）→ 左侧列下标，未命中 -1
     int divider_index(float x, float y) const;
+    // UI-214：双击分隔线 → 该列自适应内容宽度（弹性列吸收，总宽恒定）
+    void auto_fit_column(int col);
+    // UI-211/214：按当前 cols_ 宽度重算 eff_widths_（供拖动/自适应回调前即时取值）
+    void recalc_eff_widths();
     // 第 c 列起始 x（布局后有效）
     float col_x(int c) const;
 
@@ -400,6 +404,9 @@ private:
     int   hover_div_ = -1;            // 悬停分隔线（左侧列下标，-1 无）→ 高亮/光标
     std::vector<float> col_min_w_;    // 各列最小宽度（与 cols_ 平行，未设=0）
     std::function<void(int, float)> on_col_resize_;
+    // —— 列宽双击自适应（UI-214）——
+    std::chrono::steady_clock::time_point last_div_click_;  // 上次点击分隔线时刻（双击判定）
+    int   last_div_col_ = -1;         // 上次点击的分隔线（左侧列下标）
 };
 
 }  // namespace ui

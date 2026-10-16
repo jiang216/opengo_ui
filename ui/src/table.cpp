@@ -669,10 +669,8 @@ float Table::cell_pad_x() const {
     }
 }
 
-void Table::on_layout() {
-    const Rect& b = bounds_;
-    // 列宽自适应：容器宽 > 各列宽之和 → 剩余空间按比例分配给所有列
-    // 每列至少保持 cell_min_width_（如设置了）或其原始 width
+void Table::recalc_eff_widths() {
+    const float avail = bounds_.w;
     const int nc = (int)cols_.size();
     eff_widths_.resize(nc);
     float sum = 0.f;
@@ -682,17 +680,24 @@ void Table::on_layout() {
         eff_widths_[i] = w;
         sum += w;
     }
-    if (nc > 0 && b.w > sum) {
+    if (nc > 0 && avail > sum) {
         if (flex_col_ >= 0 && flex_col_ < nc) {
             // UI-211：弹性列独占余量（拖动调宽时保持总宽恒定的落点）
-            eff_widths_[flex_col_] += b.w - sum;
+            eff_widths_[flex_col_] += avail - sum;
         } else {
-            const float extra = b.w - sum;
+            const float extra = avail - sum;
             for (int i = 0; i < nc; ++i) {
                 eff_widths_[i] += extra * (eff_widths_[i] / sum);
             }
         }
     }
+}
+
+void Table::on_layout() {
+    const Rect& b = bounds_;
+    // 列宽自适应：容器宽 > 各列宽之和 → 剩余空间按比例分配给所有列
+    // 每列至少保持 cell_min_width_（如设置了）或其原始 width
+    recalc_eff_widths();
 
     int vis = (int)visible_rows_.size();
     if (visible_rows_.empty()) vis = (int)rows_.size();
@@ -1035,6 +1040,17 @@ int Table::column_divider_at(float x, float y) const { return divider_index(x, y
 bool Table::column_resize_begin(float x, float y) {
     const int d = divider_index(x, y);
     if (d < 0) return false;
+    // UI-214：双击分隔线 → 该列自适应内容宽度（不进入拖动）；与行双击同阈值 350ms。
+    const auto now = std::chrono::steady_clock::now();
+    const bool dbl = (d == last_div_col_) &&
+                     (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_div_click_).count() <=
+                      350);
+    last_div_col_ = d;
+    last_div_click_ = now;
+    if (dbl) {
+        auto_fit_column(d);
+        return true;
+    }
     drag_col_ = d;
     drag_x0_ = x;
     drag_w0_ = cols_[d].width;
@@ -1042,6 +1058,32 @@ bool Table::column_resize_begin(float x, float y) {
     hover_div_ = d;
     mark_dirty_all();
     return true;  // 消费按下 → 框架自动捕获鼠标
+}
+
+// UI-214：把第 col 列宽调整为「内容最宽单元格 + 左右内边距」，下限取列 min；
+// 弹性列（flex_col_）反向吸收保持总宽恒定；目标列本身为弹性列时直接设宽（无其它列可吸）。
+void Table::auto_fit_column(int col) {
+    if (col < 0 || col >= (int)cols_.size()) return;
+    if (!font_) return;
+    float maxw = font_->measure_text(cols_[col].title.c_str());  // 表头标题参与
+    for (const auto& row : rows_) {
+        if (col < (int)row.size() && !row[col].empty())
+            maxw = std::max(maxw, font_->measure_text(row[col].c_str()));
+    }
+    float want = maxw + cell_pad_x() * 2.f;
+    const float mn = (col < (int)col_min_w_.size()) ? col_min_w_[col] : 0.f;
+    if (want < mn) want = mn;
+    const int flex = flex_col_;
+    if (flex >= 0 && flex != col && flex < (int)cols_.size()) {
+        const float min_flex = (flex < (int)col_min_w_.size()) ? col_min_w_[flex] : 0.f;
+        const float budget = cols_[col].width + cols_[flex].width - min_flex;  // 两列宽度和上限
+        if (want > budget) want = budget;
+        cols_[flex].width = cols_[col].width + cols_[flex].width - want;
+    }
+    cols_[col].width = want;
+    mark_dirty_all();
+    recalc_eff_widths();  // 回调前即时刷新，保证 col_width() 反映新值
+    if (on_col_resize_) on_col_resize_(col, cols_[col].width);
 }
 
 bool Table::on_mouse_move(float x, float y) {
@@ -1078,6 +1120,7 @@ bool Table::on_mouse_up(float x, float y, int button) {
     const int d = divider_index(x, y);
     hover_div_ = d;
     mark_dirty_all();
+    recalc_eff_widths();  // 回调前即时刷新，保证 col_width() 反映新值
     if (on_col_resize_) on_col_resize_(col, w);
     return true;  // 已消费：兼容 dispatch_mouse_up（捕获者抬起后自动释放）
 }
