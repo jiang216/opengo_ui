@@ -1016,7 +1016,8 @@ float Table::col_x(int c) const {
     return cx;
 }
 
-// UI-211：表头列分隔线命中（相邻列边界 ±kDividerHit），返回右侧列下标（1..nc-1），否则 -1
+// UI-211：表头列分隔线命中（相邻列边界 ±kDividerHit），返回左侧列下标（0..nc-2），否则 -1
+// （与资源管理器一致：拖动分隔线调宽其左侧列，右侧列不位移、由弹性列吸收）
 int Table::divider_index(float x, float y) const {
     if (!column_resizable_) return -1;
     if (cols_.size() < 2) return -1;
@@ -1024,7 +1025,7 @@ int Table::divider_index(float x, float y) const {
     float cx = bounds_.x;
     for (int i = 0; i + 1 < (int)cols_.size(); ++i) {
         cx += col_width(i);  // 第 i 列右边界 = 第 i+1 列左边界
-        if (std::abs(x - cx) <= kDividerHit) return i + 1;
+        if (std::abs(x - cx) <= kDividerHit) return i;
     }
     return -1;
 }
@@ -1262,8 +1263,8 @@ void Table::on_draw(Renderer& renderer) {
 
     // UI-211：列宽拖动——悬停/拖动中的分隔线高亮（2px 强调竖线，提示可拖）
     const int hi = (drag_col_ >= 0) ? drag_col_ : hover_div_;
-    if (hi >= 1 && hi < (int)cols_.size()) {
-        const float hx = col_x(hi);
+    if (hi >= 0 && hi + 1 < (int)cols_.size()) {
+        const float hx = col_x(hi + 1);  // 分隔线 = 左列右边界
         renderer.draw_quad({hx - 1.f, bounds_.y, 2.f, hh}, kDividerHi);
     }
 

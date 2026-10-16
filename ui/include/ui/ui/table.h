@@ -236,10 +236,12 @@ public:
         if (col >= 0 && col < (int)cols_.size() && w > 0.f) { cols_[col].width = w; mark_dirty(); }
     }
     void set_on_column_resize(std::function<void(int, float)> cb) { on_col_resize_ = std::move(cb); }
-    // 命中分隔线则进入拖动状态并返回 true（供 on_mouse_down 顶部先判；列下标为「右列」）
+    // 命中分隔线则进入拖动状态并返回 true（供 on_mouse_down 顶部先判；列下标为「左列」）
     bool column_resize_begin(float x, float y);
-    // 表头分隔线悬停查询（右侧列下标，-1 无）——供光标反馈
+    // 表头分隔线悬停查询（左侧列下标，-1 无）——供光标反馈
     int column_divider_at(float x, float y) const;
+    // 是否正在拖动列宽（供宿主在拖动中维持「左右箭头」光标）
+    bool column_resizing() const { return drag_col_ >= 0; }
     // 表头 x 所在列下标（col_hit 的公开包装；应用层用它替代自算列边界，避免漂移）
     int col_at_x(float x) const { return col_hit(x); }
 
@@ -391,11 +393,11 @@ private:
     // —— 列宽拖动（UI-211）——
     bool  column_resizable_ = false;  // 开关（默认关，既有页面零影响）
     int   flex_col_ = -1;             // 弹性列（-1 = 维持旧版「余量比例分摊」）
-    int   drag_col_ = -1;             // 拖动中的右侧列下标（-1 = 未在拖）
+    int   drag_col_ = -1;             // 拖动中的左列下标（-1 = 未在拖）
     float drag_x0_ = 0.f;             // 拖动起点 x（累积位移基线）
     float drag_w0_ = 0.f;             // 起点宽度（避免逐帧累积浮点漂移）
     float drag_fw0_ = 0.f;            // 起点弹性列宽
-    int   hover_div_ = -1;            // 悬停分隔线（右侧列下标，-1 无）→ 高亮/光标
+    int   hover_div_ = -1;            // 悬停分隔线（左侧列下标，-1 无）→ 高亮/光标
     std::vector<float> col_min_w_;    // 各列最小宽度（与 cols_ 平行，未设=0）
     std::function<void(int, float)> on_col_resize_;
 };
