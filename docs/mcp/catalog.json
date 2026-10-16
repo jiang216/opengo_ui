@@ -8783,12 +8783,17 @@
       {
        "name": "column_resize_begin",
        "sig": "bool column_resize_begin(float x, float y)",
-       "doc": "命中分隔线则进入拖动状态并返回 true（供 on_mouse_down 顶部先判；列下标为「右列」）"
+       "doc": "命中分隔线则进入拖动状态并返回 true（供 on_mouse_down 顶部先判；列下标为「左列」）"
       },
       {
        "name": "column_divider_at",
        "sig": "int column_divider_at(float x, float y) const",
-       "doc": "表头分隔线悬停查询（右侧列下标，-1 无）——供光标反馈"
+       "doc": "表头分隔线悬停查询（左侧列下标，-1 无）——供光标反馈"
+      },
+      {
+       "name": "column_resizing",
+       "sig": "bool column_resizing() const",
+       "doc": "是否正在拖动列宽（供宿主在拖动中维持「左右箭头」光标）"
       },
       {
        "name": "col_at_x",

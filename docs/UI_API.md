@@ -2647,8 +2647,9 @@ parent->add_child(tb);
 | `void set_column_min_width(int col, float w)` |  |
 | `void set_column_width(int col, float w)` |  |
 | `void set_on_column_resize(std::function<void(int, float)> cb)` |  |
-| `bool column_resize_begin(float x, float y)` | 命中分隔线则进入拖动状态并返回 true（供 on_mouse_down 顶部先判；列下标为「右列」） |
-| `int column_divider_at(float x, float y) const` | 表头分隔线悬停查询（右侧列下标，-1 无）——供光标反馈 |
+| `bool column_resize_begin(float x, float y)` | 命中分隔线则进入拖动状态并返回 true（供 on_mouse_down 顶部先判；列下标为「左列」） |
+| `int column_divider_at(float x, float y) const` | 表头分隔线悬停查询（左侧列下标，-1 无）——供光标反馈 |
+| `bool column_resizing() const` | 是否正在拖动列宽（供宿主在拖动中维持「左右箭头」光标） |
 | `int col_at_x(float x) const` | 表头 x 所在列下标（col_hit 的公开包装；应用层用它替代自算列边界，避免漂移） |
 | `void on_layout() override` |  |
 | `float preferred_height() const` | 高度语义（UI-131）：默认内容跟随——每次调用按表头 + 可见行数×行高 [+ 分页条] 重算， 不再被首次分配的 bounds_.h 冻结（旧「h>0 即冻结」导致流式容器内行数增长永不反映， 行区被裁剪成 0，见 audio_text SPK-005）。 set_fixed_height(h>0)：显式锁定高度（固定视口 + 内部纵向滚动的摆放），h<=0 解除回内容跟随； set_max_content_height(h>0)：内容跟随模式的上限钳制（流式容器防溢出），超出部分由内部滚动区承载。 |
