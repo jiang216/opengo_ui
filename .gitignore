@@ -32,4 +32,4 @@ shot_*.png
 
 # ---- 发布包产物（scripts/publish/package.ps1 输出）----
 /dist/
-/opengl_ui-*-release.zip
+/opengl_ui-*-release*.zip

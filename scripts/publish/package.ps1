@@ -1,6 +1,7 @@
 # package.ps1 —— opengl_ui 发布包（zip）生成。
 # 把 install/ 目录（自包含分发树：bin/include/lib/share）打包为
-# dist/opengl_ui-<arch>-all-release.zip（dist/ 与产物已 gitignore），供下载方「解压即用」。
+# dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip（版本号取打包当天日期；dist/ 与产物已 gitignore），
+# 供下载方「解压即用」。
 #
 # 本脚本**只打包**，不触碰任何用户全局配置：MCP 知识服务资产随 install 入包
 # （share/opengl_ui/mcp/ + register-mcp.ps1），是否注册进编辑器/Agent 全局配置，
@@ -10,8 +11,9 @@
 #
 # 可选：
 #   -Rebuild       先用 -BuildDir（默认 build/install-all）cmake 重建并 install，再打包
+#   -Version       版本号，默认打包当天 yyyyMMdd（写入默认文件名 + 终端输出）
 #   -Install/-Out/-BuildDir/-Arch/-Cmake/-Force 可覆盖默认路径
-#   （-Out 默认 dist/opengl_ui-<arch>-all-release.zip）
+#   （-Out 默认 dist/opengl_ui-<arch>-all-release-<Version>.zip）
 #
 # 用法：
 #   .\package.ps1                       # 打包现有 install/ → dist/
@@ -24,6 +26,7 @@ param(
     [string]$BuildDir = "",
     [switch]$Rebuild,
     [string]$Cmake = "",
+    [string]$Version = (Get-Date -Format 'yyyyMMdd'),
     [switch]$Force
 )
 
@@ -32,7 +35,7 @@ $PSNativeCommandArgumentPassing = "Standard"
 
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if (-not $Install)  { $Install  = Join-Path $repo "install" }
-if (-not $Out)      { $Out      = Join-Path $repo "dist\opengl_ui-$Arch-all-release.zip" }
+if (-not $Out)      { $Out      = Join-Path $repo "dist\opengl_ui-$Arch-all-release-$Version.zip" }
 if (-not $BuildDir) { $BuildDir = Join-Path $repo "build\install-all" }
 
 function Write-Step($m) { Write-Host "==> $m" -ForegroundColor Cyan }
@@ -126,7 +129,7 @@ $zip = [System.IO.Compression.ZipFile]::OpenRead($Out)
 $count = $zip.Entries.Count
 $zip.Dispose()
 $size = (Get-Item -LiteralPath $Out).Length
-Write-Ok ("发布包已生成：{0}（{1:N2} MB，{2} 条目）" -f $Out, ($size / 1MB), $count)
+Write-Ok ("发布包已生成：{0}（{1:N2} MB，{2} 条目，版本 {3}）" -f $Out, ($size / 1MB), $count, $Version)
 
 # 本脚本不写任何全局配置。MCP 知识服务注册由使用者自行决定：
 $regHint = Join-Path $Install "share\opengl_ui\register-mcp.ps1"

@@ -5292,3 +5292,22 @@ regression.ps1 全 PASS。
   3. `install/share/opengl_ui/register-mcp.ps1 -Mode status` 正常列示三目标；
   4. `python tools/graphgen.py --check` 0 错误 0 警告。
 - **影响范围**：`scripts/publish/package.ps1`、`docs/BUILD.md`、`docs/CHANGELOG.md`。
+
+## UI-216: 发布包按打包日期定版本号——文件名 dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip（scripts/publish/package.ps1 新增 -Version 默认打包当天 yyyyMMdd）（2026-10-16）
+- **严重度**：缺功能 / 可追溯性（默认产物名 `opengl_ui-<arch>-all-release.zip` 不含版本或日期：同日多次打包互相覆盖，产物无法从文件名判断构建日期，历史包不可区分）。
+- **根因（发布流程）**：`package.ps1` 的默认 `-Out` 为固定名 `dist/opengl_ui-<arch>-all-release.zip`，未把打包日期纳入命名，缺少「按日期定版本」的能力。
+- **功能**：
+  1. 新增参数 `-Version`，默认 `Get-Date -Format 'yyyyMMdd'`（打包当天）；默认输出名改为 `dist/opengl_ui-<arch>-all-release-<Version>.zip`；
+  2. 打包结束终端回显版本号（`发布包已生成：… ，版本 <Version>`）；
+  3. `-Out` 显式给出时按原样作为最终路径（不自动追加版本后缀，保留自定义/覆盖能力）；
+  4. `.gitignore` 根级忽略模式由 `/opengl_ui-*-release.zip` 放宽为 `/opengl_ui-*-release*.zip`，覆盖带版本后缀的根级残留（`dist/` 本已在忽略内）。
+- **回归清单（改动后核对）**：
+  1. 默认运行生成 `dist/opengl_ui-<arch>-all-release-<打包当天 yyyyMMdd>.zip`，终端回显版本号；
+  2. `-Version 20260904` 生成 `…-20260904.zip`（可用于补打包历史日期 / 固定版本）；非法/任意字符串按原样拼入文件名；
+  3. `-Out <path>` 时输出到指定路径且**不改名**（保持显式覆盖与既有 `-Force` 语义）；
+  4. 仍**不写任何用户全局配置**（[UI-215](CHANGELOG.md#ui-215-mcp-全局注册与打包解耦packageps1-只打包注册交由包内-register-mcpps1-由用户决定scriptspublishpackageps1--docsbuildmd2026-10-16) 保持）；`-Rebuild` 结构校验、不完整非零退出不产出 zip（[UI-213](CHANGELOG.md#ui-213-发布包生成脚本-packageps1--示例应用与运行时素材随-install-发布appscmakeliststxt--scriptspublishpackageps1--docsbuildmd2026-10-16) 保持）。
+- **验证**：
+  1. `scripts/publish/package.ps1`（默认）→ `dist/opengl_ui-x64-all-release-<当天>.zip`，条目 421、结构校验通过；
+  2. `scripts/publish/package.ps1 -Version 20260904` → `dist/opengl_ui-x64-all-release-20260904.zip`，终端版本号回显为 `20260904`；
+  3. `python tools/graphgen.py --check` 0 错误 0 警告。
+- **影响范围**：`scripts/publish/package.ps1`、`.gitignore`、`docs/BUILD.md`、`docs/CHANGELOG.md`。

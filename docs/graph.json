@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-10-16T14:22:54+08:00",
+  "generatedAt": "2026-10-16T14:30:25+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -1413,6 +1413,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-215-mcp-全局注册与打包解耦packageps1-只打包注册交由包内-register-mcpps1-由用户决定scriptspublishpackageps1--docsbuildmd2026-10-16"
     },
+    "BUG:UI-216": {
+      "id": "BUG:UI-216",
+      "type": "BUG",
+      "label": "UI-216: 发布包按打包日期定版本号——文件名 dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip（scripts/publish/package.ps1 新增 -Version 默认打包当天 yyyyMMdd）（2026-10-16）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-216-发布包按打包日期定版本号文件名-distopenglui-arch-all-release-yyyymmddzipscriptspublishpackageps1-新增--version-默认打包当天-yyyymmdd2026-10-16"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -2074,6 +2081,12 @@
       "to": "META:CHANGELOG",
       "kind": "mention",
       "context": "UI-215: MCP 全局注册与打包解耦——package.ps1 只打包，注册交由包内 register-mcp.ps1 由用户决定（scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）"
+    },
+    {
+      "from": "META:CHANGELOG",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "UI-216: 发布包按打包日期定版本号——文件名 dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip（scripts/publish/package.ps1 新增 -Version 默认打包当天 yyyyMMdd）（2026-10-16）"
     },
     {
       "from": "DOC:MEDIA_PIPELINE",
@@ -3844,6 +3857,12 @@
       "to": "BUG:UI-215",
       "kind": "checklist",
       "context": "回归清单#发布包脚本 `package.ps1` **只打包、不写任何用户全局配置**：MCP 知识服务资产（`share/opengl_ui/mcp/` + `register-mcp.ps1`）随 install 入包，是否注册进编辑器 / Agent 全局配置（opencode / Claude / `.mcp.json`）由使用者运行包内 `register-mcp.ps1 -Mode register/status` 自行决定；`-InjectMCP` / `-MCPMode` 已移除（传之报「找不到参数」）"
+    },
+    {
+      "from": "DOC:BUILD",
+      "to": "BUG:UI-216",
+      "kind": "checklist",
+      "context": "回归清单#发布包文件名按打包日期定版本号：`package.ps1` 默认 `-Version = 打包当天 yyyyMMdd` → `dist/opengl_ui-<arch>-all-release-<Version>.zip`；`-Version` 可显式覆盖、`-Out` 显式给出时按原样（不追加后缀）"
     },
     {
       "from": "DOC:BUILD",
@@ -6281,6 +6300,13 @@
         "context": "回归清单#发布包脚本 `package.ps1` **只打包、不写任何用户全局配置**：MCP 知识服务资产（`share/opengl_ui/mcp/` + `register-mcp.ps1`）随 install 入包，是否注册进编辑器 / Agent 全局配置（opencode / Claude / `.mcp.json`）由使用者运行包内 `register-mcp.ps1 -Mode register/status` 自行决定；`-InjectMCP` / `-MCPMode` 已移除（传之报「找不到参数」）"
       }
     ],
+    "BUG:UI-216": [
+      {
+        "from": "DOC:BUILD",
+        "kind": "checklist",
+        "context": "回归清单#发布包文件名按打包日期定版本号：`package.ps1` 默认 `-Version = 打包当天 yyyyMMdd` → `dist/opengl_ui-<arch>-all-release-<Version>.zip`；`-Version` 可显式覆盖、`-Out` 显式给出时按原样（不追加后缀）"
+      }
+    ],
     "META:CHANGELOG": [
       {
         "from": "DOC:BUILD",
@@ -6401,6 +6427,11 @@
         "from": "META:CHANGELOG",
         "kind": "mention",
         "context": "UI-215: MCP 全局注册与打包解耦——package.ps1 只打包，注册交由包内 register-mcp.ps1 由用户决定（scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）"
+      },
+      {
+        "from": "META:CHANGELOG",
+        "kind": "mention",
+        "context": "UI-216: 发布包按打包日期定版本号——文件名 dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip（scripts/publish/package.ps1 新增 -Version 默认打包当天 yyyyMMdd）（2026-10-16）"
       },
       {
         "from": "DOC:MEDIA_PIPELINE",

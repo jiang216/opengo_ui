@@ -27,6 +27,7 @@ scripts/build/build-opencv.ps1 OpenCV 4.5.2 world（CMake 配置+MSBuild+install
 | `OPENGUI_MEDIA_FFMPEG`/`OPENGUI_MEDIA_OPENCV` 任一为 ON 时**隐含** `OPENGUI_MEDIA_CORE=ON`（根 CMakeLists 强制置位）：ffmpeg 模块依赖 `ui_media_core` 的 `ui/media/pipeline/*.h`，core 不入树则目标不存在、CMake 静默按库名处理致 include 不传播 → C1083；`x64-ffmpeg/x64-opencv/x64-all/install-all` 预设均依赖此隐含关系 | [UI-212](CHANGELOG.md#ui-212-media-任一具体模块开启未隐含-mediacorex64-ffmpegopencvallinstall-all-预设-ffmpeg-模块-c1083-找不到-uimediapipeline-头根-cmakeliststxt2026-10-16) |
 | 示例应用随 `cmake --install` 发布到 `bin/`（`install(TARGETS ${_APP_TARGETS})` + 素材）：`OPENGUI_BUILD_APPS=OFF` 时的纯库分发包不含示例 exe | [UI-213](CHANGELOG.md#ui-213-发布包生成脚本-packageps1--示例应用与运行时素材随-install-发布appscmakeliststxt--scriptspublishpackageps1--docsbuildmd2026-10-16) |
 | 发布包脚本 `package.ps1` **只打包、不写任何用户全局配置**：MCP 知识服务资产（`share/opengl_ui/mcp/` + `register-mcp.ps1`）随 install 入包，是否注册进编辑器 / Agent 全局配置（opencode / Claude / `.mcp.json`）由使用者运行包内 `register-mcp.ps1 -Mode register/status` 自行决定；`-InjectMCP` / `-MCPMode` 已移除（传之报「找不到参数」） | [UI-215](CHANGELOG.md#ui-215-mcp-全局注册与打包解耦packageps1-只打包注册交由包内-register-mcpps1-由用户决定scriptspublishpackageps1--docsbuildmd2026-10-16) |
+| 发布包文件名按打包日期定版本号：`package.ps1` 默认 `-Version = 打包当天 yyyyMMdd` → `dist/opengl_ui-<arch>-all-release-<Version>.zip`；`-Version` 可显式覆盖、`-Out` 显式给出时按原样（不追加后缀） | [UI-216](CHANGELOG.md#ui-216-发布包按打包日期定版本号文件名-distopenglui-arch-all-release-yyyymmddzipscriptspublishpackageps1-新增--version-默认打包当天-yyyymmdd2026-10-16) |
 | media ON 时 apps POST_BUILD 自动拷贝 glfw3.dll、FFmpeg `bin/*.dll`、OpenCV `*/vc16/bin/opencv_world*.dll` 及 `assets/test.{png,mp4}` 到可执行目录 | UI-010 |
 | 布局相关 constexpr 公开头（如 gl/font.h 字形数组尺寸）变更后，凡经历过编译失败/中断的构建树必须全量重建再验证；增量混合产物会触发 ODR 违例型堆崩溃（症状：仅个别页 0xC0000374/0xC0000005 且崩溃码漂移） | [UI-119](CHANGELOG.md#ui-119-表单选择框分页页崩溃排查陈旧增量构建产物-odr-混合布局--崩溃诊断钩子2026-08-22) |
 | layui_test 崩溃时自动打印符号化调用栈（SetUnhandledExceptionFilter + dbghelp）；定位崩溃帧需 Release+/Z7 生成 PDB | [UI-119](CHANGELOG.md#ui-119-表单选择框分页页崩溃排查陈旧增量构建产物-odr-混合布局--崩溃诊断钩子2026-08-22) |
@@ -49,7 +50,7 @@ python tools/mcp/server.py --selfcheck --data docs/mcp   # MCP 服务自检（�
 ## 发布包生成（package.ps1）
 
 `scripts/publish/package.ps1` 把自包含的 `install/`（`bin/` + `include/` + `lib/` + `share/`）
-打包为 `dist/opengl_ui-<arch>-all-release.zip`（`dist/` 与产物已 gitignore）：
+打包为 `dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip`（版本号取打包当天日期；`dist/` 与产物已 gitignore）：
 
 ```powershell
 # 直接打包现有 install/（先校验结构完整性：4 目录 + .lib + glfw3.dll + ui/all.h + Config.cmake）
@@ -59,6 +60,7 @@ scripts\publish\package.ps1
 scripts\publish\package.ps1 -Rebuild
 ```
 
-- `-Install`/`-Out`/`-BuildDir`/`-Arch`/`-Cmake` 可覆盖默认路径（默认 `install/`、`dist/opengl_ui-<arch>-all-release.zip`、`build/install-all`）；输出目录不存在时自动创建。
+- `-Install`/`-Out`/`-BuildDir`/`-Arch`/`-Cmake` 可覆盖默认路径（默认 `install/`、`dist/opengl_ui-<arch>-all-release-<Version>.zip`、`build/install-all`）；输出目录不存在时自动创建。
+- **版本号（[UI-216](CHANGELOG.md#ui-216-发布包按打包日期定版本号文件名-distopenglui-arch-all-release-yyyymmddzipscriptspublishpackageps1-新增--version-默认打包当天-yyyymmdd2026-10-16)）**：默认 `-Version = 打包当天 yyyyMMdd`，写入默认文件名；`-Version` 可显式覆盖（如补打包历史日期）；打包结束时终端回显版本号。`-Out` 仍是最终路径（显式给出时不追加版本后缀）。
 - 默认流程只打包不重建；`package.ps1` **只打包、不写任何全局配置**（[UI-215](CHANGELOG.md#ui-215-mcp-全局注册与打包解耦packageps1-只打包注册交由包内-register-mcpps1-由用户决定scriptspublishpackageps1--docsbuildmd2026-10-16)）。MCP 知识服务资产（`share/opengl_ui/mcp/` + `register-mcp.ps1`）随 install 入包，**是否注册进编辑器/Agent 全局配置由使用者自行决定**——解压后运行包内脚本 `share/opengl_ui/register-mcp.ps1 -Mode status|register`（`-Mode register` 才会写 opencode/Claude 全局配置）。
 - 示例 exe 与运行时素材（`iconfont.ttf`、media 测试素材）由 [UI-213](CHANGELOG.md#ui-213-发布包生成脚本-packageps1--示例应用与运行时素材随-install-发布appscmakeliststxt--scriptspublishpackageps1--docsbuildmd2026-10-16) 的 install 规则进入 `install/bin/`；纯库分发设 `-DOPENGUI_BUILD_APPS=OFF` 不含示例 exe。

@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 210（BUG 201 / DOC 7 / META 2）
-- 边: 428
+- 节点: 211（BUG 202 / DOC 7 / META 2）
+- 边: 430
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1384,6 +1384,12 @@
 - 反链(1):
   - `DOC:BUILD` (checklist) — 回归清单#发布包脚本 `package.ps1` **只打包、不写任何用户全局配置**：MCP 知识服务资产（`share/opengl_ui/mcp/` + `register-mcp.ps1`）随 install 入包，是否注册进编辑器 / Agent 全局配置（opencode / Claude / `.mcp.json`）由使用者运行包内 `register-mcp.ps1 -Mode register/status` 自行决定；`-InjectMCP` / `-MCPMode` 已移除（传之报「找不到参数」）
 
+### BUG:UI-216 · UI-216: 发布包按打包日期定版本号——文件名 dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip（scripts/publish/package.ps1 新增 -Version 默认打包当天 yyyyMMdd）（2026-10-16）
+
+- 路径: `docs/CHANGELOG.md#ui-216-发布包按打包日期定版本号文件名-distopenglui-arch-all-release-yyyymmddzipscriptspublishpackageps1-新增--version-默认打包当天-yyyymmdd2026-10-16`
+- 反链(1):
+  - `DOC:BUILD` (checklist) — 回归清单#发布包文件名按打包日期定版本号：`package.ps1` 默认 `-Version = 打包当天 yyyyMMdd` → `dist/opengl_ui-<arch>-all-release-<Version>.zip`；`-Version` 可显式覆盖、`-Out` 显式给出时按原样（不追加后缀）
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1456,7 +1462,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(31):
+- 反链(32):
   - `DOC:BUILD` (mention) — 发布包生成（package.ps1）
   - `META:CHANGELOG` (mention) — UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）
   - `META:CHANGELOG` (mention) — UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）
@@ -1481,6 +1487,7 @@
   - `META:CHANGELOG` (mention) — UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-213: 发布包生成脚本 package.ps1 + 示例应用与运行时素材随 install 发布（apps/CMakeLists.txt + scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）
   - `META:CHANGELOG` (mention) — UI-215: MCP 全局注册与打包解耦——package.ps1 只打包，注册交由包内 register-mcp.ps1 由用户决定（scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）
+  - `META:CHANGELOG` (mention) — UI-216: 发布包按打包日期定版本号——文件名 dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip（scripts/publish/package.ps1 新增 -Version 默认打包当天 yyyyMMdd）（2026-10-16）
   - `DOC:MEDIA_PIPELINE` (mention) — MediaPipeline 媒体管线与视频容器
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
@@ -1694,6 +1701,7 @@
 | `BUG:UI-213` | BUG | UI-213: 发布包生成脚本 package.ps1 + 示例应用与运行时素材随 install 发布（apps/CMakeLists.txt + scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16） | `docs/CHANGELOG.md` |
 | `BUG:UI-214` | BUG | UI-214: Table 双击表头分隔线 → 该列自适应内容宽度（弹性列吸收保持表宽恒定，与拖动共用 UI-211 通道）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16） | `docs/CHANGELOG.md` |
 | `BUG:UI-215` | BUG | UI-215: MCP 全局注册与打包解耦——package.ps1 只打包，注册交由包内 register-mcp.ps1 由用户决定（scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16） | `docs/CHANGELOG.md` |
+| `BUG:UI-216` | BUG | UI-216: 发布包按打包日期定版本号——文件名 dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip（scripts/publish/package.ps1 新增 -Version 默认打包当天 yyyyMMdd）（2026-10-16） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1994,6 +2002,7 @@
 | `DOC:BUILD` | `BUG:UI-212` | checklist |
 | `DOC:BUILD` | `BUG:UI-213` | checklist |
 | `DOC:BUILD` | `BUG:UI-215` | checklist |
+| `DOC:BUILD` | `BUG:UI-216` | checklist |
 | `DOC:BUILD` | `DOC:README` | mention |
 | `DOC:BUILD` | `META:CHANGELOG` | mention |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
@@ -2113,6 +2122,7 @@
 | `META:CHANGELOG` | `DOC:README` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
 | `META:CHANGELOG` | `META:AGENTS` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
