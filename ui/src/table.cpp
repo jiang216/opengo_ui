@@ -85,6 +85,10 @@ public:
         float x = bounds_.x;
         for (int c = 0; c < ncol; ++c) {
             const float w = owner_->col_width(c);
+            // 单元格裁剪：把本列绘制限制在列矩形内，防止长文本/图标越界压到相邻列。
+            // 空矩形（w/h<=0）不 push，避免清空 scissor 栈（同 Label UI-169 约定）。
+            const bool clip_cell = (w > 0.f && bounds_.h > 0.f);
+            if (clip_cell) renderer.push_scissor(Rect{x, bounds_.y, w, bounds_.h});
             const std::string& text = (int)cells.size() > c ? cells[c] : "";
             const bool is_sel = (c == owner_->selection_col());
             if (is_sel && !owner_->is_radio_column()) {
@@ -179,6 +183,7 @@ public:
                 font_->draw_text(renderer, drawText, tx,
                                  cy - font_->line_height() * 0.5f, Vec4{0.2f, 0.2f, 0.2f, 1.0f});
             }
+            if (clip_cell) renderer.pop_scissor();
             x += w;
         }
     }

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-10-14T15:03:51+08:00",
+  "generatedAt": "2026-10-16T10:04:52+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -1371,6 +1371,13 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-209-window-keycb-忽略-glfwrepeat-致长按非字符键不重复backspacedelete方向homeend-仅触发一次glsrcwindowcpp--glincludeuiglwindowh宿主-listaryeverythinganytext-独立程序实测2026-10-14"
     },
+    "BUG:UI-210": {
+      "id": "BUG:UI-210",
+      "type": "BUG",
+      "label": "UI-210: Table 单元格绘制加列内裁剪（scissor），长文本不再越界压到相邻列（ui/src/table.cpp `TableRow::on_draw`；宿主 listary_Everything_anytext 实测）（2026-10-16）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-210-table-单元格绘制加列内裁剪scissor长文本不再越界压到相邻列uisrctablecpp-tablerowondraw宿主-listaryeverythinganytext-实测2026-10-16"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -2518,6 +2525,12 @@
       "to": "BUG:UI-169",
       "kind": "checklist",
       "context": "回归清单#Renderer scissor：push_scissor/pop_scissor 可嵌套，pop 恢复上一级矩形（内部维护栈：push 与栈顶求交、pop 重设新栈顶并翻转 y，栈空才关闭 GL_SCISSOR_TEST）；禁止仅递减深度不恢复矩形；退化矩形（w/h<=0）push 静默不入栈、pair 调用点须配套在非退化时 pop，begin_frame 每帧清栈+关 GL_SCISSOR_TEST（防内容滚动穿透标题栏/Header，UI-169）"
+    },
+    {
+      "from": "DOC:ARCHITECTURE",
+      "to": "BUG:UI-210",
+      "kind": "checklist",
+      "context": "回归清单#Table 单元格列内裁剪（UI-210）：`TableRow::on_draw` 每列绘制前 `push_scissor({x,y,w,h})`、绘制后 `pop_scissor()`，长文本/图标不越界压相邻列；空矩形（w/h<=0）不 push（防清空栈，遵 UI-169）；与 ScrollBox 容器裁剪自动求交；`set_truncate_cols` 的 \"...\" 截断仅在 `reload()` 生效，`add_row()` 增量填行不触发，故渲染期需靠 `measure_text_cols` 精确截断 + 本列裁剪兜底"
     },
     {
       "from": "DOC:ARCHITECTURE",
@@ -6141,6 +6154,13 @@
         "from": "DOC:ARCHITECTURE",
         "kind": "checklist",
         "context": "回归清单#键盘自动重复：`Window::key_cb` 将 `GLFW_REPEAT` 与 `GLFW_PRESS` 合并——按住的非字符键（Backspace/Delete/方向/Home/End）持续产生按下边沿（`key_state_`/`key_pressed_`/`key_mods_` 同步置位），长按可连续删除/移动；字母经 `char_cb` 队列不受影响，单击仍只触发一次"
+      }
+    ],
+    "BUG:UI-210": [
+      {
+        "from": "DOC:ARCHITECTURE",
+        "kind": "checklist",
+        "context": "回归清单#Table 单元格列内裁剪（UI-210）：`TableRow::on_draw` 每列绘制前 `push_scissor({x,y,w,h})`、绘制后 `pop_scissor()`，长文本/图标不越界压相邻列；空矩形（w/h<=0）不 push（防清空栈，遵 UI-169）；与 ScrollBox 容器裁剪自动求交；`set_truncate_cols` 的 \"...\" 截断仅在 `reload()` 生效，`add_row()` 增量填行不触发，故渲染期需靠 `measure_text_cols` 精确截断 + 本列裁剪兜底"
       }
     ],
     "META:CHANGELOG": [

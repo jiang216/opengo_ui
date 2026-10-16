@@ -5176,3 +5176,22 @@ regression.ps1 全 PASS。
   3.宿主 listary_Everything_anytext 独立程序（链接刷新后 `ui_gl.lib`）人工冒烟：长按 Backspace 连续删除、方向键连续移动、单击仍单次。
 - **影响范围**：`gl/src/window.cpp`、`gl/include/ui/gl/window.h`、`docs/UI_API.md`（生成产物）、`docs/CHANGELOG.md`。
 
+## UI-210: Table 单元格绘制加列内裁剪（scissor），长文本不再越界压到相邻列（ui/src/table.cpp `TableRow::on_draw`；宿主 listary_Everything_anytext 实测）（2026-10-16）
+- **严重度**：中（视觉缺陷：长文件名/路径文字越出本列、压到右侧「大小/修改时间」列，重叠不可读，影响所有启用截断列的表格）。
+- **根因（ui 库）**：`TableRow::on_draw`（ui/src/table.cpp）逐列绘制单元格（文本/标签/下拉三角/复选等）时**未对单元格矩形做任何裁剪**；而 `set_truncate_cols` 的「...」截断只在 `reload()` 调用的 `truncate_rows()` 里执行，应用层用 `add_row()` 增量填行时根本不触发；渲染期的逐字精确截断又只认 `measure_text_cols_`。三者叠加 → 长名称/路径列直接画出列宽、压到右侧列。
+- **修复**：
+  1. `ui/src/table.cpp` `TableRow::on_draw`：每列绘制前 `renderer.push_scissor({x, bounds_.y, w, bounds_.h})`、绘制后 `renderer.pop_scissor()`，把该列全部绘制限制在列矩形内（与 ScrollBox / Label 的嵌套裁剪自动求交）；
+  2. 空矩形（w<=0 或 h<=0）不 push，避免空矩形清空 scissor 栈（同 Label UI-169 约定）。
+- **回归清单（改动后核对）：**
+  1. 每列绘制严格被列矩形裁剪，长文本/图标不越界、不压相邻列；
+  2. 列宽为 0 或行高为 0 时不破坏 scissor 栈、不影响后续绘制；
+  3. 复选框/单选/按钮/单元格表单/下拉三角等非文本单元格同样受列裁剪；
+  4. 表格嵌套在 ScrollBox 中时，列裁剪与容器裁剪求交，滚动/悬浮行表现不变；
+  5. 内容不超宽的列文本显示不受影响（不误裁）。
+- **验证**：
+  1. Release（VS 18 2026，cmake preset `install-all`）重编 `ui_ui.lib`，替换 `opengl_UI/install/lib/ui_ui.lib` 与宿主 `listary_Everything_anytext/install/lib/ui_ui.lib`；
+  2. 宿主 listary_Everything_anytext Release 重编通过、链接新库正常；
+  3. 人工冒烟：长文件名/路径列文字不再与「大小/修改时间」列重叠；
+  4. `python tools/graphgen.py --check` 0 错误 0 警告。
+- **影响范围**：`ui/src/table.cpp`、`docs/CHANGELOG.md`。
+
