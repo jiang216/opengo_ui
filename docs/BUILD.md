@@ -48,7 +48,7 @@ python tools/mcp/server.py --selfcheck --data docs/mcp   # MCP 服务自检（�
 ## 发布包生成（package.ps1）
 
 `scripts/publish/package.ps1` 把自包含的 `install/`（`bin/` + `include/` + `lib/` + `share/`）
-打包为 `opengl_ui-<arch>-all-release.zip`：
+打包为 `dist/opengl_ui-<arch>-all-release.zip`（`dist/` 与产物已 gitignore）：
 
 ```powershell
 # 直接打包现有 install/（先校验结构完整性：4 目录 + .lib + glfw3.dll + ui/all.h + Config.cmake）
@@ -61,6 +61,6 @@ scripts\publish\package.ps1 -Rebuild
 scripts\publish\package.ps1 -Rebuild -InjectMCP
 ```
 
-- `-Install`/`-Out`/`-BuildDir`/`-Arch`/`-Cmake` 可覆盖默认路径（默认 `install/`、仓库根 `opengl_ui-x64-all-release.zip`、`build/install-all`）。
+- `-Install`/`-Out`/`-BuildDir`/`-Arch`/`-Cmake` 可覆盖默认路径（默认 `install/`、`dist/opengl_ui-<arch>-all-release.zip`、`build/install-all`）；输出目录不存在时自动创建。
 - 默认流程只打包不重建；`-InjectMCP` 等价 `-MCPMode register`（委托 `publish.ps1` → `register-mcp.ps1`，写 `install/share/opengl_ui/mcp/`）。
 - 示例 exe 与运行时素材（`iconfont.ttf`、media 测试素材）由 [UI-213](CHANGELOG.md#ui-213-发布包生成脚本-packageps1--示例应用与运行时素材随-install-发布appscmakeliststxt--scriptspublishpackageps1--docsbuildmd2026-10-16) 的 install 规则进入 `install/bin/`；纯库分发设 `-DOPENGUI_BUILD_APPS=OFF` 不含示例 exe。

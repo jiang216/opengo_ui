@@ -5239,13 +5239,14 @@ regression.ps1 全 PASS。
 - **根因（构建系统 / 发布流程）**：apps/CMakeLists.txt 只对示例 exe 做 POST_BUILD 拷贝（到构建树 exe 目录），**无 `install(TARGETS)` 规则**——`cmake --install` 不产出示例 exe 与运行素材，自包含运行包无法由构建产物完整生成；发布 zip 因此靠人工拼装。
 - **功能**：
   1. **apps 随 install 发布**（`apps/CMakeLists.txt`）：新增 `install(TARGETS ${_APP_TARGETS} RUNTIME DESTINATION bin)`，并把运行时素材（`iconfont.ttf` 恒有；`OPENGUI_MEDIA_OPENCV` 时 `test.png`；`OPENGUI_MEDIA_FFMPEG` 时 `test*.mp4`）`install(FILES ... DESTINATION bin)`。`_APP_TARGETS` 不含开发工具 `opengl_ui_gen_av`（不安装）；`OPENGUI_BUILD_APPS=OFF` 时本文件不入树、纯库分发包不含示例 exe（UI-097 语义保持）。
-  2. **发布包脚本**（`scripts/publish/package.ps1`）：把自包含 `install/` 打包为 `opengl_ui-<arch>-all-release.zip`。默认只打包；`-Rebuild` 先经 `-BuildDir`（默认 `build/install-all`）`cmake --build`/`--install` 刷新 install 再打包；`-InjectMCP` 委托 `publish.ps1` 注入 opengui MCP 知识服务（写 `install/share/opengl_ui/mcp/`）。打包前做**结构完整性校验**（`bin/include/lib/share` 四目录 + `.lib` + `glfw3.dll` + `include/ui/all.h` + `lib/cmake/opengl_ui/opengl_uiConfig.cmake`），缺失即中止。cmake 路径自动解析（env.ps1 的 CLion 路径 → VS 内置 → PATH）。
+  2. **发布包脚本**（`scripts/publish/package.ps1`）：把自包含 `install/` 打包为 `dist/opengl_ui-<arch>-all-release.zip`（`dist/` 与产物已 gitignore；输出目录不存在时自动创建）。默认只打包；`-Rebuild` 先经 `-BuildDir`（默认 `build/install-all`）`cmake --build`/`--install` 刷新 install 再打包；`-InjectMCP` 委托 `publish.ps1` 注入 opengui MCP 知识服务（写 `install/share/opengl_ui/mcp/`）。打包前做**结构完整性校验**（`bin/include/lib/share` 四目录 + `.lib` + `glfw3.dll` + `include/ui/all.h` + `lib/cmake/opengl_ui/opengl_uiConfig.cmake`），缺失即中止。cmake 路径自动解析（env.ps1 的 CLion 路径 → VS 内置 → PATH）。
 - **回归清单（改动后核对）**：
   1. `OPENGUI_BUILD_APPS=ON` + `cmake --install` 后 `install/bin/` 含各示例 exe、运行时 DLL 与 `iconfont.ttf`(+`test.*`)，解压即运行（依赖 exe 同目录 DLL）；
   2. `OPENGUI_BUILD_APPS=OFF` 时 install 不含示例 exe（仅库 + 头 + 第三方 DLL），下游 `find_package(opengl_ui)` 消费不受影响；
   3. `opengl_ui_gen_av`（开发工具）不进入安装树；
   4. `package.ps1` 代码默认仅打包、`-Rebuild`/`-InjectMCP` 为显式开关（无副作用默认）；结构不完整时非零退出、不产出误导性 zip。
 - **验证**：
-  1. `scripts/publish/package.ps1 -Rebuild` 端到端：重建 + install + 校验通过 + 生成 zip；解压核对 `bin/` 含示例 exe 与 `iconfont.ttf`、`share/opengl_ui/mcp/` 存在；
-  2. `python tools/graphgen.py --check` 0 错误 0 警告。
-- **影响范围**：`apps/CMakeLists.txt`、`scripts/publish/package.ps1`（新）、`docs/BUILD.md`、`docs/distribution/README.md`、`docs/CHANGELOG.md`。
+  1. `scripts/publish/package.ps1 -Rebuild` 端到端：重建 + install + 校验通过 + 生成 `dist/opengl_ui-x64-all-release.zip`；解压核对 `bin/` 含示例 exe 与 `iconfont.ttf`、`share/opengl_ui/mcp/` 存在；
+  2. `.gitignore` 生效：`dist/` 与 `opengl_ui-*-release.zip`、`*.pam` 不再出现在 `git status`；
+  3. `python tools/graphgen.py --check` 0 错误 0 警告。
+- **影响范围**：`apps/CMakeLists.txt`、`scripts/publish/package.ps1`（新）、`.gitignore`、`docs/BUILD.md`、`docs/distribution/README.md`、`docs/CHANGELOG.md`。
