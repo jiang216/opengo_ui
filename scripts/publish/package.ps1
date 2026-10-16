@@ -2,24 +2,27 @@
 # 把 install/ 目录（自包含分发树：bin/include/lib/share）打包为
 # dist/opengl_ui-<arch>-all-release.zip（dist/ 与产物已 gitignore），供下载方「解压即用」。
 #
-# 默认流程：校验 install/ 完整性 → 直接打包。可选：
+# 本脚本**只打包**，不触碰任何用户全局配置：MCP 知识服务资产随 install 入包
+# （share/opengl_ui/mcp/ + register-mcp.ps1），是否注册进编辑器/Agent 全局配置，
+# 由使用者解压后自行决定：
+#   <install>/share/opengl_ui/register-mcp.ps1 -Mode status     # 查看
+#   <install>/share/opengl_ui/register-mcp.ps1 -Mode register   # 注册（写全局配置）
+#
+# 可选：
 #   -Rebuild       先用 -BuildDir（默认 build/install-all）cmake 重建并 install，再打包
-#   -InjectMCP     打包前注入 opengui MCP 知识服务（委托 publish.ps1，写 install/share/opengl_ui/mcp）
-#   -MCPMode       注入模式 register|status|none（默认 none；-InjectMCP 等价 register）
-#   -Install/-Out/-BuildDir/-Cmake 可覆盖默认路径（-Out 默认 dist/opengl_ui-<arch>-all-release.zip）
+#   -Install/-Out/-BuildDir/-Arch/-Cmake/-Force 可覆盖默认路径
+#   （-Out 默认 dist/opengl_ui-<arch>-all-release.zip）
 #
 # 用法：
 #   .\package.ps1                       # 打包现有 install/ → dist/
 #   .\package.ps1 -Rebuild              # 重建 install/ 后再打包
-#   .\package.ps1 -Rebuild -InjectMCP   # 重建 + 注入 MCP + 打包
+[CmdletBinding()]
 param(
     [string]$Install = "",
     [string]$Out = "",
     [ValidateSet("x64", "x86")][string]$Arch = "x64",
     [string]$BuildDir = "",
     [switch]$Rebuild,
-    [switch]$InjectMCP,
-    [ValidateSet("none", "status", "register")][string]$MCPMode = "none",
     [string]$Cmake = "",
     [switch]$Force
 )
@@ -79,17 +82,7 @@ if (-not (Test-Path -LiteralPath $Install)) {
 }
 
 # ---------------------------------------------------------------------------
-# 2) 可选：注入 MCP 知识服务
-# ---------------------------------------------------------------------------
-$effMCP = if ($InjectMCP) { "register" } else { $MCPMode }
-if ($effMCP -ne "none") {
-    Write-Step "MCP 知识服务注入（$effMCP）"
-    & (Join-Path $PSScriptRoot "publish.ps1") -Install $Install -MCPMode $effMCP -Targets opencode,claude,mcpjson
-    if ($LASTEXITCODE -ne 0) { throw "MCP 注入失败（exit $LASTEXITCODE）" }
-}
-
-# ---------------------------------------------------------------------------
-# 3) 完整性校验：install 必须是自包含分发树
+# 2) 完整性校验：install 必须是自包含分发树
 # ---------------------------------------------------------------------------
 Write-Step "校验 install/ 结构"
 $problems = @()
@@ -115,7 +108,7 @@ if ($problems.Count -gt 0) {
 Write-Ok "结构完整（bin/ include/ lib/ share/）"
 
 # ---------------------------------------------------------------------------
-# 4) 打包
+# 3) 打包
 # ---------------------------------------------------------------------------
 if ((Test-Path -LiteralPath $Out) -and -not $Force) {
     Write-Warn2 "目标已存在，将覆盖：$Out"
@@ -134,3 +127,12 @@ $count = $zip.Entries.Count
 $zip.Dispose()
 $size = (Get-Item -LiteralPath $Out).Length
 Write-Ok ("发布包已生成：{0}（{1:N2} MB，{2} 条目）" -f $Out, ($size / 1MB), $count)
+
+# 本脚本不写任何全局配置。MCP 知识服务注册由使用者自行决定：
+$regHint = Join-Path $Install "share\opengl_ui\register-mcp.ps1"
+if (Test-Path -LiteralPath $regHint) {
+    Write-Host ""
+    Write-Host "提示：如需把 opengui MCP 知识服务注册进编辑器/Agent（会写全局配置），自行运行：" -ForegroundColor DarkGray
+    Write-Host "  $regHint -Mode status     # 查看当前注册状态" -ForegroundColor DarkGray
+    Write-Host "  $regHint -Mode register   # 注册" -ForegroundColor DarkGray
+}

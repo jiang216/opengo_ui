@@ -5239,12 +5239,12 @@ regression.ps1 全 PASS。
 - **根因（构建系统 / 发布流程）**：apps/CMakeLists.txt 只对示例 exe 做 POST_BUILD 拷贝（到构建树 exe 目录），**无 `install(TARGETS)` 规则**——`cmake --install` 不产出示例 exe 与运行素材，自包含运行包无法由构建产物完整生成；发布 zip 因此靠人工拼装。
 - **功能**：
   1. **apps 随 install 发布**（`apps/CMakeLists.txt`）：新增 `install(TARGETS ${_APP_TARGETS} RUNTIME DESTINATION bin)`，并把运行时素材（`iconfont.ttf` 恒有；`OPENGUI_MEDIA_OPENCV` 时 `test.png`；`OPENGUI_MEDIA_FFMPEG` 时 `test*.mp4`）`install(FILES ... DESTINATION bin)`。`_APP_TARGETS` 不含开发工具 `opengl_ui_gen_av`（不安装）；`OPENGUI_BUILD_APPS=OFF` 时本文件不入树、纯库分发包不含示例 exe（UI-097 语义保持）。
-  2. **发布包脚本**（`scripts/publish/package.ps1`）：把自包含 `install/` 打包为 `dist/opengl_ui-<arch>-all-release.zip`（`dist/` 与产物已 gitignore；输出目录不存在时自动创建）。默认只打包；`-Rebuild` 先经 `-BuildDir`（默认 `build/install-all`）`cmake --build`/`--install` 刷新 install 再打包；`-InjectMCP` 委托 `publish.ps1` 注入 opengui MCP 知识服务（写 `install/share/opengl_ui/mcp/`）。打包前做**结构完整性校验**（`bin/include/lib/share` 四目录 + `.lib` + `glfw3.dll` + `include/ui/all.h` + `lib/cmake/opengl_ui/opengl_uiConfig.cmake`），缺失即中止。cmake 路径自动解析（env.ps1 的 CLion 路径 → VS 内置 → PATH）。
+   2. **发布包脚本**（`scripts/publish/package.ps1`）：把自包含 `install/` 打包为 `dist/opengl_ui-<arch>-all-release.zip`（`dist/` 与产物已 gitignore；输出目录不存在时自动创建）。默认只打包；`-Rebuild` 先经 `-BuildDir`（默认 `build/install-all`）`cmake --build`/`--install` 刷新 install 再打包（MCP 全局注册已与打包解耦，见 [UI-215](CHANGELOG.md#ui-215-mcp-全局注册与打包解耦packageps1-只打包注册交由包内-register-mcpps1-由用户决定scriptspublishpackageps1--docsbuildmd2026-10-16)）。打包前做**结构完整性校验**（`bin/include/lib/share` 四目录 + `.lib` + `glfw3.dll` + `include/ui/all.h` + `lib/cmake/opengl_ui/opengl_uiConfig.cmake`），缺失即中止。cmake 路径自动解析（env.ps1 的 CLion 路径 → VS 内置 → PATH）。
 - **回归清单（改动后核对）**：
   1. `OPENGUI_BUILD_APPS=ON` + `cmake --install` 后 `install/bin/` 含各示例 exe、运行时 DLL 与 `iconfont.ttf`(+`test.*`)，解压即运行（依赖 exe 同目录 DLL）；
   2. `OPENGUI_BUILD_APPS=OFF` 时 install 不含示例 exe（仅库 + 头 + 第三方 DLL），下游 `find_package(opengl_ui)` 消费不受影响；
   3. `opengl_ui_gen_av`（开发工具）不进入安装树；
-  4. `package.ps1` 代码默认仅打包、`-Rebuild`/`-InjectMCP` 为显式开关（无副作用默认）；结构不完整时非零退出、不产出误导性 zip。
+  4. `package.ps1` 代码默认仅打包、`-Rebuild` 为显式开关（无副作用默认）；结构不完整时非零退出、不产出误导性 zip。
 - **验证**：
   1. `scripts/publish/package.ps1 -Rebuild` 端到端：重建 + install + 校验通过 + 生成 `dist/opengl_ui-x64-all-release.zip`；解压核对 `bin/` 含示例 exe 与 `iconfont.ttf`、`share/opengl_ui/mcp/` 存在；
   2. `.gitignore` 生效：`dist/` 与 `opengl_ui-*-release.zip`、`*.pam` 不再出现在 `git status`；
@@ -5273,3 +5273,22 @@ regression.ps1 全 PASS。
   4. `python tools/api_gen.py` 重新生成 UI_API.md + mcp catalog（补 `auto_fit_column`/`recalc_eff_widths` 私有成员条目与 `divider_index` 方向注释）后 `--check` 0 差异；
   5. `python tools/graphgen.py --check` 0 错误 0 警告。
 - **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`、`docs/ARCHITECTURE.md`、`docs/UI_API.md`（生成产物）、`docs/mcp/catalog.json`（生成产物）、`docs/CHANGELOG.md`。
+
+## UI-215: MCP 全局注册与打包解耦——package.ps1 只打包，注册交由包内 register-mcp.ps1 由用户决定（scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）
+- **严重度**：易误用 / 隐式副作用（打包脚本携带 `-InjectMCP` → 隐式以 register 模式写入用户全局 opencode/Claude 配置，违背「打包只产出产物」的单一职责；用户无法只打包而不触达全局配置）。
+- **根因（发布流程）**：`package.ps1 -InjectMCP` 直接委托 `publish.ps1 -MCPMode register`，把「注册进编辑器 / Agent 全局配置」这一**有副作用**的动作绑进打包流程，且默认打包路径与被改写的全局配置无可见关联。
+- **功能**：
+  1. `package.ps1` **移除** `-InjectMCP` / `-MCPMode` 参数与注入分支，加 `[CmdletBinding()]`：只做 `-Rebuild`（可选）→ 结构校验 → 打包，**不写任何用户全局配置**；
+  2. 打包成功后在终端打印指引：如需注册 opengui MCP，运行 `<install>/share/opengl_ui/register-mcp.ps1 -Mode status|register`；
+  3. MCP 资产（`share/opengl_ui/mcp/{catalog,templates,constraints}.json` + `server.py` + `register-mcp.ps1`/`publish.ps1`/`OPENGUI_AGENT.md`）仍随 install 入包，注册权交使用者显式执行包内脚本；
+  4. `publish.ps1` / `register-mcp.ps1` 语义不变（仍提供 `register` / `unregister` / `status`）。
+- **回归清单（改动后核对）**：
+  1. `package.ps1` 任意调用（含 `-Rebuild`）均**不写**任何用户全局配置（`~/.config/opencode/opencode.json`、`~/.claude.json`、项目 `.mcp.json` 不变）；传入已移除的 `-InjectMCP` 因 `[CmdletBinding()]` 报「找不到参数」而非静默注册；
+  2. 包内 `share/opengl_ui/register-mcp.ps1 -Mode register` 仍可独立注册（register 前仍强制 `server.py --selfcheck`），`-Mode status`/`unregister` 可用（[UI-208](CHANGELOG.md#ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcpserverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21) 语义保持）；
+  3. 打包仍含 `share/opengl_ui/mcp/` 与注册脚本；结构不完整时仍非零退出、不产出 zip（[UI-213](CHANGELOG.md#ui-213-发布包生成脚本-packageps1--示例应用与运行时素材随-install-发布appscmakeliststxt--scriptspublishpackageps1--docsbuildmd2026-10-16) 保持）。
+- **验证**：
+  1. `scripts/publish/package.ps1 -Rebuild` 全流程通过；执行前后 `~/.config/opencode/opencode.json`、`~/.claude.json`、项目 `.mcp.json` 内容 / mtime 不变；
+  2. `package.ps1 -InjectMCP` 报「找不到参数 InjectMCP」（`[CmdletBinding()]` 生效），不发生注册；
+  3. `install/share/opengl_ui/register-mcp.ps1 -Mode status` 正常列示三目标；
+  4. `python tools/graphgen.py --check` 0 错误 0 警告。
+- **影响范围**：`scripts/publish/package.ps1`、`docs/BUILD.md`、`docs/CHANGELOG.md`。

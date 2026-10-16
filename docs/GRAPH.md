@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 209（BUG 200 / DOC 7 / META 2）
-- 边: 426
+- 节点: 210（BUG 201 / DOC 7 / META 2）
+- 边: 428
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1375,9 +1375,14 @@
 ### BUG:UI-214 · UI-214: Table 双击表头分隔线 → 该列自适应内容宽度（弹性列吸收保持表宽恒定，与拖动共用 UI-211 通道）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16）
 
 - 路径: `docs/CHANGELOG.md#ui-214-table-双击表头分隔线--该列自适应内容宽度弹性列吸收保持表宽恒定与拖动共用-ui-211-通道uiincludeuiuitableh--uisrctablecpp宿主-listaryeverythinganytext-实测2026-10-16`
-- 反链(2):
-  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 双击分隔线自适应列宽（UI-214）：350ms 内对同一分隔线二次按下 → `auto_fit_column(col)` 把该列宽设为「表头标题与全部行该列文本最宽值 + `cell_pad_x()*2`」，下限 `set_column_min_width`；弹性列反向吸收保持总宽恒定（目标列为弹性列时直接设宽），复用 `on_col_resize` 回调；`on_layout` 的余量分摊抽为私有 `recalc_eff_widths()`（`on_layout`/拖动抬起/自适应共用以即时刷新 `col_width()`）；单击仍进入拖动、双击不进入拖动
+- 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 列宽双击自适应（UI-214）：`column_resize_begin` 命中分隔线时先判双击（同列 + ≤350ms，与行双击同阈值）→ `auto_fit_column(col)` 按「表头标题 + 该列单元格文本」`measure_text` 最大宽加内边距设宽、下夹 `set_column_min_width`，弹性列反向吸收保持总宽恒定（目标列即弹性列时直接设宽）；双击消费事件不进入拖动、单击仍为拖动；抽出 `recalc_eff_widths()` 并在回调前即时刷新，保证 `on_column_resize` 内 `col_width()` 即新值
+
+### BUG:UI-215 · UI-215: MCP 全局注册与打包解耦——package.ps1 只打包，注册交由包内 register-mcp.ps1 由用户决定（scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）
+
+- 路径: `docs/CHANGELOG.md#ui-215-mcp-全局注册与打包解耦packageps1-只打包注册交由包内-register-mcpps1-由用户决定scriptspublishpackageps1--docsbuildmd2026-10-16`
+- 反链(1):
+  - `DOC:BUILD` (checklist) — 回归清单#发布包脚本 `package.ps1` **只打包、不写任何用户全局配置**：MCP 知识服务资产（`share/opengl_ui/mcp/` + `register-mcp.ps1`）随 install 入包，是否注册进编辑器 / Agent 全局配置（opencode / Claude / `.mcp.json`）由使用者运行包内 `register-mcp.ps1 -Mode register/status` 自行决定；`-InjectMCP` / `-MCPMode` 已移除（传之报「找不到参数」）
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -1451,7 +1456,7 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(29):
+- 反链(31):
   - `DOC:BUILD` (mention) — 发布包生成（package.ps1）
   - `META:CHANGELOG` (mention) — UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）
   - `META:CHANGELOG` (mention) — UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）
@@ -1474,6 +1479,8 @@
   - `META:CHANGELOG` (mention) — UI-117: 图标页克隆镜像列表 195 项 + HBox 自适应高度与图标字体扩段（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-118: 图标卡片文本居中 + 数据表抽离重构（2026-08-22）
   - `META:CHANGELOG` (mention) — UI-119: 表单/选择框/分页页崩溃排查：陈旧增量构建产物 ODR 混合布局 + 崩溃诊断钩子（2026-08-22）
+  - `META:CHANGELOG` (mention) — UI-213: 发布包生成脚本 package.ps1 + 示例应用与运行时素材随 install 发布（apps/CMakeLists.txt + scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）
+  - `META:CHANGELOG` (mention) — UI-215: MCP 全局注册与打包解耦——package.ps1 只打包，注册交由包内 register-mcp.ps1 由用户决定（scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）
   - `DOC:MEDIA_PIPELINE` (mention) — MediaPipeline 媒体管线与视频容器
   - `DOC:PLAN` (mention) — 里程碑计划（Roadmap）
   - `DOC:PLAN` (mention) — 完成定义（DoD）
@@ -1686,6 +1693,7 @@
 | `BUG:UI-212` | BUG | UI-212: media 任一具体模块开启未隐含 MEDIA_CORE——x64-ffmpeg/opencv/all/install-all 预设 ffmpeg 模块 C1083 找不到 ui/media/pipeline 头（根 CMakeLists.txt）（2026-10-16） | `docs/CHANGELOG.md` |
 | `BUG:UI-213` | BUG | UI-213: 发布包生成脚本 package.ps1 + 示例应用与运行时素材随 install 发布（apps/CMakeLists.txt + scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16） | `docs/CHANGELOG.md` |
 | `BUG:UI-214` | BUG | UI-214: Table 双击表头分隔线 → 该列自适应内容宽度（弹性列吸收保持表宽恒定，与拖动共用 UI-211 通道）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16） | `docs/CHANGELOG.md` |
+| `BUG:UI-215` | BUG | UI-215: MCP 全局注册与打包解耦——package.ps1 只打包，注册交由包内 register-mcp.ps1 由用户决定（scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1971,7 +1979,6 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-210` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-211` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-214` | checklist |
-| `DOC:ARCHITECTURE` | `BUG:UI-214` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
@@ -1986,6 +1993,7 @@
 | `DOC:BUILD` | `BUG:UI-208` | checklist |
 | `DOC:BUILD` | `BUG:UI-212` | checklist |
 | `DOC:BUILD` | `BUG:UI-213` | checklist |
+| `DOC:BUILD` | `BUG:UI-215` | checklist |
 | `DOC:BUILD` | `DOC:README` | mention |
 | `DOC:BUILD` | `META:CHANGELOG` | mention |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
@@ -2105,6 +2113,8 @@
 | `META:CHANGELOG` | `DOC:README` | mention |
 | `META:CHANGELOG` | `DOC:UI_API` | mention |
 | `META:CHANGELOG` | `META:AGENTS` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
+| `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
 | `META:CHANGELOG` | `META:CHANGELOG` | mention |
