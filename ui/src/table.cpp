@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 
 namespace ui {
 
@@ -33,6 +34,9 @@ constexpr Vec4 kSelBg{0.09f, 0.73f, 0.67f, 0.18f};       // #16baaa α0.18 叠�
 constexpr Vec4 kCheckBorder{0.42f, 0.42f, 0.42f, 1.0f};  // 未选中复选框边框
 constexpr float kBox = 18.f;    // 复选/单选框边长
 constexpr float kBoxR = 4.f;    // 复选方框圆角
+// UI-211：表头列分隔线拖动命中半径（像素）与高亮色
+constexpr float kDividerHit = 3.f;
+constexpr Vec4 kDividerHi{0.09f, 0.73f, 0.67f, 0.85f};  // #16baaa 悬停/拖动高亮
 }  // namespace
 
 // 单个数据行：按列宽排布文本/复选/单选/表单控件，hover/选中行高亮 #f8f8f8
@@ -679,9 +683,14 @@ void Table::on_layout() {
         sum += w;
     }
     if (nc > 0 && b.w > sum) {
-        const float extra = b.w - sum;
-        for (int i = 0; i < nc; ++i) {
-            eff_widths_[i] += extra * (eff_widths_[i] / sum);
+        if (flex_col_ >= 0 && flex_col_ < nc) {
+            // UI-211：弹性列独占余量（拖动调宽时保持总宽恒定的落点）
+            eff_widths_[flex_col_] += b.w - sum;
+        } else {
+            const float extra = b.w - sum;
+            for (int i = 0; i < nc; ++i) {
+                eff_widths_[i] += extra * (eff_widths_[i] / sum);
+            }
         }
     }
 
@@ -1007,6 +1016,71 @@ float Table::col_x(int c) const {
     return cx;
 }
 
+// UI-211：表头列分隔线命中（相邻列边界 ±kDividerHit），返回右侧列下标（1..nc-1），否则 -1
+int Table::divider_index(float x, float y) const {
+    if (!column_resizable_) return -1;
+    if (cols_.size() < 2) return -1;
+    if (y < bounds_.y || y >= bounds_.y + header_h()) return -1;
+    float cx = bounds_.x;
+    for (int i = 0; i + 1 < (int)cols_.size(); ++i) {
+        cx += col_width(i);  // 第 i 列右边界 = 第 i+1 列左边界
+        if (std::abs(x - cx) <= kDividerHit) return i + 1;
+    }
+    return -1;
+}
+
+int Table::column_divider_at(float x, float y) const { return divider_index(x, y); }
+
+bool Table::column_resize_begin(float x, float y) {
+    const int d = divider_index(x, y);
+    if (d < 0) return false;
+    drag_col_ = d;
+    drag_x0_ = x;
+    drag_w0_ = cols_[d].width;
+    drag_fw0_ = (flex_col_ >= 0 && flex_col_ < (int)cols_.size()) ? cols_[flex_col_].width : 0.f;
+    hover_div_ = d;
+    mark_dirty_all();
+    return true;  // 消费按下 → 框架自动捕获鼠标
+}
+
+bool Table::on_mouse_move(float x, float y) {
+    // 拖动中：按累计位移从「起点宽度」重算（避免逐帧累积浮点漂移）
+    if (drag_col_ >= 0) {
+        const int col = drag_col_;
+        const int flex = flex_col_;
+        const float min_col = (col < (int)col_min_w_.size()) ? col_min_w_[col] : 0.f;
+        float w = drag_w0_ + (x - drag_x0_);
+        if (w < min_col) w = min_col;
+        if (flex >= 0 && flex != col && flex < (int)cols_.size()) {
+            // 弹性列反向吸收，总宽恒定：至少保留弹性列下限
+            const float min_flex = (flex < (int)col_min_w_.size()) ? col_min_w_[flex] : 0.f;
+            const float budget = drag_w0_ + drag_fw0_ - min_flex;  // 两列宽度和的可用上限
+            if (w > budget) w = budget;
+            cols_[flex].width = drag_w0_ + drag_fw0_ - w;
+        }
+        cols_[col].width = w;
+        hover_div_ = col;
+        mark_dirty_all();
+        return true;
+    }
+    // 非拖动：仅更新分隔线悬停态（用于高亮/光标），不消费事件
+    const int d = divider_index(x, y);
+    if (d != hover_div_) { hover_div_ = d; mark_dirty_all(); }
+    return false;
+}
+
+bool Table::on_mouse_up(float x, float y, int button) {
+    if (drag_col_ < 0) return false;
+    const int col = drag_col_;
+    const float w = cols_[col].width;
+    drag_col_ = -1;
+    const int d = divider_index(x, y);
+    hover_div_ = d;
+    mark_dirty_all();
+    if (on_col_resize_) on_col_resize_(col, w);
+    return true;  // 已消费：兼容 dispatch_mouse_up（捕获者抬起后自动释放）
+}
+
 std::string Table::cell_tooltip_at(int visible_row, float x) const {
     if (!cell_tooltip_ || visible_row < 0 || visible_row >= (int)visible_rows_.size()) return {};
     const int col = col_hit(x);
@@ -1031,6 +1105,8 @@ bool Table::on_mouse_down(float x, float y, int button) {
 
     // 表头：点击可排序列切换排序；点复选头全选当前页
     if (y >= bounds_.y && y < bounds_.y + header_h()) {
+        // UI-211：分隔线优先——命中则进入列宽拖动（拖动消费按下，不再触发排序/全选）
+        if (column_resize_begin(x, y)) return true;
         const int hcol = col_hit(x);
         if (hcol >= 0) {
             if (selection_col_ >= 0 && hcol == selection_col_ && !radio_mode_) {
@@ -1182,6 +1258,13 @@ void Table::on_draw(Renderer& renderer) {
     // 表头底部行分隔线：Default / Line 画（Row/Nob 不画行线）
     if (has_row_line()) {
         renderer.draw_quad({bounds_.x, bounds_.y + hh - 1.f, bounds_.w, 1.f}, kLine);
+    }
+
+    // UI-211：列宽拖动——悬停/拖动中的分隔线高亮（2px 强调竖线，提示可拖）
+    const int hi = (drag_col_ >= 0) ? drag_col_ : hover_div_;
+    if (hi >= 1 && hi < (int)cols_.size()) {
+        const float hx = col_x(hi);
+        renderer.draw_quad({hx - 1.f, bounds_.y, 2.f, hh}, kDividerHi);
     }
 
     // 表头单元格内容：复选/单选头 / 序号头 / 文本标题

@@ -5195,3 +5195,25 @@ regression.ps1 全 PASS。
   4. `python tools/graphgen.py --check` 0 错误 0 警告。
 - **影响范围**：`ui/src/table.cpp`、`docs/CHANGELOG.md`。
 
+## UI-211: Table 新增列宽拖动调节（表头分隔线拖拽 ±3px 高亮，弹性列吸收保持表宽恒定，可选持久化回调）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16）
+- **严重度**：缺功能（ui 库 Table 无列宽调节能力：列宽仅由 `add_column` 初始值与 `on_layout` 比例分摊决定，用户无法按需拖动，资源管理器式体验缺失）。
+- **根因（ui 库）**：`Table::on_mouse_down`（ui/src/table.cpp）表头分支只做排序/全选命中，无分隔线拖拽；类多为私有成员（`cols_/eff_widths_/col_hit/col_x`），宿主无法自行实现且命中逻辑会与库漂移。
+- **功能**：
+  1. 新公开 API：`set_column_resizable(bool)`（开关，默认关，既有页面零影响）、`set_flex_col(int)`（弹性列，拖动时伸缩以保持总宽恒定；默认 -1 维持旧「余量按比例分摊所有列」语义）、`set_column_min_width(col,w)`、`set_column_width(col,w)`、`set_on_column_resize(cb)`（拖动结束回调，供持久化）、`column_resize_begin(x,y)`（命中分隔线并进入拖动）、`column_divider_at(x,y)`（悬停查询）、`col_at_x(x)`（`col_hit` 公开包装，宿主免于自算列边界）；
+  2. `on_mouse_down` 表头分支首判 `column_resize_begin`（分隔线优先于排序）——按下返回 true 由框架自动捕获鼠标（`widget.cpp` dispatch 语义），无需调用方管理捕获；
+  3. 新增 `on_mouse_move`/`on_mouse_up`：按「起点宽度 + 累计位移」重算（避免逐帧浮点漂移），以弹性列反向吸收保持总宽恒定，并夹取各列下限；抬起触发 `on_column_resize`；
+  4. `on_draw` 对悬停/拖动中的分隔线绘制 2px 强调竖线（#16baaa）作可拖提示。
+- **回归清单（改动后核对）：**
+  1. 未调用 `set_column_resizable(true)` 的表格：表头点击排序/全选行为完全不变（分隔线命中在开关关闭时直接返回 -1）；
+  2. `set_flex_col(-1)` 时 `on_layout` 维持旧「余量按比例分摊给所有列」，既有自适应布局不变；
+  3. 拖动一列时弹性列反向等量吸收，两列宽度和不变（总表宽恒定，无横向溢出）；
+  4. 各列拖动受 `set_column_min_width` 夹取，拖不出下限（弹性列下限同时限制另一列上限）；
+  5. 分隔线仅在表头纵向带内命中（±3px 横向），行列数据区点击/双击编辑/下拉不受影响；
+  6. 拖动中被自动捕获，指针移出表头甚至移出控件仍持续调宽，抬起释放（复用 dispatch_mouse_up 捕获者路径）；
+  7. 拖拽以「起点值」重算，来回拖动无累积误差；`on_column_resize` 在抬起时回调一次。
+- **验证**：
+  1. Release（VS 18 2026，cmake preset `install-all`）重编 `ui_ui.lib`，替换 `opengl_UI/install/lib/ui_ui.lib` 与宿主 `listary_Everything_anytext/install/lib/ui_ui.lib`，并同步 `install/include/ui/ui/table.h`；
+  2. 宿主 listary_Everything_anytext Release 重编通过、链接新库正常；
+  3. 人工冒烟：结果表头拖动「名称/大小/修改时间/路径」分隔线可调宽，弹性列（路径/片段）实时吸收，光标悬停高亮，重启后宽度保持（宿主持久化）；
+  4. `python tools/graphgen.py --check` 0 错误 0 警告。
+- **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`、`docs/CHANGELOG.md`。

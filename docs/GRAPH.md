@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 205（BUG 196 / DOC 7 / META 2）
-- 边: 420
+- 节点: 206（BUG 197 / DOC 7 / META 2）
+- 边: 421
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1354,6 +1354,12 @@
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 单元格列内裁剪（UI-210）：`TableRow::on_draw` 每列绘制前 `push_scissor({x,y,w,h})`、绘制后 `pop_scissor()`，长文本/图标不越界压相邻列；空矩形（w/h<=0）不 push（防清空栈，遵 UI-169）；与 ScrollBox 容器裁剪自动求交；`set_truncate_cols` 的 "..." 截断仅在 `reload()` 生效，`add_row()` 增量填行不触发，故渲染期需靠 `measure_text_cols` 精确截断 + 本列裁剪兜底
 
+### BUG:UI-211 · UI-211: Table 新增列宽拖动调节（表头分隔线拖拽 ±3px 高亮，弹性列吸收保持表宽恒定，可选持久化回调）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16）
+
+- 路径: `docs/CHANGELOG.md#ui-211-table-新增列宽拖动调节表头分隔线拖拽-3px-高亮弹性列吸收保持表宽恒定可选持久化回调uiincludeuiuitableh--uisrctablecpp宿主-listaryeverythinganytext-实测2026-10-16`
+- 反链(1):
+  - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 列宽拖动调节（UI-211）：`set_column_resizable(true)` 后表头相邻列分隔线（±3px）可拖动调宽；`on_mouse_down` 表头分支首判分隔线（优先于排序），按下返回 true 由框架自动捕获鼠标；新增 `on_mouse_move/up` 以「起点宽度+累计位移」重算（免浮点累积），`set_flex_col` 弹性列反向吸收保持总宽恒定、受 `set_column_min_width` 夹取；`on_draw` 悬停/拖动分隔线绘 2px 强调竖线；`set_column_resizable` 默认 false + `set_flex_col(-1)` 时 `on_layout` 维持旧比例分摊（既有页面零影响）；`set_on_column_resize` 抬起回调供持久化
+
 ### DOC:API_REFERENCE · API_REFERENCE
 
 - 路径: `docs/distribution/API_REFERENCE.md`
@@ -1656,6 +1662,7 @@
 | `BUG:UI-208` | BUG | UI-208: opengui MCP 知识服务——零依赖 stdlib 服务 + api_gen 同源目录 + 发布期一键注入 IDE/CLI 智能体（tools/mcp/server.py + tools/api_gen.py + tools/mcp_data.py + scripts/publish/register-mcp.ps1；2026-09-21） | `docs/CHANGELOG.md` |
 | `BUG:UI-209` | BUG | UI-209: Window `key_cb` 忽略 `GLFW_REPEAT` 致长按非字符键不重复（Backspace/Delete/方向/Home/End 仅触发一次）（gl/src/window.cpp + gl/include/ui/gl/window.h；宿主 listary_Everything_anytext 独立程序实测）（2026-10-14） | `docs/CHANGELOG.md` |
 | `BUG:UI-210` | BUG | UI-210: Table 单元格绘制加列内裁剪（scissor），长文本不再越界压到相邻列（ui/src/table.cpp `TableRow::on_draw`；宿主 listary_Everything_anytext 实测）（2026-10-16） | `docs/CHANGELOG.md` |
+| `BUG:UI-211` | BUG | UI-211: Table 新增列宽拖动调节（表头分隔线拖拽 ±3px 高亮，弹性列吸收保持表宽恒定，可选持久化回调）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1939,6 +1946,7 @@
 | `DOC:ARCHITECTURE` | `BUG:UI-208` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-209` | checklist |
 | `DOC:ARCHITECTURE` | `BUG:UI-210` | checklist |
+| `DOC:ARCHITECTURE` | `BUG:UI-211` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
 | `DOC:BUILD` | `BUG:UI-002` | checklist |
