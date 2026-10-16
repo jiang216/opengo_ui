@@ -2642,11 +2642,21 @@ parent->add_child(tb);
 | `float header_h() const` |  |
 | `float row_h() const` |  |
 | `float cell_pad_x() const` |  |
+| `void set_column_resizable(bool on)` | —— 列宽拖动调节（UI-211，资源管理器式表头分隔线拖拽）—— set_column_resizable(true) 后，表头相邻列分隔线（±kDividerHit px）可拖动调宽； 按下返回 true 即被框架自动捕获鼠标（widget dispatch），随后 on_mouse_move/on_mouse_up 接管拖动，调用方无需自行管理捕获。 set_flex_col：弹性列——拖动时它按需伸缩，使「总表宽恒定」（资源管理器语义）； 默认 -1 保持原有「余量按比例分摊给所有列」的布局行为，兼容既有页面。 set_column_min_width：该列拖动下限（与 cols_ 平行，未设=0）。 set_on_column_resize：拖动结束回调（列, 最终宽度），用于持久化。 |
+| `void set_flex_col(int col)` |  |
+| `void set_column_min_width(int col, float w)` |  |
+| `void set_column_width(int col, float w)` |  |
+| `void set_on_column_resize(std::function<void(int, float)> cb)` |  |
+| `bool column_resize_begin(float x, float y)` | 命中分隔线则进入拖动状态并返回 true（供 on_mouse_down 顶部先判；列下标为「右列」） |
+| `int column_divider_at(float x, float y) const` | 表头分隔线悬停查询（右侧列下标，-1 无）——供光标反馈 |
+| `int col_at_x(float x) const` | 表头 x 所在列下标（col_hit 的公开包装；应用层用它替代自算列边界，避免漂移） |
 | `void on_layout() override` |  |
 | `float preferred_height() const` | 高度语义（UI-131）：默认内容跟随——每次调用按表头 + 可见行数×行高 [+ 分页条] 重算， 不再被首次分配的 bounds_.h 冻结（旧「h>0 即冻结」导致流式容器内行数增长永不反映， 行区被裁剪成 0，见 audio_text SPK-005）。 set_fixed_height(h>0)：显式锁定高度（固定视口 + 内部纵向滚动的摆放），h<=0 解除回内容跟随； set_max_content_height(h>0)：内容跟随模式的上限钳制（流式容器防溢出），超出部分由内部滚动区承载。 |
 | `void set_fixed_height(float h)` |  |
 | `void set_max_content_height(float h)` |  |
 | `bool on_mouse_down(float x, float y, int button) override` |  |
+| `bool on_mouse_move(float x, float y) override` | 列宽拖动（UI-211）：按下分隔线被自动捕获后，move 更新宽度、up 结束并回调 |
+| `bool on_mouse_up(float x, float y, int button) override` |  |
 | `void on_draw(Renderer& renderer) override` |  |
 
 **类 `Column`**
@@ -2675,6 +2685,7 @@ parent->add_child(tb);
 | `bool in_header(float x, float y) const` |  |
 | `int header_col_at(float x) const` |  |
 | `int col_hit(float x) const` |  |
+| `int divider_index(float x, float y) const` | UI-211：表头列分隔线命中（±kDividerHit px）→ 右侧列下标，未命中 -1 |
 | `float col_x(int c) const` | 第 c 列起始 x（布局后有效） |
 | `const std::vector<std::string>& combo_options_for(int data, int col) const` |  |
 

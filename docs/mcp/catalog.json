@@ -8756,6 +8756,46 @@
        "doc": ""
       },
       {
+       "name": "set_column_resizable",
+       "sig": "void set_column_resizable(bool on)",
+       "doc": "—— 列宽拖动调节（UI-211，资源管理器式表头分隔线拖拽）—— set_column_resizable(true) 后，表头相邻列分隔线（±kDividerHit px）可拖动调宽； 按下返回 true 即被框架自动捕获鼠标（widget dispatch），随后 on_mouse_move/on_mouse_up 接管拖动，调用方无需自行管理捕获。 set_flex_col：弹性列——拖动时它按需伸缩，使「总表宽恒定」（资源管理器语义）； 默认 -1 保持原有「余量按比例分摊给所有列」的布局行为，兼容既有页面。 set_column_min_width：该列拖动下限（与 cols_ 平行，未设=0）。 set_on_column_resize：拖动结束回调（列, 最终宽度），用于持久化。"
+      },
+      {
+       "name": "set_flex_col",
+       "sig": "void set_flex_col(int col)",
+       "doc": ""
+      },
+      {
+       "name": "set_column_min_width",
+       "sig": "void set_column_min_width(int col, float w)",
+       "doc": ""
+      },
+      {
+       "name": "set_column_width",
+       "sig": "void set_column_width(int col, float w)",
+       "doc": ""
+      },
+      {
+       "name": "set_on_column_resize",
+       "sig": "void set_on_column_resize(std::function<void(int, float)> cb)",
+       "doc": ""
+      },
+      {
+       "name": "column_resize_begin",
+       "sig": "bool column_resize_begin(float x, float y)",
+       "doc": "命中分隔线则进入拖动状态并返回 true（供 on_mouse_down 顶部先判；列下标为「右列」）"
+      },
+      {
+       "name": "column_divider_at",
+       "sig": "int column_divider_at(float x, float y) const",
+       "doc": "表头分隔线悬停查询（右侧列下标，-1 无）——供光标反馈"
+      },
+      {
+       "name": "col_at_x",
+       "sig": "int col_at_x(float x) const",
+       "doc": "表头 x 所在列下标（col_hit 的公开包装；应用层用它替代自算列边界，避免漂移）"
+      },
+      {
        "name": "on_layout",
        "sig": "void on_layout() override",
        "doc": ""
@@ -8778,6 +8818,16 @@
       {
        "name": "on_mouse_down",
        "sig": "bool on_mouse_down(float x, float y, int button) override",
+       "doc": ""
+      },
+      {
+       "name": "on_mouse_move",
+       "sig": "bool on_mouse_move(float x, float y) override",
+       "doc": "列宽拖动（UI-211）：按下分隔线被自动捕获后，move 更新宽度、up 结束并回调"
+      },
+      {
+       "name": "on_mouse_up",
+       "sig": "bool on_mouse_up(float x, float y, int button) override",
        "doc": ""
       },
       {
@@ -8882,6 +8932,11 @@
      "name": "col_hit",
      "sig": "int col_hit(float x) const",
      "doc": ""
+    },
+    {
+     "name": "divider_index",
+     "sig": "int divider_index(float x, float y) const",
+     "doc": "UI-211：表头列分隔线命中（±kDividerHit px）→ 右侧列下标，未命中 -1"
     },
     {
      "name": "col_x",
