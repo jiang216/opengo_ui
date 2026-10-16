@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-10-16T13:48:53+08:00",
+  "generatedAt": "2026-10-16T13:53:09+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -1385,6 +1385,20 @@
       "path": "docs/CHANGELOG.md",
       "anchor": "ui-211-table-新增列宽拖动调节表头分隔线拖拽-3px-高亮弹性列吸收保持表宽恒定可选持久化回调uiincludeuiuitableh--uisrctablecpp宿主-listaryeverythinganytext-实测2026-10-16"
     },
+    "BUG:UI-212": {
+      "id": "BUG:UI-212",
+      "type": "BUG",
+      "label": "UI-212: media 任一具体模块开启未隐含 MEDIA_CORE——x64-ffmpeg/opencv/all/install-all 预设 ffmpeg 模块 C1083 找不到 ui/media/pipeline 头（根 CMakeLists.txt）（2026-10-16）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-212-media-任一具体模块开启未隐含-mediacorex64-ffmpegopencvallinstall-all-预设-ffmpeg-模块-c1083-找不到-uimediapipeline-头根-cmakeliststxt2026-10-16"
+    },
+    "BUG:UI-213": {
+      "id": "BUG:UI-213",
+      "type": "BUG",
+      "label": "UI-213: 发布包生成脚本 package.ps1 + 示例应用与运行时素材随 install 发布（apps/CMakeLists.txt + scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）",
+      "path": "docs/CHANGELOG.md",
+      "anchor": "ui-213-发布包生成脚本-packageps1--示例应用与运行时素材随-install-发布appscmakeliststxt--scriptspublishpackageps1--docsbuildmd2026-10-16"
+    },
     "META:CHANGELOG": {
       "id": "META:CHANGELOG",
       "type": "META",
@@ -1441,6 +1455,12 @@
     }
   },
   "edges": [
+    {
+      "from": "DOC:BUILD",
+      "to": "META:CHANGELOG",
+      "kind": "mention",
+      "context": "发布包生成（package.ps1）"
+    },
     {
       "from": "META:CHANGELOG",
       "to": "META:CHANGELOG",
@@ -3777,6 +3797,18 @@
     },
     {
       "from": "DOC:BUILD",
+      "to": "BUG:UI-212",
+      "kind": "checklist",
+      "context": "回归清单#`OPENGUI_MEDIA_FFMPEG`/`OPENGUI_MEDIA_OPENCV` 任一为 ON 时**隐含** `OPENGUI_MEDIA_CORE=ON`（根 CMakeLists 强制置位）：ffmpeg 模块依赖 `ui_media_core` 的 `ui/media/pipeline/*.h`，core 不入树则目标不存在、CMake 静默按库名处理致 include 不传播 → C1083；`x64-ffmpeg/x64-opencv/x64-all/install-all` 预设均依赖此隐含关系"
+    },
+    {
+      "from": "DOC:BUILD",
+      "to": "BUG:UI-213",
+      "kind": "checklist",
+      "context": "回归清单#示例应用随 `cmake --install` 发布到 `bin/`（`install(TARGETS ${_APP_TARGETS})` + 素材）：`OPENGUI_BUILD_APPS=OFF` 时的纯库分发包不含示例 exe"
+    },
+    {
+      "from": "DOC:BUILD",
       "to": "BUG:UI-010",
       "kind": "checklist",
       "context": "回归清单#media ON 时 apps POST_BUILD 自动拷贝 glfw3.dll、FFmpeg `bin/*.dll`、OpenCV `*/vc16/bin/opencv_world*.dll` 及 `assets/test.{png,mp4}` 到可执行目录"
@@ -3803,7 +3835,7 @@
       "from": "DOC:BUILD",
       "to": "BUG:UI-208",
       "kind": "checklist",
-      "context": "回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验"
+      "context": "回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish,package}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验"
     },
     {
       "from": "DOC:MEDIA_PIPELINE",
@@ -6154,7 +6186,7 @@
       {
         "from": "DOC:BUILD",
         "kind": "checklist",
-        "context": "回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验"
+        "context": "回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish,package}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验"
       },
       {
         "from": "DOC:README",
@@ -6183,7 +6215,26 @@
         "context": "回归清单#Table 列宽拖动调节（UI-211）：`set_column_resizable(true)` 后表头相邻列分隔线（±3px）可拖动调宽；`on_mouse_down` 表头分支首判分隔线（优先于排序），按下返回 true 由框架自动捕获鼠标；新增 `on_mouse_move/up` 以「起点宽度+累计位移」重算（免浮点累积），`set_flex_col` 弹性列反向吸收保持总宽恒定、受 `set_column_min_width` 夹取；`on_draw` 悬停/拖动分隔线绘 2px 强调竖线；`set_column_resizable` 默认 false + `set_flex_col(-1)` 时 `on_layout` 维持旧比例分摊（既有页面零影响）；`set_on_column_resize` 抬起回调供持久化"
       }
     ],
+    "BUG:UI-212": [
+      {
+        "from": "DOC:BUILD",
+        "kind": "checklist",
+        "context": "回归清单#`OPENGUI_MEDIA_FFMPEG`/`OPENGUI_MEDIA_OPENCV` 任一为 ON 时**隐含** `OPENGUI_MEDIA_CORE=ON`（根 CMakeLists 强制置位）：ffmpeg 模块依赖 `ui_media_core` 的 `ui/media/pipeline/*.h`，core 不入树则目标不存在、CMake 静默按库名处理致 include 不传播 → C1083；`x64-ffmpeg/x64-opencv/x64-all/install-all` 预设均依赖此隐含关系"
+      }
+    ],
+    "BUG:UI-213": [
+      {
+        "from": "DOC:BUILD",
+        "kind": "checklist",
+        "context": "回归清单#示例应用随 `cmake --install` 发布到 `bin/`（`install(TARGETS ${_APP_TARGETS})` + 素材）：`OPENGUI_BUILD_APPS=OFF` 时的纯库分发包不含示例 exe"
+      }
+    ],
     "META:CHANGELOG": [
+      {
+        "from": "DOC:BUILD",
+        "kind": "mention",
+        "context": "发布包生成（package.ps1）"
+      },
       {
         "from": "META:CHANGELOG",
         "kind": "mention",

@@ -44,6 +44,14 @@ option(OPENGUI_MEDIA_FFMPEG "Build FFmpeg media module (video decode)" OFF)
 option(OPENGUI_MEDIA_OPENCV "Build OpenCV media module (image processing)" OFF)
 option(OPENGUI_BUILD_APPS "Build demo applications" ON)
 
+# media/ffmpeg 与 media/opencv 均以 media/core（节点接口 + MediaPipeline + VideoContainer）为基础：
+# 开启任一具体媒体模块必须同时构建 core，否则 media/core 子目录不入树，ui_media_core 目标不存在，
+# CMake 将未知目标名静默当作库名（不报错、不传播其 PUBLIC include 目录）→ ffmpeg 模块编译期
+# 找不到 ui/media/pipeline/*.h（C1083）。x64-ffmpeg/x64-opencv/x64-all/install-all 预设均依赖此隐含关系。
+if(OPENGUI_MEDIA_FFMPEG OR OPENGUI_MEDIA_OPENCV)
+    set(OPENGUI_MEDIA_CORE ON CACHE BOOL "Build media core module (pipeline + synthetic source)" FORCE)
+endif()
+
 # ---- 架构 -> 3rdparty 安装前缀 ----
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(OPENGUI_ARCH "x64")
@@ -189,5 +197,6 @@ install(FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/publish/register-mcp.ps1"
     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/publish/OPENGUI_AGENT.md"
     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/publish/publish.ps1"
+    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/publish/package.ps1"
     DESTINATION ${CMAKE_INSTALL_DATADIR}/opengl_ui
 )

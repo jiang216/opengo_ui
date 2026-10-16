@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 206（BUG 197 / DOC 7 / META 2）
-- 边: 421
+- 节点: 208（BUG 199 / DOC 7 / META 2）
+- 边: 424
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1339,7 +1339,7 @@
 - 路径: `docs/CHANGELOG.md#ui-208-opengui-mcp-知识服务零依赖-stdlib-服务--apigen-同源目录--发布期一键注入-idecli-智能体toolsmcpserverpy--toolsapigenpy--toolsmcpdatapy--scriptspublishregister-mcpps12026-09-21`
 - 反链(3):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#opengui MCP 知识服务：随 install/ 发布 `share/opengl_ui/mcp/`（零依赖 stdlib `server.py` + `docs/mcp/{catalog,templates,constraints}.json` + CHANGELOG/ARCHITECTURE），供 opencode / Claude Code 等智能体查证组件/模板/回归约束；`api_gen.py --check` 同时校验 UI_API.md 与三份 JSON；`register-mcp.ps1` 注入 opencode / Claude Code / `.mcp.json`（深合并保留既有 mcpServers、写前备份 `.bak`、register 前强制 `python server.py --selfcheck`）；MCP 服务为只读文本知识层，不触碰屏幕/自动化（对齐「无 ai_ocr_tools 类 GUI 工具」原则）
-  - `DOC:BUILD` (checklist) — 回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验
+  - `DOC:BUILD` (checklist) — 回归清单#MCP 知识服务随 `cmake --install` 发布：`tools/mcp/server.py` + `docs/mcp/*.json` + `docs/CHANGELOG.md` + `docs/ARCHITECTURE.md` → `share/opengl_ui/mcp/`，`scripts/publish/{register-mcp,OPENGUI_AGENT,publish,package}.ps1/md` → `share/opengl_ui/`；`docs/mcp/*.json` 由 `python tools/api_gen.py` 同源生成，`--check` 四产物全量校验
   - `DOC:README` (checklist) — 回归清单#opengui MCP 知识服务随 `install/` 发布（`share/opengl_ui/mcp/`），`scripts/publish/register-mcp.ps1` 可一键注入 opencode / Claude Code / `.mcp.json`
 
 ### BUG:UI-209 · UI-209: Window `key_cb` 忽略 `GLFW_REPEAT` 致长按非字符键不重复（Backspace/Delete/方向/Home/End 仅触发一次）（gl/src/window.cpp + gl/include/ui/gl/window.h；宿主 listary_Everything_anytext 独立程序实测）（2026-10-14）
@@ -1359,6 +1359,18 @@
 - 路径: `docs/CHANGELOG.md#ui-211-table-新增列宽拖动调节表头分隔线拖拽-3px-高亮弹性列吸收保持表宽恒定可选持久化回调uiincludeuiuitableh--uisrctablecpp宿主-listaryeverythinganytext-实测2026-10-16`
 - 反链(1):
   - `DOC:ARCHITECTURE` (checklist) — 回归清单#Table 列宽拖动调节（UI-211）：`set_column_resizable(true)` 后表头相邻列分隔线（±3px）可拖动调宽；`on_mouse_down` 表头分支首判分隔线（优先于排序），按下返回 true 由框架自动捕获鼠标；新增 `on_mouse_move/up` 以「起点宽度+累计位移」重算（免浮点累积），`set_flex_col` 弹性列反向吸收保持总宽恒定、受 `set_column_min_width` 夹取；`on_draw` 悬停/拖动分隔线绘 2px 强调竖线；`set_column_resizable` 默认 false + `set_flex_col(-1)` 时 `on_layout` 维持旧比例分摊（既有页面零影响）；`set_on_column_resize` 抬起回调供持久化
+
+### BUG:UI-212 · UI-212: media 任一具体模块开启未隐含 MEDIA_CORE——x64-ffmpeg/opencv/all/install-all 预设 ffmpeg 模块 C1083 找不到 ui/media/pipeline 头（根 CMakeLists.txt）（2026-10-16）
+
+- 路径: `docs/CHANGELOG.md#ui-212-media-任一具体模块开启未隐含-mediacorex64-ffmpegopencvallinstall-all-预设-ffmpeg-模块-c1083-找不到-uimediapipeline-头根-cmakeliststxt2026-10-16`
+- 反链(1):
+  - `DOC:BUILD` (checklist) — 回归清单#`OPENGUI_MEDIA_FFMPEG`/`OPENGUI_MEDIA_OPENCV` 任一为 ON 时**隐含** `OPENGUI_MEDIA_CORE=ON`（根 CMakeLists 强制置位）：ffmpeg 模块依赖 `ui_media_core` 的 `ui/media/pipeline/*.h`，core 不入树则目标不存在、CMake 静默按库名处理致 include 不传播 → C1083；`x64-ffmpeg/x64-opencv/x64-all/install-all` 预设均依赖此隐含关系
+
+### BUG:UI-213 · UI-213: 发布包生成脚本 package.ps1 + 示例应用与运行时素材随 install 发布（apps/CMakeLists.txt + scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）
+
+- 路径: `docs/CHANGELOG.md#ui-213-发布包生成脚本-packageps1--示例应用与运行时素材随-install-发布appscmakeliststxt--scriptspublishpackageps1--docsbuildmd2026-10-16`
+- 反链(1):
+  - `DOC:BUILD` (checklist) — 回归清单#示例应用随 `cmake --install` 发布到 `bin/`（`install(TARGETS ${_APP_TARGETS})` + 素材）：`OPENGUI_BUILD_APPS=OFF` 时的纯库分发包不含示例 exe
 
 ### DOC:API_REFERENCE · API_REFERENCE
 
@@ -1432,7 +1444,8 @@
 ### META:CHANGELOG · CHANGELOG
 
 - 路径: `docs/CHANGELOG.md`
-- 反链(28):
+- 反链(29):
+  - `DOC:BUILD` (mention) — 发布包生成（package.ps1）
   - `META:CHANGELOG` (mention) — UI-199: ScrollBox 滚动条「点击轨道空白仅跳转不抓取」修复——按下即抓 + 拖拽延续，根治下拉列表滚动条「首次点滑块没抓住，松手再按才拖得动」（ui/src/scrollbox.cpp；layui_test 仅编排验证 + 永久回归 lane）（2026-09-07）
   - `META:CHANGELOG` (mention) — UI-154: 子树变更不标脏使长命容器首帧不重排、新子控件在 (0,0) 闪一帧——基类 add_child/remove_child/clear_children 自报标脏（2026-09-01）
   - `META:CHANGELOG` (mention) — UI-100: IME 候选窗跟随输入框光标（2026-08-21）
@@ -1663,6 +1676,8 @@
 | `BUG:UI-209` | BUG | UI-209: Window `key_cb` 忽略 `GLFW_REPEAT` 致长按非字符键不重复（Backspace/Delete/方向/Home/End 仅触发一次）（gl/src/window.cpp + gl/include/ui/gl/window.h；宿主 listary_Everything_anytext 独立程序实测）（2026-10-14） | `docs/CHANGELOG.md` |
 | `BUG:UI-210` | BUG | UI-210: Table 单元格绘制加列内裁剪（scissor），长文本不再越界压到相邻列（ui/src/table.cpp `TableRow::on_draw`；宿主 listary_Everything_anytext 实测）（2026-10-16） | `docs/CHANGELOG.md` |
 | `BUG:UI-211` | BUG | UI-211: Table 新增列宽拖动调节（表头分隔线拖拽 ±3px 高亮，弹性列吸收保持表宽恒定，可选持久化回调）（ui/include/ui/ui/table.h + ui/src/table.cpp；宿主 listary_Everything_anytext 实测）（2026-10-16） | `docs/CHANGELOG.md` |
+| `BUG:UI-212` | BUG | UI-212: media 任一具体模块开启未隐含 MEDIA_CORE——x64-ffmpeg/opencv/all/install-all 预设 ffmpeg 模块 C1083 找不到 ui/media/pipeline 头（根 CMakeLists.txt）（2026-10-16） | `docs/CHANGELOG.md` |
+| `BUG:UI-213` | BUG | UI-213: 发布包生成脚本 package.ps1 + 示例应用与运行时素材随 install 发布（apps/CMakeLists.txt + scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16） | `docs/CHANGELOG.md` |
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
@@ -1959,7 +1974,10 @@
 | `DOC:BUILD` | `BUG:UI-119` | checklist |
 | `DOC:BUILD` | `BUG:UI-186` | checklist |
 | `DOC:BUILD` | `BUG:UI-208` | checklist |
+| `DOC:BUILD` | `BUG:UI-212` | checklist |
+| `DOC:BUILD` | `BUG:UI-213` | checklist |
 | `DOC:BUILD` | `DOC:README` | mention |
+| `DOC:BUILD` | `META:CHANGELOG` | mention |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |

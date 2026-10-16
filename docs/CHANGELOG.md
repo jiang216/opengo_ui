@@ -5217,3 +5217,35 @@ regression.ps1 全 PASS。
   3. 人工冒烟：结果表头拖动「名称/大小/修改时间/路径」分隔线可调宽，弹性列（路径/片段）实时吸收，光标悬停高亮，重启后宽度保持（宿主持久化）；
   4. `python tools/graphgen.py --check` 0 错误 0 警告。
 - **影响范围**：`ui/include/ui/ui/table.h`、`ui/src/table.cpp`、`docs/CHANGELOG.md`。
+
+## UI-212: media 任一具体模块开启未隐含 MEDIA_CORE——x64-ffmpeg/opencv/all/install-all 预设 ffmpeg 模块 C1083 找不到 ui/media/pipeline 头（根 CMakeLists.txt）（2026-10-16）
+- **严重度**：高（构建系统缺陷：`cmake` 预设 `x64-ffmpeg`/`x64-opencv`/`x64-all`/`install-all` 全部无法构建 `ui_media_ffmpeg`，`cmake --build build/install-all` 直接 C1083；发布包重建流程被阻断）。
+- **根因（构建系统 / 根 CMakeLists.txt + presets）**：`option(OPENGUI_MEDIA_CORE ... OFF)` 与 `OPENGUI_MEDIA_FFMPEG`/`OPENGUI_MEDIA_OPENCV` 彼此独立，而 CMakePresets 的 `x64-ffmpeg`/`x64-opencv`/`x64-all`（→ `install-all`）只开 ffmpeg/opencv、**未开 CORE**。`media/CMakeLists.txt` 仅当 `OPENGUI_MEDIA_CORE` 为 ON 才 `add_subdirectory(core)`，于是 `ui_media_core` 目标不存在；`media/ffmpeg/CMakeLists.txt` 的 `target_link_libraries(ui_media_ffmpeg PUBLIC ui_media_core ...)` 对未定义目标**不报错**（CMake 将其静默当作库名 `ui_media_core.lib`），其 `PUBLIC` include 目录（`media/core/include`，含 `ui/media/pipeline/*.h`）**不传播** → `video_view.cpp`/`ffmpeg_nodes.cpp` 找不到 `ui/media/pipeline/pipeline.h`/`node.h`（C1083）。UI-193（09-05）建立 `ui_media_core` 分层、UI-191 把 `VideoView` 实现迁到管线之上后，ffmpeg 模块开始直接 `#include` 管线头，潜伏的预设不一致才被触发（09-04 的旧 install-all 产物不含该依赖故未暴露）。
+- **修复**：根 `CMakeLists.txt` 在三个 media option 之后追加隐含关系——`OPENGUI_MEDIA_FFMPEG` 或 `OPENGUI_MEDIA_OPENCV` 任一为 ON 时，`set(OPENGUI_MEDIA_CORE ON CACHE BOOL ... FORCE)` 强制置位（含 FC1083 注释说明根因）。单一事实源在根 CMake，预设无需各自重复声明；`media/core` 子目录随之入树，`ui_media_core` 目标存在，其 PUBLIC include 正常传播。
+- **回归清单（改动后核对）**：
+  1. `x64-ffmpeg`/`x64-opencv`/`x64-all`/`install-all` 预设 configure 后 `OPENGUI_MEDIA_CORE=ON`，`ui_media_ffmpeg.vcxproj` 的 `AdditionalIncludeDirectories` 含 `media/core/include`，`ui_media_ffmpeg` 可编译；
+  2. 纯 UI 工程（`OPENGUI_MEDIA_*` 全 OFF）不受影响：仍不构建任何 media 模块、不依赖媒体库；
+  3. `OPENGUI_MEDIA_CORE=ON` 单独开启（无 ffmpeg/opencv）行为不变（合成源 / VideoContainer 演示仍可构建）；
+  4. `install(TARGETS ui_media_core ...)` 与 `ui/media/pipeline/*.h` 头文件安装保持（UI-193 语义不破）。
+- **验证**：
+  1. `cmake -S . -B build/install-all` 重配置成功；cache `OPENGUI_MEDIA_CORE:BOOL=ON`；`ui_media_ffmpeg.vcxproj` 12 处配置均含 `media/core/include`；
+  2. `cmake --build build/install-all --config Release` 全量通过（ui_core/ui_gl/ui_ui/ui_media_core/ui_media_ffmpeg/ui_media_opencv + 全部 apps exe）；
+  3. `cmake --install build/install-all --config Release` 成功；
+  4. `python tools/graphgen.py --check` 0 错误 0 警告。
+- **影响范围**：`CMakeLists.txt`、`docs/BUILD.md`、`docs/CHANGELOG.md`。
+
+## UI-213: 发布包生成脚本 package.ps1 + 示例应用与运行时素材随 install 发布（apps/CMakeLists.txt + scripts/publish/package.ps1 + docs/BUILD.md）（2026-10-16）
+- **严重度**：缺功能（发布包生成无脚本：`scripts/publish/publish.ps1` 仅做 MCP 注入、不打包 zip；仓库根 `opengl_ui-x64-all-release.zip` 系手工 `Compress-Archive` 于 09-04 产物，不可复现；`cmake --install` 从不安装 apps exe，install/bin 内的示例 exe 为历史手工拷贝、与源码不同步）。
+- **根因（构建系统 / 发布流程）**：apps/CMakeLists.txt 只对示例 exe 做 POST_BUILD 拷贝（到构建树 exe 目录），**无 `install(TARGETS)` 规则**——`cmake --install` 不产出示例 exe 与运行素材，自包含运行包无法由构建产物完整生成；发布 zip 因此靠人工拼装。
+- **功能**：
+  1. **apps 随 install 发布**（`apps/CMakeLists.txt`）：新增 `install(TARGETS ${_APP_TARGETS} RUNTIME DESTINATION bin)`，并把运行时素材（`iconfont.ttf` 恒有；`OPENGUI_MEDIA_OPENCV` 时 `test.png`；`OPENGUI_MEDIA_FFMPEG` 时 `test*.mp4`）`install(FILES ... DESTINATION bin)`。`_APP_TARGETS` 不含开发工具 `opengl_ui_gen_av`（不安装）；`OPENGUI_BUILD_APPS=OFF` 时本文件不入树、纯库分发包不含示例 exe（UI-097 语义保持）。
+  2. **发布包脚本**（`scripts/publish/package.ps1`）：把自包含 `install/` 打包为 `opengl_ui-<arch>-all-release.zip`。默认只打包；`-Rebuild` 先经 `-BuildDir`（默认 `build/install-all`）`cmake --build`/`--install` 刷新 install 再打包；`-InjectMCP` 委托 `publish.ps1` 注入 opengui MCP 知识服务（写 `install/share/opengl_ui/mcp/`）。打包前做**结构完整性校验**（`bin/include/lib/share` 四目录 + `.lib` + `glfw3.dll` + `include/ui/all.h` + `lib/cmake/opengl_ui/opengl_uiConfig.cmake`），缺失即中止。cmake 路径自动解析（env.ps1 的 CLion 路径 → VS 内置 → PATH）。
+- **回归清单（改动后核对）**：
+  1. `OPENGUI_BUILD_APPS=ON` + `cmake --install` 后 `install/bin/` 含各示例 exe、运行时 DLL 与 `iconfont.ttf`(+`test.*`)，解压即运行（依赖 exe 同目录 DLL）；
+  2. `OPENGUI_BUILD_APPS=OFF` 时 install 不含示例 exe（仅库 + 头 + 第三方 DLL），下游 `find_package(opengl_ui)` 消费不受影响；
+  3. `opengl_ui_gen_av`（开发工具）不进入安装树；
+  4. `package.ps1` 代码默认仅打包、`-Rebuild`/`-InjectMCP` 为显式开关（无副作用默认）；结构不完整时非零退出、不产出误导性 zip。
+- **验证**：
+  1. `scripts/publish/package.ps1 -Rebuild` 端到端：重建 + install + 校验通过 + 生成 zip；解压核对 `bin/` 含示例 exe 与 `iconfont.ttf`、`share/opengl_ui/mcp/` 存在；
+  2. `python tools/graphgen.py --check` 0 错误 0 警告。
+- **影响范围**：`apps/CMakeLists.txt`、`scripts/publish/package.ps1`（新）、`docs/BUILD.md`、`docs/distribution/README.md`、`docs/CHANGELOG.md`。

@@ -226,7 +226,10 @@ All runtime DLLs are bundled in the `install/bin/` directory.
 
 ```
 install/
-├── bin/                    # Runtime DLLs (glfw3.dll, ffmpeg, opencv)
+├── bin/                    # DLLs (glfw3.dll, ffmpeg, opencv) + demo exes + runtime assets
+│   ├── opengl_ui_demo.exe       # demo apps (built with OPENGUI_BUILD_APPS=ON)
+│   ├── opengl_ui_image_viewer.exe / opengl_ui_video_player.exe ...
+│   └── iconfont.ttf             # runtime assets (iconfont + media test assets)
 ├── include/
 │   ├── ui/                 # opengl_ui headers
 │   │   ├── all.h          # Umbrella header (includes everything)
@@ -240,7 +243,8 @@ install/
 ├── lib/
 │   ├── *.lib              # Static libraries + import libs
 │   └── cmake/opengl_ui/  # CMake config files
-└── share/opengl_ui/       # Runtime assets (iconfont.ttf)
+└── share/
+    └── opengl_ui/         # iconfont.ttf + opengui MCP knowledge service (mcp/)
 ```
 
 ## License

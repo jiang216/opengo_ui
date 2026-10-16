@@ -118,3 +118,23 @@ foreach(_TGT ${_ASSET_TARGETS})
     endif()
     add_custom_command(TARGET ${_TGT} POST_BUILD ${_ASSET_CMDS})
 endforeach()
+
+# ---------- install（运行包：示例 exe + 运行时素材随 install 发布） ----------
+# 本文件仅在 OPENGUI_BUILD_APPS=ON 时被根 CMake add_subdirectory；纯库分发包
+# （configure 时设 -DOPENGUI_BUILD_APPS=OFF）不含示例 exe。/bin 即运行包根：exe
+# 与其所需 DLL / 素材（iconfont.ttf、media 测试素材）同目录，下载解压即可运行。
+# 注：opengl_ui_gen_av 为开发工具（非演示应用），不入 _APP_TARGETS、不安装。
+include(GNUInstallDirs)
+install(TARGETS ${_APP_TARGETS} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+if(_ICON_FONT)
+    install(FILES ${_ICON_FONT} DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+if(OPENGUI_MEDIA_OPENCV AND _TEST_IMG)
+    install(FILES ${_TEST_IMG} DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+if(OPENGUI_MEDIA_FFMPEG)
+    set(_TEST_MEDIA ${_TEST_VID} ${_TEST_AV} ${_TEST_H264})
+    if(_TEST_MEDIA)
+        install(FILES ${_TEST_MEDIA} DESTINATION ${CMAKE_INSTALL_BINDIR})
+    endif()
+endif()
