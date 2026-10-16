@@ -1,6 +1,6 @@
 # OpenGL UI
 
-C++ OpenGL UI 框架（CMake 多模块工程）。里程碑计划见 [PLAN.md](PLAN.md)，四层架构见 [ARCHITECTURE.md](ARCHITECTURE.md)，依赖构建见 [BUILD.md](BUILD.md)。
+C++ OpenGL UI 框架（CMake 多模块工程）。面向网站的产品介绍 / 落地文案见 [INTRO.md](INTRO.md)，里程碑计划见 [PLAN.md](PLAN.md)，四层架构见 [ARCHITECTURE.md](ARCHITECTURE.md)，依赖构建见 [BUILD.md](BUILD.md)。
 
 ## 必须保证的功能（回归清单）
 

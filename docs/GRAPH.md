@@ -5,8 +5,8 @@
 
 ## 统计
 
-- 节点: 211（BUG 202 / DOC 7 / META 2）
-- 边: 430
+- 节点: 212（BUG 202 / DOC 8 / META 2）
+- 边: 432
 - lint: 0 错误 / 0 警告
 
 ## 反链索引
@@ -1428,6 +1428,12 @@
   - `DOC:README` (mention) — 示例应用（M16 收官）
   - `META:CHANGELOG` (mention)
 
+### DOC:INTRO · INTRO
+
+- 路径: `docs/INTRO.md`
+- 反链(1):
+  - `DOC:README` (mention) — OpenGL UI
+
 ### DOC:MEDIA_PIPELINE · MEDIA_PIPELINE
 
 - 路径: `docs/MEDIA_PIPELINE.md`
@@ -1450,7 +1456,8 @@
 ### DOC:UI_API · UI_API
 
 - 路径: `docs/UI_API.md`
-- 反链(1):
+- 反链(2):
+  - `DOC:INTRO` (mention) — 四、控件一览（59 个）
   - `META:CHANGELOG` (mention)
 
 ### META:AGENTS · AGENTS
@@ -1705,6 +1712,7 @@
 | `DOC:API_REFERENCE` | DOC | API_REFERENCE | `docs/distribution/API_REFERENCE.md` |
 | `DOC:ARCHITECTURE` | DOC | ARCHITECTURE | `docs/ARCHITECTURE.md` |
 | `DOC:BUILD` | DOC | BUILD | `docs/BUILD.md` |
+| `DOC:INTRO` | DOC | INTRO | `docs/INTRO.md` |
 | `DOC:MEDIA_PIPELINE` | DOC | MEDIA_PIPELINE | `docs/MEDIA_PIPELINE.md` |
 | `DOC:PLAN` | DOC | PLAN | `docs/PLAN.md` |
 | `DOC:README` | DOC | README | `docs/README.md` |
@@ -2005,6 +2013,7 @@
 | `DOC:BUILD` | `BUG:UI-216` | checklist |
 | `DOC:BUILD` | `DOC:README` | mention |
 | `DOC:BUILD` | `META:CHANGELOG` | mention |
+| `DOC:INTRO` | `DOC:UI_API` | mention |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
 | `DOC:MEDIA_PIPELINE` | `BUG:UI-193` | checklist |
@@ -2033,6 +2042,7 @@
 | `DOC:README` | `DOC:ARCHITECTURE` | mention |
 | `DOC:README` | `DOC:BUILD` | mention |
 | `DOC:README` | `DOC:BUILD` | mention |
+| `DOC:README` | `DOC:INTRO` | mention |
 | `DOC:README` | `DOC:PLAN` | mention |
 | `DOC:README` | `META:CHANGELOG` | mention |
 | `DOC:UI_API` | `META:CHANGELOG` | mention |

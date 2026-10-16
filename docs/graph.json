@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-10-16T14:30:25+08:00",
+  "generatedAt": "2026-10-16T14:53:01+08:00",
   "project": "opengl_UI",
   "prefixes": {
     "UI": "OpenGL UI"
@@ -1438,6 +1438,12 @@
       "label": "BUILD",
       "path": "docs/BUILD.md"
     },
+    "DOC:INTRO": {
+      "id": "DOC:INTRO",
+      "type": "DOC",
+      "label": "INTRO",
+      "path": "docs/INTRO.md"
+    },
     "DOC:MEDIA_PIPELINE": {
       "id": "DOC:MEDIA_PIPELINE",
       "type": "DOC",
@@ -2089,6 +2095,12 @@
       "context": "UI-216: 发布包按打包日期定版本号——文件名 dist/opengl_ui-<arch>-all-release-<yyyyMMdd>.zip（scripts/publish/package.ps1 新增 -Version 默认打包当天 yyyyMMdd）（2026-10-16）"
     },
     {
+      "from": "DOC:INTRO",
+      "to": "DOC:UI_API",
+      "kind": "mention",
+      "context": "四、控件一览（59 个）"
+    },
+    {
       "from": "DOC:MEDIA_PIPELINE",
       "to": "META:CHANGELOG",
       "kind": "mention",
@@ -2129,6 +2141,12 @@
       "to": "DOC:ARCHITECTURE",
       "kind": "mention",
       "context": "完成定义（DoD）"
+    },
+    {
+      "from": "DOC:README",
+      "to": "DOC:INTRO",
+      "kind": "mention",
+      "context": "OpenGL UI"
     },
     {
       "from": "DOC:README",
@@ -6583,6 +6601,13 @@
         "context": ""
       }
     ],
+    "DOC:INTRO": [
+      {
+        "from": "DOC:README",
+        "kind": "mention",
+        "context": "OpenGL UI"
+      }
+    ],
     "DOC:MEDIA_PIPELINE": [
       {
         "from": "META:CHANGELOG",
@@ -6610,6 +6635,11 @@
       }
     ],
     "DOC:UI_API": [
+      {
+        "from": "DOC:INTRO",
+        "kind": "mention",
+        "context": "四、控件一览（59 个）"
+      },
       {
         "from": "META:CHANGELOG",
         "kind": "mention",
